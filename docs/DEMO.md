@@ -8,7 +8,7 @@ What exists: project, theme, shared components, onboarding with permissions chec
 What does not exist yet: mesh, packets, sending, rescue, map, AI. The four tabs say which phase brings them.
 The status strip says "Mesh not running" and "Rules only" because neither the mesh service nor a model exists yet.
 
-Nothing here has been verified on the three demo phones yet.
+Phone A (iQOO 15, I2501, Android 16, SM8850): installed, app launches, onboarding reached the main screen, component gallery renders (screenshots checked 9 Oct). Phones B and C: not yet installed.
 
 ## Demo steps
 
@@ -31,4 +31,8 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
 
 ## Needs real phones
 
-- Install on all three phones, complete onboarding, grant every permission (Phase 0 "done when").
+- Install on phones B and C, complete onboarding, grant every permission (Phase 0 "done when"). iQOO 15 done.
+
+## Build notes
+
+- Use Android Studio's bundled JDK: `JAVA_HOME="C:/Program Files/Android/Android Studio1/jbr"`. The `Android Studio/jbr` folder on this laptop is incomplete (no `jvm.cfg`).

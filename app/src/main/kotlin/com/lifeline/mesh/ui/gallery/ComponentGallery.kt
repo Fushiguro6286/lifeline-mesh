@@ -180,11 +180,15 @@ private fun ColorSwatches() {
         "ink" to c.ink, "inkMuted" to c.inkMuted, "signal" to c.signal, "link" to c.link,
         "sos" to c.sos, "sosInk" to c.sosInk, "safe" to c.safe, "warn" to c.warn,
     )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(Space.s),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
+        maxItemsInEachRow = 3,
+    ) {
         tokens.forEach { (name, color) ->
-            Column(Modifier.width(104.dp).background(c.surface, Shapes.card).padding(Space.s), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+            Column(Modifier.weight(1f).background(c.surface, Shapes.card).padding(Space.s), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                 Box(Modifier.fillMaxWidth().height(36.dp).background(color, Shapes.chip).border(1.dp, c.outline, Shapes.chip))
-                Text(name, style = Lifeline.type.label, color = c.ink)
+                Text(name, style = Lifeline.type.label, color = c.ink, maxLines = 1, softWrap = false)
                 Text(hex(color), style = Lifeline.type.caption, color = c.inkMuted)
                 Text("on bg %.1f:1".format(contrast(color, c.bg)), style = Lifeline.type.caption, color = c.inkMuted)
             }
