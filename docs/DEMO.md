@@ -2,7 +2,7 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 9 in progress; Phase 8 confirmed on the iQOO 15 on 10 Oct; phone tests for Phases 2 to 5 still open)
+## Current state (Phase 10 built; checked on the iQOO 15 alone and in simulation; 3-phone tests still open)
 
 - Phases 0 to 6: app, codec, mesh, Live Mesh, simulation/demo modes, SOS send flow, Rescue tab, offline map.
 - Phase 7: on-device AI. Model ladder (assets/models.json), DeviceProfiler, ModelShortlist, ModelSelector (load → speed
@@ -20,7 +20,18 @@ Living document. Updated at the end of every phase.
 - Phase 9 so far: sync server (server/main.py) and ServerUploader with Settings → Sync; community reports (Rescue tab →
   Add a report); battery drain while relaying (Benchmarks → Mesh); Settings → Export measurements (CSV, share sheet);
   Settings → Battery and background; First aid screen (SOS tab, bottom) waiting for the vetted firstaid.json.
-- 160 unit tests pass.
+- Phase 10: offline profile (I need help / volunteer / rescue team → Fire service, Ambulance, Police, NDRF/SDRF,
+  Other; optional phone number, sent only with this phone's own uploads), live positions (Position packet every
+  30 s while moving, every 2 min otherwise; teams see everyone, others see only teams), travel-time estimates computed
+  in Kotlin (straight line × detour at an assumed speed, always labelled "estimate"), team views on the Rescue tab
+  ("For you" chips), urgent ambulance requests (SOS tab and First aid) with an alarm on Ambulance phones, and the
+  internet relay (server assigns each alert to the nearest online team of its type; phones poll every 15 s).
+- 176 unit tests pass.
+- Verified on the iQOO 15 (10 Oct, by Claude over adb): mesh service runs as connectedDevice|location (types 0x18);
+  in simulation, Kiran (ambulance) shows on Map/Rings for a "needs help" phone while Meena and Ravi stay hidden; as
+  Ambulance, the Rescue tab opens on "For you (Ambulance)" with "About 4 min by road · estimate"; Ravi's simulated
+  ambulance request raised the alarm; internet relay end to end: a request uploaded to the laptop server for a spot
+  940 m away was assigned to the iQOO, fetched, alarmed and listed "via internet".
 - Verified on the iQOO 15 (10 Oct, by Claude over adb): Settings → Sync uploaded a real panic alert to the laptop server
   over Wi-Fi ("Waiting to upload: 0", server shows it; simulated packets stayed out); a wrong server address shows a
   plain error and keeps the packet queued. Design pass at font scale 1.0 and 1.3 on SOS, First aid, Mesh, Rescue, Map
@@ -51,6 +62,22 @@ apart from real ones and never shown together; every number carries a Simulated 
 
 Phase 3 check in simulation: switch "Ravi off", tap "Alert from Meena" (nothing reaches you; Meena holds it), switch
 "Ravi on" (it arrives through Ravi, events show "Sent N stored packets").
+
+## Phase 10 phone checks (3 phones; laptop server for the last two)
+
+Roles: A "I need help", B "I'm a volunteer", C "I'm on a rescue team → Ambulance". Location on everywhere. Simulation off.
+
+1. Live positions: after ~30 s, C's Map (or Rings) shows A and B with names; A's Map shows only C (the team).
+   Walk B 50 m: within ~30 s B's marker moves on C.
+2. Travel time: A sends an alert. On C's Rescue tab the card says "About N min by road · estimate"; Acknowledge offers
+   that N as an ETA choice. A's status card says "Nearest rescue team: Ambulance (name), X away, about N min".
+3. Team view: C opens on "For you (Ambulance)"; a fire-only alert appears under All, not under For you.
+4. Ambulance request: on B, SOS tab → "Someone needs an ambulance" → 1 patient, "fell, head injury" → Send. C sounds
+   an alarm "Ambulance requested · 1 patient · distance" (and reads it aloud if Read aloud is on). A and B do not.
+5. Internet relay: laptop server running; C and B on the laptop's Wi-Fi with Settings → Sync URL set; A on the mesh
+   only (Wi-Fi off). A sends an alert: it reaches B over the mesh, B uploads it, the server assigns it to C (dashboard:
+   "sent to Ambulance …"), C gets it "via internet" even if C is out of mesh range of B. C acknowledges: the reply
+   reaches A through the mesh, or through the server when A finds a connection.
 
 ## Phase 9 phone checks
 
@@ -162,6 +189,13 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
   runtime. Only ServerUploader opens connections.
 - First aid has no guides until firstaid.json is supplied. Its Hindi and Kannada screen texts (including "Contact
   emergency services if you can.") are machine-drafted: check them with a native speaker first.
+- Live positions are hidden from non-team phones by the app, not by encryption: any phone relays Position packets.
+  Team roles are self-declared ("not verified" is shown when choosing one).
+- Live position with the screen off needs the location foreground-service type, which Android allows only when the
+  mesh starts while the app is open (or with background-location permission, which the app does not ask for). If the
+  system restarts the service in the background it falls back to relaying only; positions resume when the app opens.
+- The internet relay never runs in simulation mode (real and simulated packets never mix).
+- Phase 10 Hindi and Kannada strings (team names, ambulance request, nearest team) are machine-drafted: check them.
 - Read aloud uses the phone's TextToSpeech voices. If the phone has no Hindi or Kannada voice, it reads with the default
   voice (check Settings → Text-to-speech on each phone).
 
