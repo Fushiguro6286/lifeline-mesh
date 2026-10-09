@@ -6,10 +6,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.lifeline.mesh.BuildConfig
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -57,6 +59,8 @@ class SettingsStore(private val context: Context) {
         val THEME = stringPreferencesKey("theme")
         val ONBOARDED = booleanPreferencesKey("onboarding_done")
         val READ_ALOUD = booleanPreferencesKey("read_aloud")
+        val LAST_UPLOAD_AT = longPreferencesKey("last_upload_at")
+        val LAST_UPLOAD_COUNT = intPreferencesKey("last_upload_count")
     }
 
     private val store get() = context.dataStore
@@ -102,6 +106,12 @@ class SettingsStore(private val context: Context) {
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
     suspend fun setOnboardingDone(done: Boolean) = store.edit { it[Keys.ONBOARDED] = done }
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
+
+    /** Last successful upload (time ms, packets sent). Kept out of [Settings] so an upload doesn't recompose the app. */
+    val lastUpload: Flow<Pair<Long, Int>?> = store.data.map { p -> p[Keys.LAST_UPLOAD_AT]?.let { it to (p[Keys.LAST_UPLOAD_COUNT] ?: 0) } }
+        .distinctUntilChanged()
+
+    suspend fun setLastUpload(at: Long, count: Int) = store.edit { it[Keys.LAST_UPLOAD_AT] = at; it[Keys.LAST_UPLOAD_COUNT] = count }
 
     /**
      * The chosen language, read synchronously. Only for Activity.attachBaseContext, which must

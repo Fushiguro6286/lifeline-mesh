@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only ServerUploader uses the network. The sync server is a laptop on the venue Wi-Fi or a hotspot, reached over
+     plain HTTP (SETUP.md 9). Its address is typed in Settings at runtime, so it cannot be listed here by domain;
+     cleartext is therefore allowed app-wide. Nothing else in the app opens a connection. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

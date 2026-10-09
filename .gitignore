@@ -8,3 +8,7 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.litertlm
+
+# Sync server
+server/lifeline.db
+server/__pycache__/

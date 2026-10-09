@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -52,8 +53,7 @@ import com.lifeline.mesh.ui.theme.Space
 import com.lifeline.mesh.ui.theme.Touch
 
 /**
- * Phase 0 settings: You, Appearance, Mesh (permissions and battery), Privacy, Developer.
- * Mesh service, simulation, demo mode, AI, sync and export rows arrive with the phases that make them work.
+ * Settings (DESIGN.md 8.6): You, Appearance, Mesh, On-device AI, Sync, Privacy, Developer.
  */
 @Composable
 fun SettingsScreen(
@@ -121,6 +121,9 @@ fun SettingsScreen(
         Section("On-device AI")
         AiSettingsCard(onBenchmarks)
 
+        Section("Sync")
+        SyncCard(settings, repository)
+
         Section(stringResource(R.string.settings_privacy))
         Text(stringResource(R.string.privacy_body), style = Lifeline.type.body, color = c.ink)
 
@@ -131,6 +134,59 @@ fun SettingsScreen(
         Text(
             stringResource(R.string.settings_version, BuildConfig.VERSION_NAME, "%08x".format(settings.originId)),
             style = Lifeline.type.caption, color = c.inkMuted, modifier = Modifier.padding(vertical = Space.l),
+        )
+    }
+}
+
+/**
+ * Sync (DESIGN.md 8.6): server URL, what is waiting, last upload, and Upload now. Uploads start by themselves on
+ * validated internet; Upload now also works on a Wi-Fi without internet (a laptop hotspot).
+ */
+@Composable
+private fun SyncCard(settings: Settings, repository: AppRepository) {
+    val c = Lifeline.colors
+    val focus = LocalFocusManager.current
+    val uploader = (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.lifeline.mesh.LifelineApp).uploader
+    val st by uploader.state.collectAsStateWithLifecycle()
+    val last by repository.lastUpload.collectAsStateWithLifecycle()
+    var url by rememberSaveable(settings.serverUrl) { mutableStateOf(settings.serverUrl) }
+    val changed = url.trim() != settings.serverUrl
+    fun save() { repository.setServerUrl(url); focus.clearFocus() }
+
+    Column(
+        Modifier.fillMaxWidth().clip(Shapes.card).background(c.surface).padding(Space.l),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
+    ) {
+        OutlinedTextField(
+            value = url,
+            onValueChange = { url = it.take(100) },
+            label = { Text("Server URL") },
+            placeholder = { Text("http://192.168.1.10:8000") },
+            singleLine = true,
+            textStyle = Lifeline.type.body,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri),
+            keyboardActions = KeyboardActions(onDone = { save() }),
+            trailingIcon = if (changed) {
+                { TextButton(onClick = { save() }) { Text(stringResource(R.string.save), color = c.link) } }
+            } else null,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            if (st.internet) "Internet: available. Uploads start by themselves." else "Internet: none. Packets wait here until a network appears.",
+            style = Lifeline.type.body, color = c.ink,
+        )
+        Text("Waiting to upload: ${st.pending}", style = Lifeline.type.body, color = c.ink)
+        Text(
+            last?.let { (at, n) -> "Last upload: " + java.text.SimpleDateFormat("d MMM, HH:mm", java.util.Locale.US).format(java.util.Date(at)) + " · $n packets" }
+                ?: "Last upload: never",
+            style = Lifeline.type.body, color = c.inkMuted,
+        )
+        st.lastError?.let { Text(it, style = Lifeline.type.body, color = c.warn) }
+        if (settings.simulationMode) Text("Simulated packets are never uploaded.", style = Lifeline.type.caption, color = c.inkMuted)
+        com.lifeline.mesh.ui.components.SecondaryButton(
+            if (st.uploading) "Uploading…" else "Upload now",
+            { if (!st.uploading) { if (changed) save(); uploader.uploadNow() } },
+            Modifier.fillMaxWidth(),
         )
     }
 }

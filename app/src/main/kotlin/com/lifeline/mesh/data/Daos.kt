@@ -26,6 +26,13 @@ interface PacketDao {
     @Query("UPDATE packets SET uploaded = 1 WHERE id IN (:ids)")
     suspend fun markUploaded(ids: List<Long>)
 
+    /** Real (never simulated) alerts, check-ins, acks and reports the sync server has not got yet. */
+    @Query("SELECT * FROM packets WHERE uploaded = 0 AND simulated = 0 AND type IN (1, 2, 3, 4) ORDER BY receivedAt LIMIT :limit")
+    suspend fun pendingUpload(limit: Int): List<PacketEntity>
+
+    @Query("SELECT COUNT(*) FROM packets WHERE uploaded = 0 AND simulated = 0 AND type IN (1, 2, 3, 4)")
+    fun observePendingUpload(): Flow<Int>
+
     @Query("DELETE FROM packets WHERE simulated = 1")
     suspend fun clearSimulated()
 

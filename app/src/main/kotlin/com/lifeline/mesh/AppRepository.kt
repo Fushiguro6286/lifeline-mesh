@@ -61,6 +61,8 @@ class AppRepository(
     fun setSimulationMode(on: Boolean) = scope.launch { settingsStore.setSimulationMode(on) }
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
+    fun setServerUrl(url: String) = scope.launch { settingsStore.setServerUrl(url) }
+    val lastUpload: StateFlow<Pair<Long, Int>?> = settingsStore.lastUpload.stateIn(scope, SharingStarted.Eagerly, null)
 
     // ------------------------------------------------------------------ Room
 
