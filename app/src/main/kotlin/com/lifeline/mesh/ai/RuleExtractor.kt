@@ -44,6 +44,9 @@ object RuleExtractor {
         return AlertDraft(needs, people, severity(t, needs, people), text.trim())
     }
 
+    /** Severity for edited fields: the review sheet re-derives it until the user picks one. */
+    fun severityFor(text: String, needs: Set<Need>, people: Int): Int = severity(normalize(text), needs, people)
+
     // ------------------------------------------------------------------ normalizing
 
     /** Lower case, native digits to ASCII, punctuation to spaces, single spaces, padded for word matching. */

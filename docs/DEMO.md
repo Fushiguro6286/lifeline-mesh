@@ -2,20 +2,20 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 3 built; Phase 2 and 3 phone tests still open)
+## Current state (Phase 4 built; phone tests for Phases 2 to 4 still open)
 
-- Phase 0: app, theme, components, onboarding, navigation. Phase 1: packet codec.
-- Phase 2: mesh core (router, store and forward, hellos), Nearby transport, foreground service, debug panel
-  (now under Settings → Developer → Mesh debug panel).
-- Phase 3: Live Mesh screen on the Mesh tab. Topology from Hellos (me centre, direct neighbors inner orbit, phones
-  further away outward), packet dots along links colored by type, arrival rings and "Alert · hop 2" labels,
-  "N waiting" badge for my undelivered packets, radar sweep when nobody is linked, tap a node for details,
-  draggable sheet with Scoreboard (hops, round trip, bytes; "Not measured" when empty) and event timeline with
-  All / Alerts / Network filters. Simulation mode and demo mode in Settings.
-- 73 unit tests pass (codec, router/simulator, graph and layout).
-- Verified on the iQOO 15 in simulation mode (9 Oct): red banner on every screen, an alert from Meena visibly hops
-  Meena → Ravi → You with labels at each hop, Kiran's reply crosses back, Simulated tags on every number,
-  node sheet, timeline. NOT yet verified with real phones.
+- Phases 0 to 3: app, codec, mesh core + Nearby + foreground service, Live Mesh screen, simulation and demo modes.
+- Phase 4: SOS tab. Hold-to-send panic SOS (3 s, cancels on early release, no speech, no gate), Type (and Speak, which
+  opens typing until Phase 7), RuleExtractor, review sheet (quote + "Understood by: Rules", need chips, people stepper,
+  severity, location row, quality-gate question in the app language, exact packet bytes, Send alert), GPS (fresh fix
+  within 8 s and 50 m = exact, else last known = approximate), Delivery Status (Created → Waiting / Passed to N →
+  Help is coming with ETA), reply notification with vibration, and the I'm safe check-in.
+- 95 unit tests pass.
+- Verified on the iQOO 15 in simulation mode (9 Oct): demo sentence 1 extracts trapped + medical, 5 people, Urgent,
+  exact location 12 m, 70 bytes; "please help us" is blocked with the question (also checked in Hindi); panic hold
+  sends an SOS alert, a 1 s press does not; the alert is passed to Ravi within a second and Kiran's reply turns the card
+  green with "Help is coming, ETA 20 min, Boat on the way" and a heads-up notification; I'm safe sends a check-in.
+  The Hinglish, Kannada and Hindi demo sentences are covered by unit tests (adb cannot type Devanagari/Kannada).
 
 ## Simulation mode (rehearsal and stage fallback)
 
@@ -65,11 +65,22 @@ Machine-drafted translations. Please have a native speaker check them before the
 - `app/src/main/res/values-hi/strings.xml` (Hindi): SOS flow, need and severity words, delivery status, onboarding, permissions checklist.
 - `app/src/main/res/values-kn/strings.xml` (Kannada): same set.
 
+Phase 2 and 4 additions to check: status strip and notification texts, and the whole send flow (sos_type_*, review_*,
+gate_q_*, gate_ready, status_title/eta/panic/send_another, checkin_*).
+
 Words to check first, because they appear on stage: "SOS के लिए दबाकर रखें" / "SOS ಗಾಗಿ ಒತ್ತಿ ಹಿಡಿಯಿರಿ" (Hold for SOS), "मदद आ रही है" / "ಸಹಾಯ ಬರುತ್ತಿದೆ" (Help is coming), "पास के फ़ोन का इंतज़ार" / "ಹತ್ತಿರದ ಫೋನ್‌ಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ" (Waiting for a nearby phone).
 
 Settings and developer screens are English only on purpose (DESIGN.md section 9).
 
 ## Known issues
+
+- RuleExtractor was written from scratch: the web prototype's source was not on this laptop. If you have it, the rules
+  can be aligned with it. Behaviour is pinned by RuleExtractorTest.
+- Speak opens the typing panel and says voice is not ready yet (speech arrives in Phase 7). The speaker button on the
+  gate question arrives with ReadAloud in Phase 8.
+- "Approximate" location is shown to the sender only; the packet format has no flag for it (the accuracy byte carries the
+  fix's own accuracy).
+- Notes longer than 60 bytes are trimmed on whole characters; the review sheet shows exactly what is sent ("Sent as").
 
 - iQOO 15 (measured 9 Oct): without the battery-optimization exemption the OS freezes the app ~10 s after the screen turns
   off, even with the foreground service running (`isFrozen=true`, wake lock disabled). With the exemption it stays a

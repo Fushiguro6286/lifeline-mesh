@@ -68,6 +68,8 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.serialization.json)
     implementation(libs.play.services.nearby)
+    implementation(libs.play.services.location)
+    implementation(libs.coroutines.play.services)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)

@@ -107,4 +107,41 @@
     </plurals>
     <string name="notif_stop">रोकें</string>
     <string name="notif_reply">मदद आ रही है, लगभग %d मिनट में</string>
+
+    <!-- Phase 4: send flow -->
+    <string name="sos_type_title">बताइए क्या हो रहा है</string>
+    <string name="sos_type_hint">जैसे: छत पर 5 लोग हैं, एक घायल है</string>
+    <string name="sos_continue">आगे</string>
+    <string name="sos_cancel">रद्द करें</string>
+    <string name="sos_speak_later">आवाज़ से बोलना अभी तैयार नहीं है। कृपया लिखें।</string>
+    <string name="sos_or">या बताइए क्या हो रहा है</string>
+    <string name="review_title">भेजने से पहले जाँचें</string>
+    <string name="review_source_rules">समझा गया: नियमों से</string>
+    <string name="review_source_ai">समझा गया: फ़ोन पर AI से</string>
+    <string name="review_needs">आपको क्या चाहिए?</string>
+    <string name="review_people">कितने लोग हैं?</string>
+    <string name="review_people_less">एक कम</string>
+    <string name="review_people_more">एक ज़्यादा</string>
+    <string name="review_severity">कितना गंभीर है?</string>
+    <string name="review_location_finding">आपकी जगह ढूँढ रहे हैं…</string>
+    <string name="review_location_exact">सटीक जगह, %d मीटर</string>
+    <string name="review_location_exact_unknown">सटीक जगह</string>
+    <string name="review_location_approx">अनुमानित जगह, पिछली ज्ञात</string>
+    <string name="review_location_unknown">जगह पता नहीं। अलर्ट बिना जगह के भेजा जाएगा।</string>
+    <string name="review_note_trimmed">ऐसे भेजा जाएगा: “%s”</string>
+    <string name="review_bytes">बाइट</string>
+    <string name="review_send">अलर्ट भेजें</string>
+    <string name="review_sending">भेज रहे हैं…</string>
+    <string name="review_edit_text">शब्द बदलें</string>
+    <string name="gate_q_needs">आपको किस चीज़ में मदद चाहिए? नीचे एक चुनें।</string>
+    <string name="gate_q_people">आपके साथ कितने लोग हैं?</string>
+    <string name="status_title">आपका अलर्ट</string>
+    <string name="status_send_another">एक और अलर्ट भेजें</string>
+    <string name="status_eta">लगभग %d मिनट में</string>
+    <string name="status_panic">SOS अलर्ट</string>
+    <string name="checkin_title">क्या आप सुरक्षित हैं?</string>
+    <string name="checkin_body">बचाव दल को बताइए कि आप ठीक हैं, ताकि वे पहले दूसरों की मदद कर सकें।</string>
+    <string name="checkin_send">मैं सुरक्षित हूँ</string>
+    <string name="checkin_sent">भेज दिया। पास के फ़ोन इसे आगे भेजेंगे।</string>
+    <string name="gate_ready">भेजने के लिए तैयार।</string>
 </resources>

@@ -49,6 +49,7 @@ import com.lifeline.mesh.mesh.MeshHealth
 import com.lifeline.mesh.mesh.MeshService
 import com.lifeline.mesh.ui.components.EmptyState
 import com.lifeline.mesh.ui.mesh.LiveMeshScreen
+import com.lifeline.mesh.ui.send.SendScreen
 import com.lifeline.mesh.ui.mesh.MeshDebugScreen
 import com.lifeline.mesh.ui.components.StatusItem
 import com.lifeline.mesh.ui.components.StatusStrip
@@ -129,7 +130,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
         bottomBar = { if (onTab) BottomBar(nav, destination) },
     ) { padding ->
         NavHost(nav, startDestination = start, modifier = Modifier.padding(padding)) {
-            composable<SosRoute> { PhasePlaceholder(R.string.ph_sos_title, R.string.ph_sos_body, R.drawable.ic_sos) { nav.navigate(GalleryRoute) } }
+            composable<SosRoute> { SendScreen(settings) }
             composable<MeshRoute> {
                 LiveMeshScreen(settings, repository, onDebug = { nav.navigate(DebugRoute) }, onPermissions = { nav.navigate(PermissionsRoute) })
             }

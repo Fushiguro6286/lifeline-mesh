@@ -117,4 +117,41 @@
     </plurals>
     <string name="notif_stop">Stop</string>
     <string name="notif_reply">Help is coming, ETA %d min</string>
+
+    <!-- Phase 4: send flow -->
+    <string name="sos_type_title">Type what is happening</string>
+    <string name="sos_type_hint">For example: 5 people on the roof, one is injured</string>
+    <string name="sos_continue">Continue</string>
+    <string name="sos_cancel">Cancel</string>
+    <string name="sos_speak_later">Voice input is not ready yet. Please type instead.</string>
+    <string name="sos_or">Or tell us what is happening</string>
+    <string name="review_title">Check before sending</string>
+    <string name="review_source_rules">Understood by: Rules</string>
+    <string name="review_source_ai">Understood by: On-device AI</string>
+    <string name="review_needs">What do you need?</string>
+    <string name="review_people">How many people?</string>
+    <string name="review_people_less">One less</string>
+    <string name="review_people_more">One more</string>
+    <string name="review_severity">How serious?</string>
+    <string name="review_location_finding">Finding your location…</string>
+    <string name="review_location_exact">Exact location, %d m</string>
+    <string name="review_location_exact_unknown">Exact location</string>
+    <string name="review_location_approx">Approximate location, last known</string>
+    <string name="review_location_unknown">Location unknown. The alert will be sent without a position.</string>
+    <string name="review_note_trimmed">Sent as: “%s”</string>
+    <string name="review_bytes">bytes</string>
+    <string name="review_send">Send alert</string>
+    <string name="review_sending">Sending…</string>
+    <string name="review_edit_text">Change the words</string>
+    <string name="gate_q_needs">What do you need help with? Tap one below.</string>
+    <string name="gate_q_people">How many people are with you?</string>
+    <string name="status_title">Your alert</string>
+    <string name="status_send_another">Send another alert</string>
+    <string name="status_eta">ETA %d min</string>
+    <string name="status_panic">SOS alert</string>
+    <string name="checkin_title">Are you safe?</string>
+    <string name="checkin_body">Tell rescuers you are OK, so they can help others first.</string>
+    <string name="checkin_send">I\'m safe</string>
+    <string name="checkin_sent">Sent. Nearby phones will pass it on.</string>
+    <string name="gate_ready">Ready to send.</string>
 </resources>

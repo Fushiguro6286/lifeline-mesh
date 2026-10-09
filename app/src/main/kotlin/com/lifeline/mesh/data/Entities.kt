@@ -37,9 +37,21 @@ data class PacketEntity(
     /** Produced in simulation mode. Simulated rows are never shown alongside real ones. */
     val simulated: Boolean = false,
 ) {
-    // Room entities with arrays need structural equality on the id only.
-    override fun equals(other: Any?) = other is PacketEntity && other.id == id
-    override fun hashCode() = id.hashCode()
+    // Full structural equality (bytes by content). Equality on the id alone made StateFlow treat a row whose
+    // handedTo/acked changed as "unchanged" and drop the update, so Delivery Status stayed on "Waiting".
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PacketEntity) return false
+        return id == other.id && type == other.type && origin == other.origin && ttl == other.ttl && hops == other.hops &&
+            sentAt == other.sentAt && receivedAt == other.receivedAt && fromEndpoint == other.fromEndpoint &&
+            rawBytes.contentEquals(other.rawBytes) && lat == other.lat && lon == other.lon && accuracy == other.accuracy &&
+            needs == other.needs && severity == other.severity && people == other.people && note == other.note &&
+            refId == other.refId && eta == other.eta && reportType == other.reportType && name == other.name &&
+            isMine == other.isMine && uploaded == other.uploaded && acked == other.acked && ackEta == other.ackEta &&
+            handedTo == other.handedTo && simulated == other.simulated
+    }
+
+    override fun hashCode(): Int = 31 * (31 * id.hashCode() + handedTo) + (if (acked) 1 else 0)
 }
 
 /** What this phone knows about another phone, from Hello beacons. */
