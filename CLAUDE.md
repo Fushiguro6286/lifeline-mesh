@@ -357,7 +357,19 @@ Done when: each works on sample data and falls back cleanly with the model missi
 **Phase 9: Sync and polish (remaining time)**
 ServerUploader and FastAPI server, community report sending, battery measurement, first aid, demo mode, crash fixes, final design pass against `DESIGN.md`.
 
-**Cut order if behind:** Phase 9 extras → map (use Canvas fallback) → Phase 8 → server sync. Never cut phases 0–5.
+**Phase 10: Profiles, teams and live locations (added 10 Oct 2026; start only after Phase 9 and the 3-phone tests for phases 2–5 pass)**
+Decisions made on 10 Oct 2026:
+- **Offline profile, no server login.** Onboarding creates a profile on the phone: name, optional phone number, role. Roles: Needs help, Volunteer, and teams: Firefighter, Ambulance, Police, NDRF, Other rescuer. Team roles are self-declared (not verified). Works with no internet.
+- **Live location, teams see all.** Every phone shares its position in the mesh periodically. Rescue teams see everyone's live position; other users see only teams and their own alerts. An SOS always carries position. Positions expire after silence like Hello entries.
+- **ETA is computed in Kotlin, never by the LLM.** Straight-line distance and a travel mode per team (e.g. on foot, road vehicle, boat), labelled "Estimate (straight line)". No road routing offline.
+- **Team views.** Each team sees all alerts in its area, ranked by the existing Ranker, grouped by need, with a filter defaulting to its type (Firefighter: fire; Ambulance: medical; NDRF: trapped; Police: road blocked and all).
+- **Urgent ambulance request.** A helper with a patient can send an urgent request addressed to Ambulance teams (severity 3, medical); Ambulance phones get a strong alert with sound, vibration and read-aloud.
+- **Internet relay.** When any phone holding an alert has internet, the server forwards it to the nearest online team of the matching type; online team phones poll the server about every 15 s and inject what they receive into their own Rescue list (marked "via internet"). The mesh path stays unchanged.
+- **First aid stays vetted-only** (rule 10 unchanged): the LLM only picks the matching vetted guide.
+Packet changes (team role codes, position in Hello or a new position packet, a target-role field for directed requests) must be designed at the start of the phase, versioned, and covered by codec tests.
+Done when: on three phones, a team phone sees the others' live positions and an ETA; a person-in-need phone does not see other people's positions; an urgent ambulance request from A reaches an Ambulance phone C through B; with internet on B only, the alert also reaches an online team through the server.
+
+**Cut order if behind:** Phase 10 → Phase 9 extras → map (use Canvas fallback) → Phase 8 → server sync. Never cut phases 0–5.
 
 ---
 
