@@ -182,4 +182,18 @@
     <string name="translating">Translating on device…</string>
     <string name="translate_failed">Could not translate; showing the original.</string>
     <string name="listen">Read aloud</string>
+
+    <!-- Phase 9: first aid -->
+    <string name="firstaid_title">First aid</string>
+    <string name="firstaid_open_body">Vetted guides, shown word for word</string>
+    <string name="firstaid_contact">Contact emergency services if you can.</string>
+    <string name="firstaid_missing">First-aid guides have not been added to this app yet.</string>
+    <string name="firstaid_ask">What happened?</string>
+    <string name="firstaid_find">Find a guide</string>
+    <string name="firstaid_finding">Finding…</string>
+    <string name="firstaid_none">No matching guide.</string>
+    <string name="firstaid_all">All guides</string>
+    <string name="firstaid_source">Source: %s</string>
+    <string name="firstaid_by_ai">Picked on device</string>
+    <string name="firstaid_by_keywords">Picked by keywords</string>
 </resources>

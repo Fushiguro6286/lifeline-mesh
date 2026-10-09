@@ -3,6 +3,8 @@ package com.lifeline.mesh.ui.send
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
@@ -231,7 +233,7 @@ private const val STATUS_KEEP_MS = 2 * 60 * 60 * 1000L
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SendScreen(settings: Settings, vm: SendViewModel = viewModel()) {
+fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewModel = viewModel()) {
     val c = Lifeline.colors
     val repo = (androidx.compose.ui.platform.LocalContext.current.applicationContext as LifelineApp).repository
     val packets by repo.packets.collectAsStateWithLifecycle()
@@ -273,6 +275,7 @@ fun SendScreen(settings: Settings, vm: SendViewModel = viewModel()) {
         }
 
         CheckInCard(sentAt = checkInAt, onSafe = { vm.checkIn(settings.displayName) })
+        FirstAidLink(onFirstAid)
         Spacer(Modifier.height(Space.l))
     }
 
@@ -443,5 +446,25 @@ private fun LevelMeter(rmsDb: Float, active: Boolean) {
                     .background(if (active) c.link else c.outline, Shapes.chip)
             )
         }
+    }
+}
+
+/** Quiet entry to the vetted first-aid guides, under the check-in card. */
+@Composable
+private fun FirstAidLink(onClick: () -> Unit) {
+    val c = Lifeline.colors
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = com.lifeline.mesh.ui.theme.Touch.standard).background(c.surface, Shapes.card)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).padding(Space.l),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_local_hospital), null, tint = c.link,
+            modifier = Modifier.size(24.dp))
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.firstaid_title), style = Lifeline.type.bodyStrong, color = c.ink)
+            Text(stringResource(R.string.firstaid_open_body), style = Lifeline.type.caption, color = c.inkMuted)
+        }
+        androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_chevron_right), null, tint = c.inkMuted)
     }
 }

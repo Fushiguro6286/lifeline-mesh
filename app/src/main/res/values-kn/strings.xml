@@ -172,4 +172,18 @@
     <string name="translating">ಫೋನ್‌ನಲ್ಲಿ ಅನುವಾದಿಸಲಾಗುತ್ತಿದೆ…</string>
     <string name="translate_failed">ಅನುವಾದ ಆಗಲಿಲ್ಲ; ಮೂಲ ಸಂದೇಶ ತೋರಿಸಲಾಗಿದೆ.</string>
     <string name="listen">ಕೇಳಿ</string>
+
+    <!-- Phase 9: first aid -->
+    <string name="firstaid_title">ಪ್ರಥಮ ಚಿಕಿತ್ಸೆ</string>
+    <string name="firstaid_open_body">ಪರಿಶೀಲಿಸಿದ ಮಾರ್ಗದರ್ಶಿಗಳು, ಬದಲಾವಣೆ ಇಲ್ಲದೆ</string>
+    <string name="firstaid_contact">ಸಾಧ್ಯವಾದರೆ ತುರ್ತು ಸೇವೆಗಳನ್ನು ಸಂಪರ್ಕಿಸಿ.</string>
+    <string name="firstaid_missing">ಈ ಆ್ಯಪ್‌ಗೆ ಇನ್ನೂ ಪ್ರಥಮ ಚಿಕಿತ್ಸೆ ಮಾರ್ಗದರ್ಶಿಗಳನ್ನು ಸೇರಿಸಿಲ್ಲ.</string>
+    <string name="firstaid_ask">ಏನಾಯಿತು?</string>
+    <string name="firstaid_find">ಮಾರ್ಗದರ್ಶಿ ಹುಡುಕಿ</string>
+    <string name="firstaid_finding">ಹುಡುಕಲಾಗುತ್ತಿದೆ…</string>
+    <string name="firstaid_none">ಹೊಂದುವ ಮಾರ್ಗದರ್ಶಿ ಸಿಗಲಿಲ್ಲ.</string>
+    <string name="firstaid_all">ಎಲ್ಲಾ ಮಾರ್ಗದರ್ಶಿಗಳು</string>
+    <string name="firstaid_source">ಮೂಲ: %s</string>
+    <string name="firstaid_by_ai">ಫೋನ್‌ನಲ್ಲಿ ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ</string>
+    <string name="firstaid_by_keywords">ಪದಗಳಿಂದ ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ</string>
 </resources>

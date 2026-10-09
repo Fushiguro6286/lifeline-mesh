@@ -73,6 +73,7 @@ import kotlin.reflect.KClass
 @Serializable object DebugRoute
 @Serializable object BenchmarksRoute
 @Serializable object AskRoute
+@Serializable object FirstAidRoute
 
 private data class Tab(
     val route: Any,
@@ -134,7 +135,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
         bottomBar = { if (onTab) BottomBar(nav, destination) },
     ) { padding ->
         NavHost(nav, startDestination = start, modifier = Modifier.padding(padding)) {
-            composable<SosRoute> { SendScreen(settings) }
+            composable<SosRoute> { SendScreen(settings, onFirstAid = { nav.navigate(FirstAidRoute) }) }
             composable<MeshRoute> {
                 LiveMeshScreen(settings, repository, onDebug = { nav.navigate(DebugRoute) }, onPermissions = { nav.navigate(PermissionsRoute) })
             }
@@ -165,6 +166,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
             composable<GalleryRoute> { ComponentGallery() }
             composable<BenchmarksRoute> { com.lifeline.mesh.ui.settings.BenchmarksScreen() }
             composable<AskRoute> { com.lifeline.mesh.ui.rescuer.AskMeshScreen() }
+            composable<FirstAidRoute> { com.lifeline.mesh.ui.send.FirstAidScreen() }
         }
     }
 }
@@ -206,6 +208,7 @@ private fun SubScreenTitle(destination: androidx.navigation.NavDestination?, onB
         destination?.hasRoute(DebugRoute::class) == true -> stringResource(R.string.settings_debug)
         destination?.hasRoute(BenchmarksRoute::class) == true -> "Benchmarks"
         destination?.hasRoute(AskRoute::class) == true -> "Ask the mesh"
+        destination?.hasRoute(FirstAidRoute::class) == true -> stringResource(R.string.firstaid_title)
         else -> ""
     }
     Row(Modifier.heightIn(min = 56.dp).padding(end = Space.screen), verticalAlignment = Alignment.CenterVertically) {

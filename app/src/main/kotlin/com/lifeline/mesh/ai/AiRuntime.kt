@@ -189,6 +189,15 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
         }
     }
 
+    /** The first-aid entry id the model picks for [question] ([FirstAid.NONE] for none); null = use the keyword match. */
+    suspend fun firstAid(question: String, entries: List<FirstAidEntry>): String? {
+        if (entries.isEmpty() || !canUse(scriptLanguage(question))) return null
+        return nonEssential { e ->
+            val r = e.generate(FirstAid.request(question, entries))
+            (if (r.ok) FirstAid.validate(r.text, entries) else null) to r
+        }
+    }
+
     /** One demo sentence through rules and the model, compared with the expected answer (PROMPTS.md, Phase 4). */
     data class DemoResult(val text: String, val expected: AlertDraft, val rules: AlertDraft, val ai: AlertDraft?, val usedAi: Boolean) {
         private fun right(d: AlertDraft?) = d != null && d.needs == expected.needs && d.people == expected.people

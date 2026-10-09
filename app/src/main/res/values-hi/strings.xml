@@ -172,4 +172,18 @@
     <string name="translating">फ़ोन पर अनुवाद हो रहा है…</string>
     <string name="translate_failed">अनुवाद नहीं हो सका; मूल संदेश दिखा रहे हैं।</string>
     <string name="listen">सुनें</string>
+
+    <!-- Phase 9: first aid -->
+    <string name="firstaid_title">प्राथमिक उपचार</string>
+    <string name="firstaid_open_body">जाँची हुई जानकारी, बिना बदलाव</string>
+    <string name="firstaid_contact">अगर हो सके तो आपातकालीन सेवाओं से संपर्क करें।</string>
+    <string name="firstaid_missing">इस ऐप में अभी प्राथमिक उपचार की जानकारी नहीं जोड़ी गई है।</string>
+    <string name="firstaid_ask">क्या हुआ?</string>
+    <string name="firstaid_find">जानकारी खोजें</string>
+    <string name="firstaid_finding">खोज रहे हैं…</string>
+    <string name="firstaid_none">कोई मिलती जानकारी नहीं मिली।</string>
+    <string name="firstaid_all">सारी जानकारी</string>
+    <string name="firstaid_source">स्रोत: %s</string>
+    <string name="firstaid_by_ai">फ़ोन पर चुना गया</string>
+    <string name="firstaid_by_keywords">शब्दों से चुना गया</string>
 </resources>
