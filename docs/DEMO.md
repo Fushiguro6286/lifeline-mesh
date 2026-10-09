@@ -2,20 +2,27 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 4 built; phone tests for Phases 2 to 4 still open)
+## Current state (Phase 5 built; phone tests for Phases 2 to 5 still open)
 
-- Phases 0 to 3: app, codec, mesh core + Nearby + foreground service, Live Mesh screen, simulation and demo modes.
-- Phase 4: SOS tab. Hold-to-send panic SOS (3 s, cancels on early release, no speech, no gate), Type (and Speak, which
-  opens typing until Phase 7), RuleExtractor, review sheet (quote + "Understood by: Rules", need chips, people stepper,
-  severity, location row, quality-gate question in the app language, exact packet bytes, Send alert), GPS (fresh fix
-  within 8 s and 50 m = exact, else last known = approximate), Delivery Status (Created → Waiting / Passed to N →
-  Help is coming with ETA), reply notification with vibration, and the I'm safe check-in.
-- 95 unit tests pass.
-- Verified on the iQOO 15 in simulation mode (9 Oct): demo sentence 1 extracts trapped + medical, 5 people, Urgent,
-  exact location 12 m, 70 bytes; "please help us" is blocked with the question (also checked in Hindi); panic hold
-  sends an SOS alert, a 1 s press does not; the alert is passed to Ravi within a second and Kiran's reply turns the card
-  green with "Help is coming, ETA 20 min, Boat on the way" and a heads-up notification; I'm safe sends a check-in.
-  The Hinglish, Kannada and Hindi demo sentences are covered by unit tests (adb cannot type Devanagari/Kannada).
+- Phases 0 to 4: app, codec, mesh core + Nearby + foreground service, Live Mesh, simulation/demo modes, SOS send flow.
+- Phase 5: Rescue tab. Merger (same needs, within 60 m and 15 min; positionless reports merge only from the same phone)
+  and Ranker (severity, reports, distance), header numbers (active alerts, people, urgent, acknowledged), ranked alert
+  cards with distance and direction from the rescuer's GPS, detail sheet with every merged report, ETA picker
+  (10/20/30/60 min), optional 40-byte note and "Send help is coming" (one Ack per merged report, max 5), check-ins and
+  community reports. "Load sample alerts" (simulation mode only; samples are simulated rows). Situation report and
+  Ask the mesh: placeholder card until Phase 8.
+- 110 unit tests pass.
+- Verified on the iQOO 15 in simulation mode (9 Oct): samples + Meena's alert give 6 ranked alerts; the two flood reports
+  merge into one card (5 people, 2 reports, 300 m N); Kiran's reply to Meena's alert shows that card as acknowledged;
+  acknowledging rank 1 with ETA 30 min and a note sends two replies on the mesh and the card dims.
+
+## Phase 5 phone test (needs 2 or 3 phones)
+
+1. C: Settings → role Rescuer. A and C (and B between them) on the Mesh tab show each other.
+2. A: SOS tab → Type "Water is rising, 5 people on the roof, one elderly person is ill" → Continue → Send alert.
+3. C: Rescue tab shows it as rank 1 (Trapped · Medical, 5 people, Urgent, distance from C). Tap Acknowledge → 20 min →
+   Send help is coming.
+4. A: vibrates, "Help is coming · ETA 20 min" notification, and the SOS card turns green with ETA 20 min.
 
 ## Simulation mode (rehearsal and stage fallback)
 

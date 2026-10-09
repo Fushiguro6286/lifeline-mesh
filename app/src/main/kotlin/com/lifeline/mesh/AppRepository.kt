@@ -17,7 +17,10 @@ import com.lifeline.mesh.mesh.MeshSimulation
 import com.lifeline.mesh.mesh.MeshHealth
 import com.lifeline.mesh.mesh.Neighbor
 import com.lifeline.mesh.mesh.Router
+import com.lifeline.mesh.packet.Geo
 import com.lifeline.mesh.packet.Header
+import com.lifeline.mesh.packet.Need
+import com.lifeline.mesh.packet.ReportType
 import com.lifeline.mesh.packet.Packet
 import com.lifeline.mesh.packet.PacketCodec
 import kotlinx.coroutines.CoroutineScope
@@ -126,10 +129,55 @@ class AppRepository(
             val now = System.currentTimeMillis()
             val sim = s.simulationMode
             database.packets().insert(p.toEntity(raw, null, 0, mine = true, receivedAt = now, simulated = sim))
+            if (p is Packet.Ack) database.packets().markAcked(p.refId, p.etaMinutes)
             database.events().insert(EventEntity(time = now, kind = MeshEvent.Kind.QUEUED.name,
                 text = "Your ${Router.label(p)} is saved. The mesh is not running yet.", packetId = id, simulated = sim))
         }
         return p
+    }
+
+    /**
+     * "Help is coming" for a merged alert: one Ack per report (at most 5, well inside the 10-per-minute rate limit),
+     * so every phone that reported it gets the reply.
+     */
+    fun sendAcks(reportIds: List<Long>, etaMinutes: Int, note: String) {
+        reportIds.take(5).forEach { id -> originate { h -> Packet.Ack(h, id, etaMinutes.coerceIn(0, 255), note.trim()) } }
+    }
+
+    /**
+     * Sample alerts, check-ins and reports around [lat]/[lon], for rehearsing the Rescue screen. Stored as simulated rows,
+     * so they never appear next to real alerts; refused outside simulation mode.
+     */
+    fun loadSampleAlerts(lat: Double, lon: Double): Boolean {
+        val s = settings.value ?: return false
+        if (!s.simulationMode) return false
+        scope.launch {
+            val now = System.currentTimeMillis()
+            val m = 1.0 / 111_320
+            fun at(northM: Double, eastM: Double) = Pair(Geo.toE6(lat + northM * m), Geo.toE6(lon + eastM * m / kotlin.math.cos(Math.toRadians(lat))))
+            fun h(origin: Int, minutesAgo: Int, hops: Int) =
+                Header(SecureRandom().nextLong(), origin, PacketCodec.TTL_DEFAULT - hops + 1, hops - 1, (now / 1000) - minutesAgo * 60)
+            val T = Need.TRAPPED.bit; val M = Need.MEDICAL.bit; val W = Need.WATER_FOOD.bit; val F = Need.FIRE.bit
+            data class Sample(val p: Packet, val minutesAgo: Int, val hops: Int)
+            val samples = listOf(
+                at(300.0, 20.0).let { (a, b) -> Sample(Packet.Alert(h(0x51A11001, 3, 2), a, b, 2, T or M, 3, 5, "Water rising, 5 on roof, elderly man ill"), 3, 2) },
+                at(330.0, 40.0).let { (a, b) -> Sample(Packet.Alert(h(0x51A11002, 2, 3), a, b, 3, T or M, 3, 4, "Paani badh gaya, chhat par 4 log"), 2, 3) },
+                at(-60.0, 800.0).let { (a, b) -> Sample(Packet.Alert(h(0x51A11003, 6, 2), a, b, 2, F, 3, 3, "आग लगी है, ३ लोग अंदर हैं"), 6, 2) },
+                at(-350.0, -350.0).let { (a, b) -> Sample(Packet.Alert(h(0x51A11004, 12, 1), a, b, 4, W, 1, 8, "Need drinking water for 8 people"), 12, 1) },
+                Sample(Packet.Alert(h(0x51A11005, 20, 3), 0, 0, Geo.ACCURACY_UNKNOWN, M, 2, 1, "Pregnant woman needs a doctor"), 20, 3),
+                at(110.0, -110.0).let { (a, b) -> Sample(Packet.Alert(h(0x51A11006, 1, 1), a, b, 1, Need.PANIC.bit, 3, 1, ""), 1, 1) },
+                at(380.0, 120.0).let { (a, b) -> Sample(Packet.CheckIn(h(0x51A11007, 2, 1), a, b, 1, "Asha"), 2, 1) },
+                at(-700.0, 500.0).let { (a, b) -> Sample(Packet.CheckIn(h(0x51A11008, 10, 2), a, b, 2, "Ravi"), 10, 2) },
+                at(600.0, 0.0).let { (a, b) -> Sample(Packet.Report(h(0x51A11009, 8, 2), a, b, 2, ReportType.ROAD_BLOCKED, "Main road flooded"), 8, 2) },
+                at(-1200.0, 300.0).let { (a, b) -> Sample(Packet.Report(h(0x51A1100A, 15, 3), a, b, 3, ReportType.SHELTER_OPEN, "School hall, 200 beds"), 15, 3) },
+            )
+            for ((p, ago, hops) in samples) {
+                database.packets().insert(p.toEntity(PacketCodec.encode(p), "sample", hops, mine = false, receivedAt = now - ago * 60_000L, simulated = true))
+            }
+            database.events().insert(EventEntity(time = now, kind = MeshEvent.Kind.RECEIVED.name,
+                text = "Loaded ${samples.size} sample packets (simulated).", packetId = null, simulated = true))
+        }
+        return true
     }
 
     /** Ping for one of my packets; needs the mesh running (a queued ping would measure nothing). */
