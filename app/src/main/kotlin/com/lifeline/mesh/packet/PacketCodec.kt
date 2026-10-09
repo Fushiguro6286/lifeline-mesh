@@ -93,6 +93,20 @@ object PacketCodec {
         return out
     }
 
+    /**
+     * The bytes to forward: the original packet with TTL − 1 and hops + 1, everything else byte-for-byte
+     * unchanged. Caller checks TTL > 0 first.
+     */
+    fun forwardBytes(raw: ByteArray): ByteArray {
+        val ttl = raw[13].toInt() and 0xFF
+        val hops = raw[14].toInt() and 0xFF
+        require(ttl > 0) { "ttl already 0" }
+        return raw.copyOf().also {
+            it[13] = (ttl - 1).toByte()
+            it[14] = minOf(hops + 1, 255).toByte()
+        }
+    }
+
     // ---------------------------------------------------------------- decode
 
     fun decode(bytes: ByteArray): DecodeResult = try {
