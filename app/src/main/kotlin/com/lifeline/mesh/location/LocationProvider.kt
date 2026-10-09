@@ -14,6 +14,7 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import com.lifeline.mesh.ai.GeoFix
 import com.lifeline.mesh.ai.LocationChoice
 import com.lifeline.mesh.ai.QualityGate
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -55,6 +56,29 @@ class LocationProvider(context: Context) {
         } finally {
             cancel.cancel()
         }
+    }
+
+    /**
+     * Continuous fixes for the live position (Phase 10), every ~[intervalMs]. Ends quietly (no fixes) without permission.
+     * Works with the screen off only while the mesh service runs as a location foreground service.
+     */
+    @SuppressLint("MissingPermission")
+    fun updates(intervalMs: Long = 15_000L): kotlinx.coroutines.flow.Flow<GeoFix> = kotlinx.coroutines.flow.callbackFlow {
+        if (!hasPermission()) { close(); return@callbackFlow }
+        val request = com.google.android.gms.location.LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
+            .setMinUpdateIntervalMillis(intervalMs / 2)
+            .build()
+        val callback = object : com.google.android.gms.location.LocationCallback() {
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                result.lastLocation?.let { trySend(it.toFix()) }
+            }
+        }
+        try {
+            client.requestLocationUpdates(request, callback, android.os.Looper.getMainLooper())
+        } catch (e: Exception) {
+            Log.w(TAG, "requestLocationUpdates", e)
+        }
+        awaitClose { client.removeLocationUpdates(callback) }
     }
 
     /** CLAUDE.md 9.2: fresh within 8 s and 50 m is exact, otherwise last known and approximate. */

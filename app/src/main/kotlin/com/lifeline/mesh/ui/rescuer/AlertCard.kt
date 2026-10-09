@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +73,7 @@ fun AlertCard(r: RankedAlert, now: Long, onOpen: () -> Unit, modifier: Modifier 
                     Icon(painterResource(R.drawable.ic_navigation), null, tint = c.link, modifier = Modifier.size(18.dp).rotate(it.toFloat()))
                 }
             }
+            EtaLine(r)
             Text(
                 (if (a.count > 1) stringResource(R.string.alert_merged, a.count) else stringResource(R.string.alert_single)) +
                     " · " + ago(context, now, a.lastAt),
@@ -109,4 +112,22 @@ fun peopleText(a: MergedAlert): String = when (a.people) {
     0 -> stringResource(R.string.alert_people_unknown)
     1 -> stringResource(R.string.alert_one_person)
     else -> stringResource(R.string.alert_people, a.people)
+}
+
+/** My estimate for this alert (Phase 10), or null when I need help myself or either position is unknown. */
+@Composable
+fun myEstimate(r: RankedAlert): Pair<Int, com.lifeline.mesh.triage.Travel>? {
+    val repo = (LocalContext.current.applicationContext as com.lifeline.mesh.LifelineApp).repository
+    val settings by repo.settings.collectAsStateWithLifecycle()
+    val s = settings ?: return null
+    if (s.role == com.lifeline.mesh.data.Role.NEEDS_HELP) return null
+    val d = r.distanceM ?: return null
+    return com.lifeline.mesh.triage.Teams.etaMinutes(d, s.travel) to s.travel
+}
+
+/** "About 7 min by road · estimate": straight-line distance × detour at an assumed speed, computed in Kotlin. */
+@Composable
+private fun EtaLine(r: RankedAlert) {
+    val (min, travel) = myEstimate(r) ?: return
+    Text(stringResource(R.string.eta_estimate, min, travel.label), style = Lifeline.type.body, color = Lifeline.colors.link)
 }

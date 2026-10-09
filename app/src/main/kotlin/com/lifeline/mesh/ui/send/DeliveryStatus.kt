@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -60,6 +62,7 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
             Text(stringResource(R.string.status_title), style = Lifeline.type.title, color = c.ink, modifier = Modifier.semantics { heading() })
         }
         if (what.isNotBlank()) Text(if (acked) stringResource(R.string.status_your_alert, what) else what, style = Lifeline.type.label, color = c.inkMuted)
+        NearestTeam()
 
         val passed = alert.handedTo > 0
         StatusTimeline(
@@ -80,4 +83,28 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
         )
         SecondaryButton(stringResource(R.string.status_send_another), onSendAnother, Modifier.fillMaxWidth())
     }
+}
+
+/**
+ * The nearest rescue team I can see on the mesh (Phase 10), with its live distance and a travel-time estimate at that
+ * team's usual speed. Shown only when both positions are known; the estimate is computed in Kotlin and says so.
+ */
+@Composable
+private fun NearestTeam() {
+    val repo = (LocalContext.current.applicationContext as com.lifeline.mesh.LifelineApp).repository
+    val positions by repo.positions.collectAsStateWithLifecycle()
+    val me by repo.myFix.collectAsStateWithLifecycle()
+    val fix = me ?: return
+    val now = System.currentTimeMillis()
+    val nearest = positions.values
+        .filter { it.role.isTeam && now - it.heardAt < com.lifeline.mesh.mesh.PositionBeacon.SHOW_MS }
+        .map { it to com.lifeline.mesh.triage.GeoMath.distanceM(fix.lat, fix.lon, it.lat, it.lon) }
+        .minByOrNull { it.second } ?: return
+    val (team, d) = nearest
+    val minutes = com.lifeline.mesh.triage.Teams.etaMinutes(d, com.lifeline.mesh.triage.Teams.defaultTravel(team.role))
+    val who = stringResource(com.lifeline.mesh.ui.onboarding.teamLabel(team.role.code)) + if (team.name.isNotBlank()) " (${team.name})" else ""
+    Text(
+        stringResource(R.string.status_nearest, who, com.lifeline.mesh.ui.rescuer.distanceText(d), minutes),
+        style = Lifeline.type.body, color = Lifeline.colors.link,
+    )
 }

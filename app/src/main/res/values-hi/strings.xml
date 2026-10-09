@@ -199,4 +199,5 @@
     <string name="onb_team_note">दल की पुष्टि नहीं की जाती।</string>
     <string name="onb_phone">फ़ोन नंबर (वैकल्पिक)</string>
     <string name="onb_phone_hint">सिर्फ़ इंटरनेट मिलने पर बचाव सर्वर को भेजा जाता है। मेश पर कभी नहीं।</string>
+    <string name="status_nearest">सबसे पास का बचाव दल: %1$s, %2$s दूर, लगभग %3$d मिनट (अनुमान)</string>
 </resources>

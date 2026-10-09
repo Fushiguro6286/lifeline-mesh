@@ -98,15 +98,27 @@ fun CanvasFallbackMap(
         val n = measurer.measure("N", TextStyle(fontFamily = type.label.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = c.ink))
         drawText(n, topLeft = Offset(center.x - n.size.width / 2, center.y - radius - n.size.height - 4.dp.toPx()))
 
-        // Help points: squares; check-ins: small green dots.
+        // Help points: squares; check-ins: small green dots; live positions: teams as teal squares, people as rings.
         for ((pl, p) in placePlots) {
             val o = at(p)
-            if (pl.kind == 0) {
-                drawCircle(c.safe, 6.dp.toPx(), o)
-            } else {
-                val s = 14.dp.toPx()
-                val tone = if (pl.kind == 2 || pl.kind == 3) c.safe else c.warn
-                drawRoundRect(tone, Offset(o.x - s / 2, o.y - s / 2), Size(s, s), CornerRadius(3.dp.toPx()))
+            when {
+                pl.kind >= 13 -> {
+                    val s = 16.dp.toPx()
+                    drawRoundRect(c.bg, Offset(o.x - s / 2 - 2.dp.toPx(), o.y - s / 2 - 2.dp.toPx()), Size(s + 4.dp.toPx(), s + 4.dp.toPx()), CornerRadius(4.dp.toPx()))
+                    drawRoundRect(c.link, Offset(o.x - s / 2, o.y - s / 2), Size(s, s), CornerRadius(3.dp.toPx()))
+                }
+                pl.kind >= 11 -> drawCircle(if (pl.kind == 11) c.sos else c.warn, 7.dp.toPx(), o, style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
+                pl.kind == 0 -> drawCircle(c.safe, 6.dp.toPx(), o)
+                else -> {
+                    val s = 14.dp.toPx()
+                    val tone = if (pl.kind == 2 || pl.kind == 3) c.safe else c.warn
+                    drawRoundRect(tone, Offset(o.x - s / 2, o.y - s / 2), Size(s, s), CornerRadius(3.dp.toPx()))
+                }
+            }
+            // Live positions carry the phone's name.
+            if (pl.kind >= 11 && pl.label.isNotBlank()) {
+                val t = measurer.measure(pl.label, TextStyle(fontFamily = type.caption.fontFamily, fontSize = 12.sp, color = c.ink))
+                drawText(t, topLeft = Offset(o.x - t.size.width / 2, o.y + 11.dp.toPx()))
             }
         }
 

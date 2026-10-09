@@ -225,6 +225,23 @@ class MeshService : Service() {
                 repo.settings.value?.let { st -> applySettings(router, st) }
             }
         }
+        // Live position (Phase 10): GPS fixes into the repository; my Position beacon when PositionBeacon says so.
+        // In simulation the virtual phones are around the venue, so "me" is there too unless GPS knows better.
+        s.launch { com.lifeline.mesh.location.LocationProvider(this@MeshService).updates().collect { repo.myFix.value = it } }
+        s.launch {
+            var last: PositionBeacon.Sent? = null
+            while (isActive) {
+                val fix = repo.myFix.value ?: if (simulated) com.lifeline.mesh.ai.GeoFix(MeshSimulation.LAT, MeshSimulation.LON, 50f, 0) else null
+                val now = SystemClock.elapsedRealtime()
+                if (fix != null && PositionBeacon.due(last, fix.lat, fix.lon, now)) {
+                    router.sendPosition(com.lifeline.mesh.packet.Geo.toE6(fix.lat), com.lifeline.mesh.packet.Geo.toE6(fix.lon),
+                        com.lifeline.mesh.packet.Geo.accuracyStep(fix.accuracyM))
+                    last = PositionBeacon.Sent(fix.lat, fix.lon, now)
+                }
+                delay(5_000)
+            }
+        }
+
         // Battery for Hellos every minute; on real phones also the drain while relaying (CLAUDE.md 10), stored every
         // 5 minutes once 15 minutes on battery have passed. Never in simulation: it would be this phone's drain anyway.
         val battery = if (simulated) null else BatteryMonitor()
@@ -260,6 +277,7 @@ class MeshService : Service() {
         repo.neighbors.value = emptyList()
         repo.neighborOrigins.value = emptyMap()
         repo.waiting.value = 0
+        repo.positions.value = emptyMap()
         scope.launch(dbWrites) { repo.database.topology().clear() }
         lastConnected = -1
     }
@@ -341,6 +359,18 @@ class MeshService : Service() {
             MetricEntity(name = name, value = value, unit = unit, backend = null, simulated = simulated, timestamp = at, notes = notes)
 
         override fun onPacket(packet: Packet, raw: ByteArray, fromPeer: String?, linkHops: Int, mine: Boolean) {
+            if (packet is Packet.Position) {
+                if (!mine) {
+                    val p = PeerPosition(
+                        origin = packet.header.origin, name = packet.name, role = packet.role,
+                        lat = packet.latE6 / 1e6, lon = packet.lonE6 / 1e6,
+                        accuracyM = com.lifeline.mesh.packet.Geo.accuracyMeters(packet.accuracy),
+                        hops = linkHops, heardAt = System.currentTimeMillis(),
+                    )
+                    repo.positions.value = repo.positions.value + (p.origin to p)
+                }
+                return
+            }
             if (!Router.storable(packet)) return
             val now = System.currentTimeMillis()
             write {
@@ -445,14 +475,28 @@ class MeshService : Service() {
             .build()
     }
 
-    private fun goForeground(connected: Int, simulated: Boolean): Boolean = try {
-        val type = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
-        ServiceCompat.startForeground(this, NOTIF_MESH, meshNotification(connected, simulated), type)
-        true
-    } catch (e: Exception) {
-        // e.g. ForegroundServiceStartNotAllowedException when the system restarts us in the background.
-        Log.e(TAG, "cannot start foreground", e)
-        false
+    /**
+     * connectedDevice always; plus location (Phase 10 live position) when permission is granted and location is on.
+     * Android refuses the location type when started from the background without background-location permission
+     * (developer.android.com, foreground service types): then we fall back to connectedDevice and keep relaying.
+     */
+    private fun goForeground(connected: Int, simulated: Boolean): Boolean {
+        val notif = meshNotification(connected, simulated)
+        if (Build.VERSION.SDK_INT < 29) return runCatching { startForeground(NOTIF_MESH, notif) }.isSuccess
+        val device = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        val withLocation = device or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+        val canLocate = com.lifeline.mesh.location.LocationProvider(this).hasPermission() &&
+            getSystemService(LocationManager::class.java)?.let { androidx.core.location.LocationManagerCompat.isLocationEnabled(it) } == true
+        for (type in if (canLocate) listOf(withLocation, device) else listOf(device)) {
+            try {
+                ServiceCompat.startForeground(this, NOTIF_MESH, notif, type)
+                return true
+            } catch (e: Exception) {
+                // SecurityException (location not allowed now) or ForegroundServiceStartNotAllowedException.
+                Log.w(TAG, "startForeground type $type refused: ${e.javaClass.simpleName}")
+            }
+        }
+        return false
     }
 
     private var lastConnected = -1

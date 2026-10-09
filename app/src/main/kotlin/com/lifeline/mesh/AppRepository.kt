@@ -96,6 +96,10 @@ class AppRepository(
     val linkActivity = MutableSharedFlow<LinkEvent>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     /** The running simulation, when simulation mode is on (for its on-screen controls). */
     val simulation = MutableStateFlow<MeshSimulation?>(null)
+    /** My latest GPS fix while the mesh service runs (Phase 10 live position). */
+    val myFix = MutableStateFlow<com.lifeline.mesh.ai.GeoFix?>(null)
+    /** Other phones' latest positions by origin, current session only (cleared when the mesh stops or the mode changes). */
+    val positions = MutableStateFlow<Map<Int, com.lifeline.mesh.mesh.PeerPosition>>(emptyMap())
     /** The user pressed Stop; don't auto-start the mesh again until they press Start or reopen the app. */
     @Volatile var userStoppedMesh = false
 

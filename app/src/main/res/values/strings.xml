@@ -209,4 +209,5 @@
     <string name="onb_team_note">Team roles are not verified.</string>
     <string name="onb_phone">Phone number (optional)</string>
     <string name="onb_phone_hint">Sent only to the rescue server when this phone has internet. Never over the mesh.</string>
+    <string name="status_nearest">Nearest rescue team: %1$s, %2$s away, about %3$d min (estimate)</string>
 </resources>

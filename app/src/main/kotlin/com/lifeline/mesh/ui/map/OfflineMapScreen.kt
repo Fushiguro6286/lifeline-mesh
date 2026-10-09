@@ -79,8 +79,17 @@ import java.io.File
 
 private enum class MapMode { MAP, RINGS }
 
-/** A help point or check-in on the map. */
-data class Place(val id: Long, val lat: Double, val lon: Double, val kind: Int)
+/**
+ * A help point, check-in or live position on the map. [kind]: 0 check-in, 1–4 community report type,
+ * 10 + role code (11 needs help, 12 volunteer, 13–17 teams) for a phone's live position (Phase 10).
+ */
+data class Place(val id: Long, val lat: Double, val lon: Double, val kind: Int, val label: String = "")
+
+/** Live positions this phone may show (teams see everyone; others see only teams), as map places. */
+fun positionPlaces(all: Collection<com.lifeline.mesh.mesh.PeerPosition>, viewer: com.lifeline.mesh.packet.HelloRole, now: Long): List<Place> =
+    com.lifeline.mesh.mesh.PositionBeacon.visible(all, viewer, now).map { p ->
+        Place(p.origin.toLong(), p.lat, p.lon, 10 + p.role.code, p.name)
+    }
 
 /**
  * Map tab (DESIGN.md 8.5): the offline MapLibre map (venue PMTiles, local style) with alerts (size = people,
@@ -94,12 +103,18 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     val context = LocalContext.current
     val repo = (context.applicationContext as LifelineApp).repository
     val packets by repo.packets.collectAsStateWithLifecycle()
-    val me by vm.me.collectAsStateWithLifecycle()
+    val slowMe by vm.me.collectAsStateWithLifecycle()
+    val liveMe by repo.myFix.collectAsStateWithLifecycle()
+    // The service's live GPS fix when the mesh runs; otherwise the screen's own fix (refreshed every minute).
+    val me = liveMe ?: slowMe
+    val positions by repo.positions.collectAsStateWithLifecycle()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(30_000); now = System.currentTimeMillis() } }
 
     val ranked = remember(packets, me) { rankAlerts(packets, me, now) }
-    val places = remember(packets) { places(packets, now) }
+    val places = remember(packets, positions, settings.role, now) {
+        places(packets, now) + positionPlaces(positions.values, settings.role.hello, System.currentTimeMillis())
+    }
     val archive by produceState<Result<File?>?>(null) { value = Result.success(MapAssets.prepare(context)) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
@@ -247,6 +262,10 @@ private fun LibreMap(
                         listOf(
                             0 to (R.drawable.ic_verified_user to c.safe), 1 to (R.drawable.ic_block to c.warn),
                             2 to (R.drawable.ic_water_drop to c.link), 3 to (R.drawable.ic_groups to c.safe), 4 to (R.drawable.ic_groups to c.warn),
+                            // Live positions (Phase 10): people in need, volunteers, and each team type.
+                            11 to (R.drawable.ic_person to c.sos), 12 to (R.drawable.ic_volunteer_activism to c.warn),
+                            13 to (R.drawable.ic_health_and_safety to c.link), 14 to (R.drawable.ic_local_fire_department to c.link),
+                            15 to (R.drawable.ic_emergency to c.link), 16 to (R.drawable.ic_local_police to c.link), 17 to (R.drawable.ic_boat to c.link),
                         ).forEach { (kind, v) ->
                             st.addImage("place-$kind", MarkerBitmaps.square(context, v.first, c.surface.toArgb(), v.second.toArgb(), v.second.toArgb(), density))
                         }
@@ -281,12 +300,15 @@ private fun LibreMap(
     // Once, when my fix (or the first alerts) arrive: frame me and the five highest-ranked alerts, so a rescuer opening
     // the map sees who needs help first, not just their own dot.
     var framed by remember { mutableStateOf(false) }
-    LaunchedEffect(map, me, ranked) {
+    LaunchedEffect(map, me, ranked, places) {
         val m = map ?: return@LaunchedEffect
         if (framed) return@LaunchedEffect
         val points = buildList {
             me?.let { add(LatLng(it.lat, it.lon)) }
             ranked.take(5).forEach { r -> r.alert.position?.let { p -> add(LatLng(p.lat!!, p.lon!!)) } }
+            // The nearest teams too (Phase 10): someone waiting for help wants to see who is coming.
+            places.filter { it.kind >= 13 }.sortedBy { pl -> me?.let { com.lifeline.mesh.triage.GeoMath.distanceM(it.lat, it.lon, pl.lat, pl.lon) } ?: 0.0 }
+                .take(2).forEach { add(LatLng(it.lat, it.lon)) }
         }.filter { MapAssets.contains(it.latitude, it.longitude) }
         if (points.isEmpty()) return@LaunchedEffect
         framed = true

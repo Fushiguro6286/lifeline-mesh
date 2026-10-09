@@ -199,4 +199,5 @@
     <string name="onb_team_note">ತಂಡವನ್ನು ಪರಿಶೀಲಿಸಲಾಗುವುದಿಲ್ಲ.</string>
     <string name="onb_phone">ಫೋನ್ ಸಂಖ್ಯೆ (ಐಚ್ಛಿಕ)</string>
     <string name="onb_phone_hint">ಇಂಟರ್ನೆಟ್ ಸಿಕ್ಕಾಗ ಮಾತ್ರ ರಕ್ಷಣಾ ಸರ್ವರ್‌ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಮೆಶ್ ಮೂಲಕ ಎಂದಿಗೂ ಇಲ್ಲ.</string>
+    <string name="status_nearest">ಹತ್ತಿರದ ರಕ್ಷಣಾ ತಂಡ: %1$s, %2$s ದೂರ, ಸುಮಾರು %3$d ನಿಮಿಷ (ಅಂದಾಜು)</string>
 </resources>

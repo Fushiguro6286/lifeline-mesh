@@ -23,6 +23,8 @@
     <!-- Relaying in the background -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- Phase 10 live position with the screen off: the service also runs as type "location" when allowed. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Lets onboarding show the system "allow background" dialog directly (sideloaded app, not on Play). -->
@@ -63,12 +65,13 @@
         <uses-native-library android:name="libvndksupport.so" android:required="false" />
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
 
-        <!-- Relays alerts with the screen off. connectedDevice: Bluetooth/Wi-Fi links to nearby phones.
-             Android 14+ prerequisite is met by CHANGE_WIFI_STATE above. -->
+        <!-- Relays alerts with the screen off. connectedDevice: Bluetooth/Wi-Fi links to nearby phones
+             (Android 14+ prerequisite met by CHANGE_WIFI_STATE above). location: live position (Phase 10), used only
+             when location permission is granted and location is on; otherwise the service runs as connectedDevice. -->
         <service
             android:name=".mesh.MeshService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice|location" />
 
         <!-- Shares the measurements CSV with other apps (Settings → Export measurements). -->
         <provider

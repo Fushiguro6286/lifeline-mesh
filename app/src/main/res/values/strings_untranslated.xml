@@ -166,4 +166,7 @@
         <item quantity="other">%d alerts have no location and are not on the map</item>
     </plurals>
     <string name="map_outside">Your position is outside the offline map area.</string>
+    <!-- Phase 10: travel-time estimates (Rescue tab, English like the rest of it) -->
+    <string name="eta_estimate">About %1$d min %2$s · estimate</string>
+    <string name="eta_basis">Your estimate: %1$d min %2$s (straight line × %3$s at %4$d km/h).</string>
 </resources>

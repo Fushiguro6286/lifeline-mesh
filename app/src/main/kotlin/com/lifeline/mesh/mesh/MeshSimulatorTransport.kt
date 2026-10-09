@@ -108,10 +108,10 @@ class VirtualTransport internal constructor(val id: String, private val mesh: Vi
 /**
  * Simulation mode (CLAUDE.md 7.5): this phone plus 3 virtual phones, 4 in a line, every one run by the real [Router]:
  *
- *     this phone — Ravi (volunteer) — Meena (needs help) — Kiran (rescuer)
+ *     this phone — Ravi (volunteer) — Meena (needs help) — Kiran (ambulance)
  *
  * Meena sends alerts now and then, Ravi checks in, Kiran replies "help is coming" to every alert (including yours)
- * and, being a rescuer, echoes pings. Phones can be switched off and on to show store and forward.
+ * with a travel-time estimate, then drives towards it (positions every 15 s), and, being a team, echoes pings. Phones can be switched off and on to show store and forward.
  * Everything this produces is labeled Simulated by the caller.
  */
 class MeshSimulation(
@@ -123,12 +123,14 @@ class MeshSimulation(
     companion object {
         const val ME = "me"
         val PHONES = listOf("Ravi", "Meena", "Kiran")
-        private val ROLES = mapOf("Ravi" to HelloRole.VOLUNTEER, "Meena" to HelloRole.NEEDS_HELP, "Kiran" to HelloRole.RESCUER)
+        private val ROLES = mapOf("Ravi" to HelloRole.VOLUNTEER, "Meena" to HelloRole.NEEDS_HELP, "Kiran" to HelloRole.AMBULANCE)
         private val ORIGINS = mapOf("Ravi" to 0x5170a1b2, "Meena" to 0x5170c3d4, "Kiran" to 0x5170e5f6)
         private val BATTERY = mapOf("Ravi" to 64, "Meena" to 18, "Kiran" to 91)
         // Around the venue in Bengaluru; Meena is ~600 m north-east of "me".
-        private const val LAT = 12.9716
-        private const val LON = 77.5946
+        const val LAT = 12.9716
+        const val LON = 77.5946
+        /** Where each virtual phone stands (degrees from LAT/LON). Kiran, the ambulance, starts ~1.7 km south-west. */
+        private val START = mapOf("Ravi" to (0.0015 to 0.0005), "Meena" to (0.004 to 0.004), "Kiran" to (-0.010 to -0.012))
     }
 
     val mesh = VirtualMesh(scope, latencyMs)
@@ -151,20 +153,42 @@ class MeshSimulation(
             it.battery = BATTERY.getValue(name)
         }
         val beacon = HelloBeacon(router)
+        var lat = LAT + START.getValue(name).first
+        var lon = LON + START.getValue(name).second
+        /** Where Kiran is driving to (the last alert he answered), or null. */
+        var target: Pair<Double, Double>? = null
 
         override fun onPacket(packet: Packet, raw: ByteArray, fromPeer: String?, linkHops: Int, mine: Boolean) {
-            // Kiran, the rescuer, answers every alert after a short pause.
+            // Kiran, the ambulance, answers every alert after a short pause, then drives towards it.
             if (name == "Kiran" && !mine && packet is Packet.Alert) {
                 scope.launch {
                     delay(4_000)
-                    if (mesh.isUp("Kiran")) router.originate(Packet.Ack(router.newHeader(), packet.header.messageId, 20, "Boat on the way"))
+                    if (!mesh.isUp("Kiran")) return@launch
+                    val known = packet.latE6 != 0 || packet.lonE6 != 0
+                    val eta = if (!known) 20
+                    else com.lifeline.mesh.triage.Teams.etaMinutes(
+                        com.lifeline.mesh.triage.GeoMath.distanceM(lat, lon, packet.latE6 / 1e6, packet.lonE6 / 1e6),
+                        com.lifeline.mesh.triage.Travel.VEHICLE)
+                    router.originate(Packet.Ack(router.newHeader(), packet.header.messageId, eta.coerceIn(1, 255), "Ambulance on the way"))
+                    if (known) target = packet.latE6 / 1e6 to packet.lonE6 / 1e6
                 }
             }
+        }
+
+        /** One position beacon; Kiran first moves ~200 m towards his target (a fast-forwarded drive). */
+        fun tickPosition() {
+            target?.let { (tl, tn) ->
+                val d = com.lifeline.mesh.triage.GeoMath.distanceM(lat, lon, tl, tn)
+                if (d < 60) target = null
+                else { val f = (200.0 / d).coerceAtMost(1.0); lat += (tl - lat) * f; lon += (tn - lon) * f }
+            }
+            if (mesh.isUp(name)) router.sendPosition(Geo.toE6(lat), Geo.toE6(lon), 2)
         }
     }
 
     private val phones = PHONES.associateWith { Phone(it) }
     private var job: Job? = null
+    private var positionJob: Job? = null
 
     fun label(id: String): String = if (id == ME) "This phone" else "$id-${"%08x".format(ORIGINS[id] ?: 0).takeLast(4)}"
 
@@ -175,6 +199,13 @@ class MeshSimulation(
         mesh.link("Ravi", "Meena")
         mesh.link("Meena", "Kiran")
         publishNeighbors()
+        positionJob = scope.launch {
+            delay(2_000)
+            while (isActive) {
+                phones.values.forEach { it.tickPosition() }
+                delay(15_000)
+            }
+        }
         job = scope.launch {
             delay(8_000)
             var turn = 0
@@ -193,6 +224,7 @@ class MeshSimulation(
 
     fun stop() {
         job?.cancel()
+        positionJob?.cancel()
         phones.values.forEach { it.beacon.stop() }
         mesh.onLinkChange = null
     }
