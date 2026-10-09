@@ -374,9 +374,12 @@ class MeshService : Service() {
                 return
             }
             if (!Router.storable(packet)) return
-            if (packet is Packet.Alert && !mine && packet.needs and com.lifeline.mesh.packet.Need.AMBULANCE.bit != 0 &&
-                repo.settings.value?.role == com.lifeline.mesh.data.Role.AMBULANCE
-            ) scope.launch { ambulanceAlarm(packet, simulated) }
+            if (packet is Packet.Alert && !mine) {
+                val role = repo.settings.value?.role
+                val ambulance = packet.needs and com.lifeline.mesh.packet.Need.AMBULANCE.bit != 0 && role == com.lifeline.mesh.data.Role.AMBULANCE
+                val assigned = fromPeer == Router.INTERNET && role?.isTeam == true && repo.assignedToMe.remove(packet.header.messageId)
+                if (ambulance || assigned) scope.launch { ambulanceAlarm(packet, simulated, assignedOnly = !ambulance) }
+            }
             val now = System.currentTimeMillis()
             write {
                 db.packets().insert(packet.toEntity(raw, fromPeer, linkHops, mine, now, simulated))
@@ -445,16 +448,18 @@ class MeshService : Service() {
      * An ambulance request reached an Ambulance phone (Phase 10): alarm-sound notification, strong vibration and, if
      * read-aloud is on, "Ambulance requested. 2 patients. 1.4 km away." Distance from my live fix when known.
      */
-    private fun ambulanceAlarm(a: Packet.Alert, simulated: Boolean) {
+    private fun ambulanceAlarm(a: Packet.Alert, simulated: Boolean, assignedOnly: Boolean = false) {
         val fix = repo.myFix.value
         val far = if (fix != null && (a.latE6 != 0 || a.lonE6 != 0))
             com.lifeline.mesh.ui.rescuer.distanceText(com.lifeline.mesh.triage.GeoMath.distanceM(fix.lat, fix.lon, a.latE6 / 1e6, a.lonE6 / 1e6))
         else getString(R.string.notif_amb_far)
-        val text = getString(R.string.notif_amb_text, a.people, far) + if (a.note.isNotBlank()) " · ${a.note}" else ""
+        val patients = resources.getQuantityString(R.plurals.amb_patients, a.people, a.people)
+        val text = getString(R.string.notif_amb_text, patients, far) + if (a.note.isNotBlank()) " · ${a.note}" else ""
         Haptics.strong(this)
         val n = NotificationCompat.Builder(this, CHANNEL_AMBULANCE)
             .setSmallIcon(R.drawable.ic_emergency)
-            .setContentTitle(getString(R.string.notif_amb_title) + if (simulated) " · ${getString(R.string.simulated_tag)}" else "")
+            .setContentTitle(getString(if (assignedOnly) R.string.notif_assigned_title else R.string.notif_amb_title) +
+                if (simulated) " · ${getString(R.string.simulated_tag)}" else "")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -464,7 +469,7 @@ class MeshService : Service() {
             .build()
         runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_AMBULANCE, n) }
         val s = repo.settings.value
-        if (s?.readAloud == true) (application as LifelineApp).readAloud.speak(getString(R.string.notif_amb_say, a.people, far), s.language.tag)
+        if (s?.readAloud == true && !assignedOnly) (application as LifelineApp).readAloud.speak(getString(R.string.notif_amb_say, patients, far), s.language.tag)
     }
 
     private fun createChannels() {

@@ -11,7 +11,7 @@ class LifelineApp : Application() {
     val repository by lazy { AppRepository(database, settingsStore) }
     val ai by lazy { com.lifeline.mesh.ai.AiRuntime(this, database) }
     val readAloud by lazy { com.lifeline.mesh.ai.ReadAloud(this) }
-    val uploader by lazy { com.lifeline.mesh.sync.ServerUploader(this, database, repository.settings, settingsStore) }
+    val uploader by lazy { com.lifeline.mesh.sync.ServerUploader(this, database, repository, settingsStore) }
 
     override fun onCreate() {
         super.onCreate()

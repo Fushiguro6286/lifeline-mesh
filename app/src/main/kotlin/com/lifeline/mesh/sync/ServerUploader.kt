@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.ConnectException
@@ -36,22 +37,28 @@ import java.net.URL
 import java.net.UnknownHostException
 
 /**
- * Uploads queued alerts, check-ins, acks and reports to the sync server (CLAUDE.md 7.6). The only network user in
- * the app. Uploads by itself when Android reports validated internet; "Upload now" in Settings tries on any network
+ * Uploads queued alerts, check-ins, acks and reports to the sync server (CLAUDE.md 7.6), and runs the internet relay
+ * (Phase 10): polls the server for alerts near this team and replies to my alerts, and hands them to the mesh.
+ * The only network user in the app. Uploads by itself when Android reports validated internet; "Upload now" in Settings tries on any network
  * (a laptop hotspot with no internet is not "validated"). Simulated packets are never uploaded. Nothing is broadcast
  * to the mesh about it.
  */
 class ServerUploader(
     private val context: Context,
     private val db: AppDatabase,
-    private val settings: StateFlow<Settings?>,
+    private val repo: com.lifeline.mesh.AppRepository,
     private val store: SettingsStore,
 ) {
+    private val settings: StateFlow<Settings?> get() = repo.settings
     data class State(
         val internet: Boolean = false,
         val pending: Int = 0,
         val uploading: Boolean = false,
         val lastError: String? = null,
+        /** Internet relay (Phase 10): last successful poll (ms) and packets received from the server so far. */
+        val lastPollAt: Long? = null,
+        val received: Int = 0,
+        val pollError: String? = null,
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -93,6 +100,17 @@ class ServerUploader(
                 if (n > 0 && _state.value.internet) kick.trySend(false)
             }
         }
+        // Internet relay (Phase 10): poll the server for alerts near me (teams) and replies to my alerts.
+        // Never in simulation mode, so real and simulated packets never mix.
+        scope.launch {
+            var since = 0L
+            while (true) {
+                delay(POLL_MS)
+                val s = settings.value ?: continue
+                if (s.simulationMode || (!_state.value.internet && wifi == null)) continue
+                since = poll(s, since) ?: since
+            }
+        }
         scope.launch {
             for (manual in kick) {
                 // Auto: let a burst of arriving packets go in one request. Manual: let a just-saved URL land first.
@@ -123,7 +141,7 @@ class ServerUploader(
             while (true) {
                 val batch = db.packets().pendingUpload(BATCH)
                 if (batch.isEmpty()) break
-                val body = SyncFormat.json.encodeToString(batch.map { SyncFormat.toUpload(it, s.originId) })
+                val body = SyncFormat.json.encodeToString(batch.map { SyncFormat.toUpload(it, s.originId, s.phone) })
                 val err = withContext(Dispatchers.IO) { post(s.serverUrl, body) }
                 if (err != null) {
                     _state.update { it.copy(lastError = err) }
@@ -141,6 +159,40 @@ class ServerUploader(
             return false
         } finally {
             _state.update { it.copy(uploading = false) }
+        }
+    }
+
+    /** One poll; returns the server's cursor for next time, or null on failure. Received packets enter the mesh. */
+    private suspend fun poll(s: Settings, since: Long): Long? = withContext(Dispatchers.IO) {
+        val base = SyncFormat.normalizeUrl(s.serverUrl) ?: return@withContext null
+        val fix = repo.myFix.value
+        val url = try {
+            URL("$base/api/feed?" + SyncFormat.feedQuery(s.originId, s.role.code, s.displayName,
+                fix?.lat.takeIf { s.role.isTeam }, fix?.lon.takeIf { s.role.isTeam }, since))
+        } catch (e: MalformedURLException) { return@withContext null }
+        val net = if (SyncFormat.isLocalHost(url.host)) wifi else null
+        val conn = (net?.openConnection(url) ?: url.openConnection()) as HttpURLConnection
+        try {
+            conn.connectTimeout = 5_000
+            conn.readTimeout = 10_000
+            if (conn.responseCode !in 200..299) {
+                _state.update { it.copy(pollError = "The server answered ${conn.responseCode}.") }
+                return@withContext null
+            }
+            val feed = SyncFormat.json.decodeFromString<FeedResponse>(conn.inputStream.bufferedReader().use { it.readText() })
+            var injected = 0
+            for (p in feed.packets) {
+                val bytes = runCatching { java.util.Base64.getDecoder().decode(p.raw) }.getOrNull() ?: continue
+                if (p.assigned) p.id.toULongOrNull(16)?.toLong()?.let { repo.assignedToMe.add(it) }
+                if (repo.receiveFromInternet(bytes)) injected++
+            }
+            _state.update { it.copy(lastPollAt = System.currentTimeMillis(), received = it.received + injected, pollError = null) }
+            feed.now
+        } catch (e: Exception) {
+            _state.update { it.copy(pollError = "Cannot reach the server for the internet relay.") }
+            null
+        } finally {
+            conn.disconnect()
         }
     }
 
@@ -180,6 +232,7 @@ class ServerUploader(
         private const val BATCH = 200
         private const val FIRST_RETRY_MS = 30_000L
         private const val MAX_RETRY_MS = 5 * 60_000L
+        private const val POLL_MS = 15_000L
     }
 }
 
@@ -204,16 +257,34 @@ data class UploadPacket(
     val reportType: String? = null,
     val name: String? = null,
     val uploadedBy: String,
+    /** The packet as sent (base64), for teams that inject it into their own mesh (Phase 10). */
+    val raw: String? = null,
+    /** My phone number, only on my own packets (Settings; never sent over the mesh). */
+    val contactPhone: String? = null,
 )
+
+/** One entry of GET /api/feed. */
+@Serializable
+data class FeedPacket(val id: String, val raw: String, val assigned: Boolean = false)
+
+@Serializable
+data class FeedResponse(val now: Long, val packets: List<FeedPacket> = emptyList())
 
 /** Pure mapping and URL rules (unit-tested). */
 object SyncFormat {
-    val json = Json { encodeDefaults = false; explicitNulls = false }
+    val json = Json { encodeDefaults = false; explicitNulls = false; ignoreUnknownKeys = true }
+
+    /** Query for GET /api/feed: who I am, my team role and where I am (teams), and what I already have. */
+    fun feedQuery(origin: Int, role: Int, name: String, lat: Double?, lon: Double?, since: Long): String = buildList {
+        add("origin=" + hex32(origin)); add("role=$role"); add("since=$since")
+        if (name.isNotBlank()) add("name=" + java.net.URLEncoder.encode(name, "UTF-8"))
+        if (lat != null && lon != null) { add("lat=$lat"); add("lon=$lon") }
+    }.joinToString("&")
 
     fun hex64(v: Long) = "%016x".format(v)
     fun hex32(v: Int) = "%08x".format(v)
 
-    fun toUpload(p: PacketEntity, myOrigin: Int): UploadPacket {
+    fun toUpload(p: PacketEntity, myOrigin: Int, myPhone: String = ""): UploadPacket {
         val type = when (p.type) {
             PacketType.ALERT.code -> "alert"
             PacketType.CHECK_IN.code -> "check_in"
@@ -242,6 +313,8 @@ object SyncFormat {
             reportType = p.reportType?.let { c -> ReportType.entries.firstOrNull { it.code == c }?.name?.lowercase() },
             name = p.name,
             uploadedBy = hex32(myOrigin),
+            raw = java.util.Base64.getEncoder().encodeToString(p.rawBytes).takeIf { p.rawBytes.isNotEmpty() },
+            contactPhone = myPhone.takeIf { p.isMine && it.isNotBlank() },
         )
     }
 

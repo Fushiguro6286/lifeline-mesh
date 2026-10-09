@@ -103,7 +103,7 @@ fun PacketEntity.toReport(): AlertReport {
         id = id, origin = origin, lat = if (known) lat else null, lon = if (known) lon else null,
         accuracyM = accuracy?.let { Geo.accuracyMeters(it) }, needs = Need.fromMask(needs ?: 0),
         severity = severity ?: 0, people = people ?: 0, note = note ?: "", receivedAt = receivedAt, hops = hops,
-        acked = acked, ackEta = ackEta,
+        acked = acked, ackEta = ackEta, viaInternet = fromEndpoint == com.lifeline.mesh.mesh.Router.INTERNET,
     )
 }
 

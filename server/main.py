@@ -3,10 +3,17 @@
 Phones that find internet POST the alerts, check-ins, reports and acks they hold. Uploads are idempotent by message
 ID: the same packet arriving from three phones is stored once (and we count how many phones sent it).
 
+Internet relay (Phase 10): every online phone polls GET /api/feed. A team phone's poll records where the team is;
+each new alert is assigned to the nearest online team of the matching type (ambulance request or medical → ambulance,
+fire → fire service, trapped → NDRF, road blocked → police; otherwise any team), and team phones receive the alerts
+near them with the raw packet bytes, which they inject into their own mesh. Every phone receives replies to its own
+alerts. Distances are straight-line (haversine), like on the phones.
+
 Run:  uvicorn main:app --host 0.0.0.0 --port 8000
 """
 
 import html
+import math
 import os
 import sqlite3
 import time
@@ -42,12 +49,40 @@ class PacketIn(BaseModel):
     reportType: Optional[str] = None
     name: Optional[str] = Field(default=None, max_length=64)
     uploadedBy: str = Field(pattern=HEX8)
+    # Phase 10: the packet exactly as sent (base64), so a team phone can inject it into its own mesh; and the
+    # uploader's phone number, only on its own packets.
+    raw: Optional[str] = Field(default=None, max_length=1500)
+    contactPhone: Optional[str] = Field(default=None, max_length=16)
 
 
 COLUMNS = [
     "id", "type", "origin", "hops", "sentAt", "receivedAt", "lat", "lon", "accuracyM", "needs", "severity",
-    "people", "note", "refId", "etaMinutes", "reportType", "name", "uploadedBy",
+    "people", "note", "refId", "etaMinutes", "reportType", "name", "uploadedBy", "raw", "contactPhone",
 ]
+
+TEAM_NAMES = {3: "Rescue team", 4: "Fire service", 5: "Ambulance", 6: "Police", 7: "NDRF / SDRF"}
+ONLINE_MS = 2 * 60_000      # a team is online if it polled in the last 2 minutes
+ASSIGN_RADIUS_M = 50_000    # never assign an alert to a team further than this
+FEED_RADIUS_M = 25_000      # team phones receive alerts within this distance (and alerts with no position)
+FEED_WINDOW_MS = 6 * 3_600_000
+
+
+def team_for(needs: list[str]) -> Optional[int]:
+    """Same order as Teams.teamFor on the phone."""
+    if "ambulance" in needs: return 5
+    if "fire" in needs: return 4
+    if "medical" in needs: return 5
+    if "trapped" in needs: return 7
+    if "road_blocked" in needs: return 6
+    return None
+
+
+def distance_m(lat1, lon1, lat2, lon2) -> float:
+    r = 6_371_000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
 
 
 def db() -> sqlite3.Connection:
@@ -66,6 +101,40 @@ def init() -> None:
                 storedAt INTEGER NOT NULL, copies INTEGER NOT NULL DEFAULT 1)"""
         )
         conn.execute("CREATE INDEX IF NOT EXISTS packets_ref ON packets(refId)")
+        have = {r[1] for r in conn.execute("PRAGMA table_info(packets)")}
+        for col in ("raw", "contactPhone"):
+            if col not in have:
+                conn.execute(f"ALTER TABLE packets ADD COLUMN {col} TEXT")
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS teams (
+                origin TEXT PRIMARY KEY, role INTEGER NOT NULL, name TEXT, lat REAL, lon REAL, seenAt INTEGER NOT NULL)"""
+        )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS assignments (
+                packetId TEXT PRIMARY KEY, teamOrigin TEXT NOT NULL, distanceM REAL, assignedAt INTEGER NOT NULL)"""
+        )
+
+
+def assign_open_alerts(conn: sqlite3.Connection, now: int) -> None:
+    """Every recent alert without a team goes to the nearest online team of its type (else any team), if one is near."""
+    teams = conn.execute("SELECT * FROM teams WHERE seenAt >= ? AND lat IS NOT NULL", (now - ONLINE_MS,)).fetchall()
+    if not teams:
+        return
+    rows = conn.execute(
+        """SELECT p.* FROM packets p LEFT JOIN assignments a ON a.packetId = p.id
+           WHERE p.type = 'alert' AND a.packetId IS NULL AND p.storedAt >= ? AND p.lat IS NOT NULL""",
+        (now - FEED_WINDOW_MS,),
+    ).fetchall()
+    for r in rows:
+        want = team_for([n for n in (r["needs"] or "").split(",") if n])
+        others = [t for t in teams if t["origin"] != r["origin"]]  # never send a team its own alert
+        if not others:
+            continue
+        options = [t for t in others if want is None or t["role"] == want] or others
+        best = min(options, key=lambda t: distance_m(r["lat"], r["lon"], t["lat"], t["lon"]))
+        d = distance_m(r["lat"], r["lon"], best["lat"], best["lon"])
+        if d <= ASSIGN_RADIUS_M:
+            conn.execute("INSERT OR IGNORE INTO assignments VALUES (?, ?, ?, ?)", (r["id"], best["origin"], d, now))
 
 
 init()
@@ -89,7 +158,42 @@ def post_packets(packets: list[PacketIn]) -> dict:
             else:
                 duplicates += 1
                 conn.execute("UPDATE packets SET copies = copies + 1 WHERE id = ?", (p.id,))
+                if p.raw:  # an older upload without raw bytes: fill them in
+                    conn.execute("UPDATE packets SET raw = COALESCE(raw, ?) WHERE id = ?", (p.raw, p.id))
+        assign_open_alerts(conn, now)
     return {"stored": stored, "duplicates": duplicates}
+
+
+@app.get("/api/feed")
+def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[float] = None, name: str = "",
+         since: int = 0) -> dict:
+    """What an online phone should inject into its mesh: replies to its own alerts; for teams, nearby alerts."""
+    now = int(time.time() * 1000)
+    out = []
+    with closing(db()) as conn, conn:
+        if role >= 3:
+            conn.execute(
+                "INSERT INTO teams VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(origin) DO UPDATE SET "
+                "role = excluded.role, name = excluded.name, lat = COALESCE(excluded.lat, teams.lat), "
+                "lon = COALESCE(excluded.lon, teams.lon), seenAt = excluded.seenAt",
+                (origin, role, name[:32], lat, lon, now),
+            )
+            assign_open_alerts(conn, now)
+            assigned = {r[0] for r in conn.execute("SELECT packetId FROM assignments WHERE teamOrigin = ?", (origin,))}
+            for r in conn.execute(
+                "SELECT id, raw, lat, lon FROM packets WHERE type = 'alert' AND raw IS NOT NULL AND storedAt > ? AND storedAt >= ? AND origin != ?",
+                (since, now - FEED_WINDOW_MS, origin),
+            ):
+                near = r["lat"] is None or lat is None or lon is None or distance_m(lat, lon, r["lat"], r["lon"]) <= FEED_RADIUS_M
+                if near or r["id"] in assigned:
+                    out.append({"id": r["id"], "raw": r["raw"], "assigned": r["id"] in assigned})
+        for r in conn.execute(
+            """SELECT k.id, k.raw FROM packets k JOIN packets a ON a.id = k.refId
+               WHERE k.type = 'ack' AND k.raw IS NOT NULL AND a.origin = ? AND k.storedAt > ?""",
+            (origin, since),
+        ):
+            out.append({"id": r["id"], "raw": r["raw"], "assigned": False})
+    return {"now": now, "packets": out}
 
 
 @app.get("/api/packets")
@@ -126,7 +230,8 @@ def _e(v) -> str:
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    """One page for judges: alerts (urgent first) with their reply status, then check-ins and reports."""
+    """One page for judges: alerts (urgent first) with reply status and assigned team, teams online, check-ins, reports."""
+    now_ms = int(time.time() * 1000)
     with closing(db()) as conn:
         alerts = conn.execute("SELECT * FROM packets WHERE type = 'alert' ORDER BY severity DESC, sentAt DESC").fetchall()
         acks = {}
@@ -135,10 +240,16 @@ def index() -> str:
         checkins = conn.execute("SELECT * FROM packets WHERE type = 'check_in' ORDER BY sentAt DESC").fetchall()
         reports = conn.execute("SELECT * FROM packets WHERE type = 'report' ORDER BY sentAt DESC").fetchall()
         total = conn.execute("SELECT COUNT(*), COUNT(DISTINCT uploadedBy) FROM packets").fetchone()
+        assigned = {r["packetId"]: r for r in conn.execute(
+            "SELECT a.packetId, a.distanceM, t.role, t.name, t.origin FROM assignments a JOIN teams t ON t.origin = a.teamOrigin")}
+        teams = conn.execute("SELECT * FROM teams ORDER BY seenAt DESC").fetchall()
 
     def alert_row(r: sqlite3.Row) -> str:
         ack = acks.get(r["id"])
         status = f"Help is coming · ETA {ack['etaMinutes']} min" if ack else "Open"
+        a = assigned.get(r["id"])
+        if a:
+            status += f" · sent to {TEAM_NAMES.get(a['role'], 'team')} {_e(a['name'] or a['origin'][-4:])} ({a['distanceM'] / 1000:.1f} km)"
         needs = ", ".join(n.replace("_", " ") for n in (r["needs"] or "").split(",") if n) or "—"
         sev = SEVERITY.get(r["severity"], "?")
         return (f"<tr class='sev{r['severity']}'><td>{_t(r['sentAt'])}</td><td>{_e(needs)}</td><td>{_e(r['people'])}</td>"
@@ -168,6 +279,7 @@ tr.sev3 td:nth-child(4){{color:#ff6b5b;font-weight:700}} tr.sev2 td:nth-child(4)
 <h1>Lifeline Mesh · uploaded from the mesh</h1>
 <p class="muted">{total[0]} packets from {total[1]} phones · refreshes every 5 s · each packet is stored once, however many phones upload it</p>
 <h2>Alerts ({len(alerts)})</h2>{alert_table}
+<h2>Teams online ({sum(1 for t in teams if now_ms - t["seenAt"] < ONLINE_MS)})</h2>{simple(teams, [("Team", lambda t: _e(TEAM_NAMES.get(t["role"], "team"))), ("Name", lambda t: _e(t["name"] or t["origin"][-4:])), ("Place", lambda t: "unknown" if t["lat"] is None else f"{t['lat']:.5f}, {t['lon']:.5f}"), ("Last seen", lambda t: _t(t["seenAt"])), ("Online", lambda t: "yes" if now_ms - t["seenAt"] < ONLINE_MS else "no")])}
 <h2>Check-ins ({len(checkins)})</h2>{simple(checkins, [("Sent", lambda r: _t(r["sentAt"])), ("Name", lambda r: _e(r["name"])), ("Place", _place), ("Hops", lambda r: r["hops"])])}
 <h2>Community reports ({len(reports)})</h2>{simple(reports, [("Sent", lambda r: _t(r["sentAt"])), ("Report", lambda r: _e(REPORT.get(r["reportType"], r["reportType"]))), ("Note", lambda r: _e(r["note"])), ("Place", _place)])}
 </body></html>"""

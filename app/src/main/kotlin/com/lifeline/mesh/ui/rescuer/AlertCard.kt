@@ -76,7 +76,7 @@ fun AlertCard(r: RankedAlert, now: Long, onOpen: () -> Unit, modifier: Modifier 
             EtaLine(r)
             Text(
                 (if (a.count > 1) stringResource(R.string.alert_merged, a.count) else stringResource(R.string.alert_single)) +
-                    " · " + ago(context, now, a.lastAt),
+                    " · " + ago(context, now, a.lastAt) + if (a.viaInternet) " · via internet" else "",
                 style = Lifeline.type.caption, color = c.inkMuted,
             )
             if (a.note.isNotBlank()) com.lifeline.mesh.ui.components.TranslatableNote(a.note, language)
@@ -94,6 +94,7 @@ fun NeedIcons(a: MergedAlert) {
     val c = Lifeline.colors
     Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         if (Need.PANIC in a.needs) Icon(painterResource(R.drawable.ic_sos), null, tint = c.sos, modifier = Modifier.size(22.dp))
+        if (Need.AMBULANCE in a.needs) Icon(painterResource(R.drawable.ic_emergency), null, tint = c.sos, modifier = Modifier.size(22.dp))
         Need.selectable.filter { it in a.needs }.forEach {
             Icon(painterResource(it.iconRes()), null, tint = c.ink, modifier = Modifier.size(22.dp))
         }
@@ -104,7 +105,8 @@ fun NeedIcons(a: MergedAlert) {
 fun needsText(a: MergedAlert): String {
     val context = LocalContext.current
     if (Need.PANIC in a.needs) return stringResource(R.string.alert_panic)
-    return Need.selectable.filter { it in a.needs }.joinToString(" · ") { context.getString(it.labelRes()) }
+    val ambulance = if (Need.AMBULANCE in a.needs) listOf(context.getString(R.string.need_ambulance)) else emptyList()
+    return (ambulance + Need.selectable.filter { it in a.needs }.map { context.getString(it.labelRes()) }).joinToString(" · ")
 }
 
 @Composable

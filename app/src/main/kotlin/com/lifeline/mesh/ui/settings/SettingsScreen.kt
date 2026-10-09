@@ -197,6 +197,12 @@ private fun SyncCard(settings: Settings, repository: AppRepository) {
             style = Lifeline.type.body, color = c.inkMuted,
         )
         st.lastError?.let { Text(it, style = Lifeline.type.body, color = c.warn) }
+        Text(
+            st.lastPollAt?.let { "Internet relay: checked " + java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date(it)) +
+                " · ${st.received} received from the server" } ?: "Internet relay: not checked yet (every 15 s with a connection).",
+            style = Lifeline.type.caption, color = c.inkMuted,
+        )
+        st.pollError?.let { Text(it, style = Lifeline.type.caption, color = c.warn) }
         if (settings.simulationMode) Text("Simulated packets are never uploaded.", style = Lifeline.type.caption, color = c.inkMuted)
         com.lifeline.mesh.ui.components.SecondaryButton(
             if (st.uploading) "Uploading…" else "Upload now",

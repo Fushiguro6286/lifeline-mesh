@@ -220,7 +220,12 @@
     <string name="amb_send">Send to ambulance teams</string>
     <string name="amb_sending">Sending…</string>
     <string name="notif_amb_title">Ambulance requested</string>
-    <string name="notif_amb_text">%1$d patients · %2$s</string>
+    <string name="notif_amb_text">%1$s · %2$s</string>
     <string name="notif_amb_far">distance unknown</string>
-    <string name="notif_amb_say">Ambulance requested. %1$d patients. %2$s.</string>
+    <string name="notif_amb_say">Ambulance requested. %1$s. %2$s.</string>
+    <string name="notif_assigned_title">New alert sent to your team (via internet)</string>
+    <plurals name="amb_patients">
+        <item quantity="one">%d patient</item>
+        <item quantity="other">%d patients</item>
+    </plurals>
 </resources>

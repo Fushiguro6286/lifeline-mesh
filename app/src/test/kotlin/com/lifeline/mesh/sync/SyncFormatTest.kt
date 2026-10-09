@@ -5,6 +5,7 @@ import com.lifeline.mesh.packet.Geo
 import com.lifeline.mesh.packet.Need
 import com.lifeline.mesh.packet.PacketType
 import com.lifeline.mesh.packet.ReportType
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -67,5 +68,27 @@ class SyncFormatTest {
         assertFalse(SyncFormat.isLocalHost("example.org"))
         assertFalse(SyncFormat.isLocalHost("127.0.0.1")) // adb reverse: must not be bound to Wi-Fi
         assertFalse(SyncFormat.isLocalHost("localhost"))
+    }
+
+    @Test fun rawBytesAndPhoneOnlyOnMyPackets() {
+        val raw = byteArrayOf(0x11, 1, 2, 3)
+        val mine = SyncFormat.toUpload(entity(PacketType.ALERT).copy(rawBytes = raw, isMine = true), 1, myPhone = "+919800000000")
+        assertEquals(java.util.Base64.getEncoder().encodeToString(raw), mine.raw)
+        assertEquals("+919800000000", mine.contactPhone)
+        val relayed = SyncFormat.toUpload(entity(PacketType.ALERT).copy(rawBytes = raw, isMine = false), 1, myPhone = "+919800000000")
+        assertNull(relayed.contactPhone) // someone else's packet never carries my number
+        assertNull(SyncFormat.toUpload(entity(PacketType.ALERT), 1).raw)
+    }
+
+    @Test fun feedQueryCarriesPositionOnlyWhenGiven() {
+        assertEquals("origin=0000c0de&role=5&since=7&name=Kiran+A&lat=12.97&lon=77.59",
+            SyncFormat.feedQuery(0xc0de, 5, "Kiran A", 12.97, 77.59, 7))
+        assertEquals("origin=0000c0de&role=1&since=0", SyncFormat.feedQuery(0xc0de, 1, "", null, null, 0))
+    }
+
+    @Test fun feedResponseParses() {
+        val f = SyncFormat.json.decodeFromString<FeedResponse>("""{"now":5,"packets":[{"id":"00000000000000a1","raw":"EQ==","assigned":true,"extra":1}]}""")
+        assertEquals(5L, f.now)
+        assertTrue(f.packets.single().assigned)
     }
 }

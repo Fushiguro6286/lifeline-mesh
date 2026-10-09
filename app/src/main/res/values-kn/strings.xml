@@ -210,7 +210,12 @@
     <string name="amb_send">ಆಂಬ್ಯುಲೆನ್ಸ್ ತಂಡಗಳಿಗೆ ಕಳುಹಿಸಿ</string>
     <string name="amb_sending">ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…</string>
     <string name="notif_amb_title">ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿ</string>
-    <string name="notif_amb_text">%1$d ರೋಗಿಗಳು · %2$s</string>
+    <string name="notif_amb_text">%1$s · %2$s</string>
     <string name="notif_amb_far">ದೂರ ತಿಳಿದಿಲ್ಲ</string>
-    <string name="notif_amb_say">ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿ. %1$d ರೋಗಿಗಳು. %2$s.</string>
+    <string name="notif_amb_say">ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿ. %1$s. %2$s.</string>
+    <string name="notif_assigned_title">ನಿಮ್ಮ ತಂಡಕ್ಕೆ ಕಳುಹಿಸಿದ ಹೊಸ ಅಲರ್ಟ್ (ಇಂಟರ್ನೆಟ್ ಮೂಲಕ)</string>
+    <plurals name="amb_patients">
+        <item quantity="one">%d ರೋಗಿ</item>
+        <item quantity="other">%d ರೋಗಿಗಳು</item>
+    </plurals>
 </resources>

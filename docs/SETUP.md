@@ -240,7 +240,10 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-Endpoints: `POST /api/packets` (list of decoded packets, idempotent by message ID), `GET /api/packets`, `GET /` (simple HTML table for judges). Set the phone's server URL to the laptop's address on the same Wi-Fi, e.g. `http://192.168.x.x:8000`. Allow cleartext HTTP for that address in a network security config for the demo.
+Endpoints: `POST /api/packets` (list of decoded packets with their raw bytes, idempotent by message ID), `GET /api/packets`,
+`GET /api/feed` (Phase 10 internet relay: each online phone polls it; team phones report their position and receive
+nearby alerts, flagged when assigned to them; every phone receives replies to its own alerts), `GET /` (HTML page for
+judges: alerts with reply status and assigned team, teams online, check-ins, reports). Set the phone's server URL to the laptop's address on the same Wi-Fi, e.g. `http://192.168.x.x:8000`. Allow cleartext HTTP for that address in a network security config for the demo.
 
 ---
 

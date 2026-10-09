@@ -25,6 +25,8 @@ data class AlertReport(
     val hops: Int,
     val acked: Boolean,
     val ackEta: Int?,
+    /** Reached this phone from the sync server, not over the mesh (Phase 10 internet relay). */
+    val viaInternet: Boolean = false,
 )
 
 /** Several reports of what is most likely the same emergency (CLAUDE.md 5: Merger → Ranker). */
@@ -47,6 +49,8 @@ data class MergedAlert(val reports: List<AlertReport>) {
     val acked: Boolean get() = reports.any { it.acked }
     val ackEta: Int? get() = reports.filter { it.acked }.mapNotNull { it.ackEta }.minOrNull()
     val count: Int get() = reports.size
+    /** Every copy came from the server: nobody nearby relayed it. */
+    val viaInternet: Boolean get() = reports.all { it.viaInternet }
 }
 
 /**

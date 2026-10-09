@@ -189,6 +189,29 @@ class AppRepository(
         return true
     }
 
+    /** Alert ids the server assigned to my team (Phase 10); the service raises an alarm when they arrive. */
+    val assignedToMe: MutableSet<Long> = java.util.Collections.synchronizedSet(HashSet())
+
+    /**
+     * A packet fetched from the sync server (Phase 10 internet relay). With the mesh running it goes through the router
+     * like a packet from a neighbor (deduplicated, stored, relayed into the local mesh, replies recognised); otherwise
+     * it is stored directly, marked "internet". Never in simulation mode. True if it was new.
+     */
+    fun receiveFromInternet(raw: ByteArray): Boolean {
+        if (settings.value?.simulationMode != false) return false
+        val p = (PacketCodec.decode(raw) as? com.lifeline.mesh.packet.DecodeResult.Ok)?.packet ?: return false
+        if (!Router.storable(p)) return false
+        val r = router
+        if (r != null) { r.onReceived(Router.INTERNET, raw); return true }
+        val now = System.currentTimeMillis()
+        val mine = p.header.origin == settings.value?.originId
+        return kotlinx.coroutines.runBlocking {
+            val added = database.packets().insert(p.toEntity(raw, Router.INTERNET, p.header.hops + 1, mine = mine, receivedAt = now)) != -1L
+            if (added && p is Packet.Ack) database.packets().markAcked(p.refId, p.etaMinutes)
+            added
+        }
+    }
+
     /** Ping for one of my packets; needs the mesh running (a queued ping would measure nothing). */
     fun sendPing(refId: Long): Boolean {
         val r = router ?: return false
