@@ -49,15 +49,18 @@ object SituationReport {
         )
     }
 
+    /** Plain words for a need: "water or food", "road blocked". */
+    fun needWord(n: Need): String = if (n == Need.WATER_FOOD) "water or food" else n.label.replace('_', ' ')
+
     fun needLabels(needs: Set<Need>): String =
-        if (Need.PANIC in needs) "SOS" else needs.joinToString(", ") { it.label.replace('_', ' ') }.ifBlank { "unspecified" }
+        if (Need.PANIC in needs) "SOS" else needs.joinToString(", ") { needWord(it) }.ifBlank { "unspecified" }
 
     /** Facts as "key: value" lines for the prompt. */
     fun factLines(f: SituationFacts): String = buildString {
         appendLine("Active alerts: ${f.active}")
         appendLine("People needing help: ${f.people}")
         appendLine("Urgent alerts: ${f.urgent}")
-        if (f.needs.isNotEmpty()) appendLine("Needs: " + f.needs.entries.joinToString(", ") { "${it.key.label.replace('_', ' ')} ${it.value}" })
+        if (f.needs.isNotEmpty()) appendLine("Needs: " + f.needs.entries.joinToString(", ") { "${needWord(it.key)} ${it.value}" })
         f.topPriority?.let { appendLine("Top priority: $it") }
         appendLine("Safe check-ins: ${f.checkIns}")
         appendLine("Acknowledged: ${f.acknowledged}")
@@ -73,8 +76,8 @@ object SituationReport {
         )
         return listOf(
             "${f.active} active alerts, ${f.people} people, ${f.urgent} urgent.",
-            "Top priority ${f.topPriority}." + if (f.needs.isNotEmpty()) " Needs: " + f.needs.entries.joinToString(", ") { "${it.key.label.replace('_', ' ')} ${it.value}" } + "." else "",
-            "${f.acknowledged} acknowledged, ${f.open} still open; ${f.checkIns} safe check-ins.",
+            "Top priority ${f.topPriority}." + if (f.needs.isNotEmpty()) " Needs: " + f.needs.entries.joinToString(", ") { "${needWord(it.key)} ${it.value}" } + "." else "",
+            "${f.acknowledged} acknowledged, ${f.open} still open; ${f.checkIns} safe check-in${if (f.checkIns == 1) "" else "s"}.",
         )
     }
 

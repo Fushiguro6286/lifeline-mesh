@@ -278,14 +278,23 @@ private fun LibreMap(
         },
     )
 
-    // My first fix often arrives after the map opened on the venue centre: move to me once.
-    var centredOnMe by remember { mutableStateOf(false) }
-    LaunchedEffect(map, me) {
+    // Once, when my fix (or the first alerts) arrive: frame me and the five highest-ranked alerts, so a rescuer opening
+    // the map sees who needs help first, not just their own dot.
+    var framed by remember { mutableStateOf(false) }
+    LaunchedEffect(map, me, ranked) {
         val m = map ?: return@LaunchedEffect
-        val fix = me ?: return@LaunchedEffect
-        if (centredOnMe || !MapAssets.contains(fix.lat, fix.lon)) return@LaunchedEffect
-        centredOnMe = true
-        m.animateCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLng(LatLng(fix.lat, fix.lon)))
+        if (framed) return@LaunchedEffect
+        val points = buildList {
+            me?.let { add(LatLng(it.lat, it.lon)) }
+            ranked.take(5).forEach { r -> r.alert.position?.let { p -> add(LatLng(p.lat!!, p.lon!!)) } }
+        }.filter { MapAssets.contains(it.latitude, it.longitude) }
+        if (points.isEmpty()) return@LaunchedEffect
+        framed = true
+        val update = if (points.size == 1) org.maplibre.android.camera.CameraUpdateFactory.newLatLng(points[0])
+        else org.maplibre.android.camera.CameraUpdateFactory.newLatLngBounds(
+            LatLngBounds.Builder().includes(points).build(), (64 * density).toInt())
+        m.animateCamera(update)
+        if (m.cameraPosition.zoom > 16.0) m.animateCamera(org.maplibre.android.camera.CameraUpdateFactory.zoomTo(16.0))
     }
 
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.

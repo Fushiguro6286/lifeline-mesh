@@ -21,6 +21,10 @@ Living document. Updated at the end of every phase.
   Add a report); battery drain while relaying (Benchmarks → Mesh); Settings → Export measurements (CSV, share sheet);
   Settings → Battery and background; First aid screen (SOS tab, bottom) waiting for the vetted firstaid.json.
 - 160 unit tests pass.
+- Verified on the iQOO 15 (10 Oct, by Claude over adb): Settings → Sync uploaded a real panic alert to the laptop server
+  over Wi-Fi ("Waiting to upload: 0", server shows it; simulated packets stayed out); a wrong server address shows a
+  plain error and keeps the packet queued. Design pass at font scale 1.0 and 1.3 on SOS, First aid, Mesh, Rescue, Map
+  and Settings (fixes in the commit "Design pass"). Not yet checked: Daylight theme, Demo mode, Hindi/Kannada layouts.
 - Verified on the iQOO 15 (10 Oct): selector picks Gemma 4 E4B on GPU (TTFT 814 ms, 16.6 tok/s) and passes en/hi/kn;
   demo sentences 4/4 correct by the AI; GPU 336 ms / 22 tok/s vs CPU 1,392 ms / 17 tok/s; "please help us" gets an
   AI-written question; with the models moved away the app says "Rules only" and the send flow works on rules.

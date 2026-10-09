@@ -59,7 +59,7 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
         } else {
             Text(stringResource(R.string.status_title), style = Lifeline.type.title, color = c.ink, modifier = Modifier.semantics { heading() })
         }
-        if (what.isNotBlank()) Text(what, style = Lifeline.type.label, color = c.inkMuted)
+        if (what.isNotBlank()) Text(if (acked) stringResource(R.string.status_your_alert, what) else what, style = Lifeline.type.label, color = c.inkMuted)
 
         val passed = alert.handedTo > 0
         StatusTimeline(

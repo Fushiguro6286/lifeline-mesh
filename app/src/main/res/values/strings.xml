@@ -146,6 +146,7 @@
     <string name="gate_q_needs">What do you need help with? Tap one below.</string>
     <string name="gate_q_people">How many people are with you?</string>
     <string name="status_title">Your alert</string>
+    <string name="status_your_alert">Your alert: %s</string>
     <string name="status_send_another">Send another alert</string>
     <string name="status_eta">ETA %d min</string>
     <string name="status_panic">SOS alert</string>

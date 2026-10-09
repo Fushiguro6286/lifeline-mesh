@@ -1,5 +1,6 @@
 package com.lifeline.mesh.ui.rescuer
 
+import androidx.compose.foundation.layout.fillMaxHeight
 import android.app.Application
 import android.content.Context
 import androidx.compose.foundation.background
@@ -197,13 +198,13 @@ private fun Header(ranked: List<RankedAlert>, simulated: Boolean) {
     val urgent = ranked.count { it.alert.severity >= 3 }
     val acked = ranked.count { it.alert.acked }
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            StatTile(ranked.size.toString(), stringResource(R.string.rescue_active), Modifier.weight(1f), simulated = simulated)
-            StatTile(people.toString(), stringResource(R.string.rescue_people), Modifier.weight(1f), simulated = simulated)
+        Row(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            StatTile(ranked.size.toString(), stringResource(R.string.rescue_active), Modifier.weight(1f).fillMaxHeight(), simulated = simulated)
+            StatTile(people.toString(), stringResource(R.string.rescue_people), Modifier.weight(1f).fillMaxHeight(), simulated = simulated)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            StatTile(urgent.toString(), stringResource(R.string.rescue_urgent), Modifier.weight(1f), simulated = simulated)
-            StatTile(acked.toString(), stringResource(R.string.rescue_acked), Modifier.weight(1f), simulated = simulated)
+        Row(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            StatTile(urgent.toString(), stringResource(R.string.rescue_urgent), Modifier.weight(1f).fillMaxHeight(), simulated = simulated)
+            StatTile(acked.toString(), stringResource(R.string.rescue_acked), Modifier.weight(1f).fillMaxHeight(), simulated = simulated)
         }
     }
 }

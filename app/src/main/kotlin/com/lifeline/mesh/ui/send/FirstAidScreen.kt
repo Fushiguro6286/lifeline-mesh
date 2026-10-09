@@ -98,7 +98,7 @@ fun FirstAidScreen() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Icon(painterResource(R.drawable.ic_emergency), null, tint = c.warn, modifier = Modifier.size(28.dp))
+            Icon(painterResource(R.drawable.ic_local_hospital), null, tint = c.warn, modifier = Modifier.size(28.dp))
             Text(stringResource(R.string.firstaid_contact), style = Lifeline.type.bodyStrong, color = c.ink)
         }
 

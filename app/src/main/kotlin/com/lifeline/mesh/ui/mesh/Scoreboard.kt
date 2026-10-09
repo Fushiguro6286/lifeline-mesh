@@ -1,5 +1,7 @@
 package com.lifeline.mesh.ui.mesh
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,10 +23,10 @@ fun Scoreboard(metrics: List<MetricEntity>, simulated: Boolean, modifier: Modifi
     val hops = metrics.firstOrNull { it.name == "hops" && it.notes?.startsWith("alert") == true }
     val rtt = metrics.firstOrNull { it.name == "rtt_ms" }
     val bytes = metrics.firstOrNull { it.name == "packet_bytes" && it.notes?.startsWith("alert") == true }
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-        StatTile(hops?.value?.toInt()?.toString(), stringResource(R.string.score_hops), Modifier.weight(1f), simulated = simulated)
-        StatTile(rtt?.value?.toLong()?.toString(), stringResource(R.string.score_rtt), Modifier.weight(1f),
+    Row(modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+        StatTile(hops?.value?.toInt()?.toString(), stringResource(R.string.score_hops), Modifier.weight(1f).fillMaxHeight(), simulated = simulated)
+        StatTile(rtt?.value?.toLong()?.toString(), stringResource(R.string.score_rtt), Modifier.weight(1f).fillMaxHeight(),
             unit = stringResource(R.string.unit_ms), simulated = simulated)
-        StatTile(bytes?.value?.toInt()?.toString(), stringResource(R.string.score_bytes), Modifier.weight(1f), simulated = simulated)
+        StatTile(bytes?.value?.toInt()?.toString(), stringResource(R.string.score_bytes), Modifier.weight(1f).fillMaxHeight(), simulated = simulated)
     }
 }

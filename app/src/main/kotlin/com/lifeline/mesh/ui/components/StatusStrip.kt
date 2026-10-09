@@ -61,8 +61,9 @@ fun StatusStrip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            StatusDot(mesh, Modifier.weight(1f))
-            StatusDot(ai)
+            // The mesh state is the one people act on: it always shows in full; the AI label shortens instead.
+            StatusDot(mesh)
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) { StatusDot(ai) }
             trailing?.invoke()
         }
         if (simulated) SimulatedBanner()

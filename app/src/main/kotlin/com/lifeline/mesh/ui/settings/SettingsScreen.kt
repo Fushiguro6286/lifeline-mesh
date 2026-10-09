@@ -183,7 +183,7 @@ private fun SyncCard(settings: Settings, repository: AppRepository) {
         )
         Text("Waiting to upload: ${st.pending}", style = Lifeline.type.body, color = c.ink)
         Text(
-            last?.let { (at, n) -> "Last upload: " + java.text.SimpleDateFormat("d MMM, HH:mm", java.util.Locale.US).format(java.util.Date(at)) + " · $n packets" }
+            last?.let { (at, n) -> "Last upload: " + java.text.SimpleDateFormat("d MMM, HH:mm", java.util.Locale.US).format(java.util.Date(at)) + " · $n " + if (n == 1) "packet" else "packets" }
                 ?: "Last upload: never",
             style = Lifeline.type.body, color = c.inkMuted,
         )

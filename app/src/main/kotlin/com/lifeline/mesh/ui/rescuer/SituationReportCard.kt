@@ -58,7 +58,8 @@ fun SituationReportCard(facts: SituationFacts) {
     // Recompute when any number changes (or on refresh); the model phrasing follows when it can.
     LaunchedEffect(facts, refresh, status) {
         lines = SituationReport.template(facts); fromModel = false; at = System.currentTimeMillis()
-        if (!ai.canUse("en")) return@LaunchedEffect
+        // With no alerts there is nothing worth phrasing; don't spend the GPU on it.
+        if (facts.active == 0 || !ai.canUse("en")) return@LaunchedEffect
         // GPS jitter can nudge the top alert's distance; wait for the numbers to settle before asking the model.
         delay(1_500)
         writing = true

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -61,7 +62,10 @@ import com.lifeline.mesh.ui.theme.Shapes
 import com.lifeline.mesh.ui.theme.Space
 import kotlinx.coroutines.delay
 
+/** Collapsed sheet before the scoreboard is measured; then exactly handle + scoreboard (DESIGN.md 8.3). */
 private val PEEK = 152.dp
+/** Drag handle: 8 dp + 4 dp + 8 dp. */
+private val HANDLE = 20.dp
 
 /**
  * The Live Mesh screen (DESIGN.md 8.3): the mesh canvas full-bleed, the Scoreboard in a draggable sheet that
@@ -107,10 +111,15 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
     var filter by rememberSaveable { mutableStateOf(EventFilter.ALL) }
     val labels = meshLabels()
     val sheetMax = (LocalConfiguration.current.screenHeightDp * 0.7f).dp
+    // The tiles grow with font scale and the Simulated tag, so the peek follows their measured height: collapsed shows
+    // exactly the scoreboard, never a sliver of the timeline heading.
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    var scorePx by remember { mutableIntStateOf(0) }
+    val peek = if (scorePx == 0) PEEK else with(density) { scorePx.toDp() } + HANDLE + Space.s
 
     BottomSheetScaffold(
         scaffoldState = rememberBottomSheetScaffoldState(),
-        sheetPeekHeight = PEEK,
+        sheetPeekHeight = peek,
         sheetContainerColor = c.surface,
         sheetContentColor = c.ink,
         sheetShape = Shapes.sheet,
@@ -122,7 +131,8 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
         },
         sheetContent = {
             Column(Modifier.fillMaxWidth().heightIn(max = sheetMax).padding(horizontal = Space.screen)) {
-                Scoreboard(metrics, simulated = settings.simulationMode)
+                Scoreboard(metrics, simulated = settings.simulationMode,
+                    modifier = Modifier.onSizeChanged { scorePx = it.height })
                 Spacer(Modifier.height(Space.l))
                 Text(stringResource(R.string.timeline_title), style = Lifeline.type.title, color = c.ink,
                     modifier = Modifier.semantics { heading() })
@@ -151,6 +161,9 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
                 }
             } else {
             val searching = graph.connectedCount == 0
+            // The simulation buttons sit at the bottom of this area: keep the nodes above them.
+            var controlsPx by remember { mutableIntStateOf(0) }
+            val controlsDp = if (simulation == null) 0.dp else with(density) { controlsPx.toDp() } + Space.s
             MeshCanvas(
                 graph = graph,
                 activity = repository.linkActivity,
@@ -161,7 +174,7 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
                 isMine = { it in myIds },
                 labels = labels,
                 onNodeTap = { selected = it },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(bottom = controlsDp),
             )
 
             Column(Modifier.fillMaxWidth().padding(Space.screen), verticalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -177,7 +190,9 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
                     }
                 }
             }
-            simulation?.let { SimControls(it, Modifier.align(Alignment.BottomCenter).padding(bottom = Space.s)) }
+            simulation?.let {
+                SimControls(it, Modifier.align(Alignment.BottomCenter).padding(bottom = Space.s).onSizeChanged { sz -> controlsPx = sz.height })
+            }
 
             if (searching) {
                 Text(

@@ -54,7 +54,9 @@ fun StatTile(
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         if (value == null) {
-            Text(notMeasured, style = Lifeline.type.bodyStrong, color = c.inkMuted)
+            // A dash keeps the number line the same height as its neighbours; the words go with the label, where
+            // narrow tiles and large font scales can wrap them between words instead of mid-word.
+            Text("—", style = Lifeline.type.display, color = c.inkMuted, maxLines = 1)
         } else {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(value, style = Lifeline.type.display, color = c.ink, maxLines = 1)
@@ -70,6 +72,7 @@ fun StatTile(
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             Text(label, style = Lifeline.type.caption, color = c.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (value == null) Text(notMeasured, style = Lifeline.type.caption, color = c.inkMuted)
             if (simulated) {
                 Text(simulatedTag, style = Lifeline.type.caption, color = c.warn,
                     modifier = Modifier.border(1.dp, c.warn, Shapes.chip).padding(horizontal = 6.dp, vertical = 1.dp))

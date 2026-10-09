@@ -270,7 +270,16 @@ fun MeshCanvas(
                 color = if (n.ring == Ring.OUTER) c.inkMuted else c.ink)
             val nm = measurer.measure(name, nameStyle, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 constraints = androidx.compose.ui.unit.Constraints(maxWidth = (120.dp.toPx() * scale).toInt()))
-            drawText(nm, topLeft = Offset(p.x - nm.size.width / 2f, p.y + r + 8.dp.toPx()))
+            val nameAt = Offset(p.x - nm.size.width / 2f, p.y + r + 8.dp.toPx())
+            // Links are drawn first; a background pill keeps a line crossing the name from striking through it.
+            val pad = 4.dp.toPx()
+            drawRoundRect(
+                c.bg.copy(alpha = 0.9f),
+                topLeft = Offset(nameAt.x - pad, nameAt.y),
+                size = androidx.compose.ui.geometry.Size(nm.size.width + 2 * pad, nm.size.height.toFloat()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()),
+            )
+            drawText(nm, topLeft = nameAt)
         }
 
         // "N waiting" badge on my node.

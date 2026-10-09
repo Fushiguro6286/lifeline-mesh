@@ -136,6 +136,7 @@
     <string name="gate_q_needs">ನಿಮಗೆ ಯಾವ ಸಹಾಯ ಬೇಕು? ಕೆಳಗೆ ಒಂದನ್ನು ಆಯ್ಕೆಮಾಡಿ.</string>
     <string name="gate_q_people">ನಿಮ್ಮ ಜೊತೆ ಎಷ್ಟು ಜನ ಇದ್ದಾರೆ?</string>
     <string name="status_title">ನಿಮ್ಮ ಅಲರ್ಟ್</string>
+    <string name="status_your_alert">ನಿಮ್ಮ ಅಲರ್ಟ್: %s</string>
     <string name="status_send_another">ಇನ್ನೊಂದು ಅಲರ್ಟ್ ಕಳುಹಿಸಿ</string>
     <string name="status_eta">ಸುಮಾರು %d ನಿಮಿಷದಲ್ಲಿ</string>
     <string name="status_panic">SOS ಅಲರ್ಟ್</string>
