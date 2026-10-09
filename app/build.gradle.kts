@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.coroutines.play.services)
     implementation(libs.maplibre.android)
+    implementation(libs.litertlm.android)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)
