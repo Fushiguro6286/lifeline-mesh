@@ -210,11 +210,12 @@ class MeshSimulation(
             delay(8_000)
             var turn = 0
             while (isActive) {
-                when (turn % 4) {
+                when (turn % 5) {
                     0 -> sendAlert("Meena")
                     1 -> checkIn("Ravi")
-                    2 -> report("Meena")
-                    3 -> sendAlert("Meena", severity = 2, people = 2, needs = Need.WATER_FOOD.bit, note = "Need drinking water for 2")
+                    2 -> sendAlert("Ravi", severity = 3, people = 1, needs = Need.MEDICAL.bit or Need.AMBULANCE.bit, note = "Old man fell, head injury")
+                    3 -> report("Meena")
+                    4 -> sendAlert("Meena", severity = 2, people = 2, needs = Need.WATER_FOOD.bit, note = "Need drinking water for 2")
                 }
                 turn++
                 delay(40_000)

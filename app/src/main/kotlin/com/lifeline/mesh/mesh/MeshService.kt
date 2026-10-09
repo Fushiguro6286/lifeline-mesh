@@ -70,6 +70,8 @@ class MeshService : Service() {
         private const val TAG = "MeshService"
         private const val CHANNEL_MESH = "mesh"
         private const val CHANNEL_REPLIES = "replies"
+        private const val CHANNEL_AMBULANCE = "ambulance"
+        private const val NOTIF_AMBULANCE = 3
         private const val NOTIF_MESH = 1
         private const val NOTIF_REPLY = 2
         private const val ACTION_STOP = "com.lifeline.mesh.STOP_MESH"
@@ -372,6 +374,9 @@ class MeshService : Service() {
                 return
             }
             if (!Router.storable(packet)) return
+            if (packet is Packet.Alert && !mine && packet.needs and com.lifeline.mesh.packet.Need.AMBULANCE.bit != 0 &&
+                repo.settings.value?.role == com.lifeline.mesh.data.Role.AMBULANCE
+            ) scope.launch { ambulanceAlarm(packet, simulated) }
             val now = System.currentTimeMillis()
             write {
                 db.packets().insert(packet.toEntity(raw, fromPeer, linkHops, mine, now, simulated))
@@ -436,8 +441,44 @@ class MeshService : Service() {
 
     // ------------------------------------------------------------------ notifications
 
+    /**
+     * An ambulance request reached an Ambulance phone (Phase 10): alarm-sound notification, strong vibration and, if
+     * read-aloud is on, "Ambulance requested. 2 patients. 1.4 km away." Distance from my live fix when known.
+     */
+    private fun ambulanceAlarm(a: Packet.Alert, simulated: Boolean) {
+        val fix = repo.myFix.value
+        val far = if (fix != null && (a.latE6 != 0 || a.lonE6 != 0))
+            com.lifeline.mesh.ui.rescuer.distanceText(com.lifeline.mesh.triage.GeoMath.distanceM(fix.lat, fix.lon, a.latE6 / 1e6, a.lonE6 / 1e6))
+        else getString(R.string.notif_amb_far)
+        val text = getString(R.string.notif_amb_text, a.people, far) + if (a.note.isNotBlank()) " · ${a.note}" else ""
+        Haptics.strong(this)
+        val n = NotificationCompat.Builder(this, CHANNEL_AMBULANCE)
+            .setSmallIcon(R.drawable.ic_emergency)
+            .setContentTitle(getString(R.string.notif_amb_title) + if (simulated) " · ${getString(R.string.simulated_tag)}" else "")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(openApp())
+            .build()
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_AMBULANCE, n) }
+        val s = repo.settings.value
+        if (s?.readAloud == true) (application as LifelineApp).readAloud.speak(getString(R.string.notif_amb_say, a.people, far), s.language.tag)
+    }
+
     private fun createChannels() {
         val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_AMBULANCE, "Ambulance requests", NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 800, 300, 800, 300, 800)
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build(),
+                )
+            }
+        )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_MESH, getString(R.string.notif_channel_mesh), NotificationManager.IMPORTANCE_LOW)
         )

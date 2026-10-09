@@ -206,6 +206,9 @@ class SendViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Show the delivery status of an alert sent elsewhere on this screen (the ambulance request). */
+    fun showStatus(id: Long) { _statusFor.value = id }
+
     fun dismissStatus(id: Long) {
         _dismissed.update { it + id }
         _statusFor.value = null
@@ -251,6 +254,7 @@ fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewMode
     var typing by rememberSaveable { mutableStateOf(false) }
     var speaking by rememberSaveable { mutableStateOf(false) }
     var typedStart by rememberSaveable { mutableStateOf("") }
+    var ambulance by rememberSaveable { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.screen, vertical = Space.l),
@@ -274,6 +278,7 @@ fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewMode
             BigIconButton(R.drawable.ic_keyboard, stringResource(R.string.type), { typedStart = ""; typing = true }, Modifier.weight(1f))
         }
 
+        AmbulanceCard({ ambulance = true })
         CheckInCard(sentAt = checkInAt, onSafe = { vm.checkIn(settings.displayName) })
         FirstAidLink(onFirstAid)
         Spacer(Modifier.height(Space.l))
@@ -295,6 +300,7 @@ fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewMode
         )
     }
     review?.let { r -> ReviewSheet(r, settings, vm) }
+    if (ambulance) AmbulanceSheet(onDismiss = { ambulance = false }, onSent = vm::showStatus)
 }
 
 /** Typed input, always available (and the fallback when voice is not). */

@@ -193,7 +193,7 @@ private fun Section(text: String) =
 
 /** Big − and + with the number in Display style (DESIGN.md 8.2). */
 @Composable
-private fun PeopleStepper(people: Int, onChange: (Int) -> Unit) {
+internal fun PeopleStepper(people: Int, onChange: (Int) -> Unit) {
     val c = Lifeline.colors
     val less = stringResource(R.string.review_people_less)
     val more = stringResource(R.string.review_people_more)
@@ -246,7 +246,7 @@ private fun SeverityPicker(level: Int, onChange: (Int) -> Unit) {
 }
 
 @Composable
-private fun LocationRow(loc: SendViewModel.Loc) {
+internal fun LocationRow(loc: SendViewModel.Loc) {
     val c = Lifeline.colors
     val (text, tone) = when (loc) {
         SendViewModel.Loc.Finding -> stringResource(R.string.review_location_finding) to c.inkMuted

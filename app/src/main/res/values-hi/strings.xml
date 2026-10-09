@@ -200,4 +200,17 @@
     <string name="onb_phone">फ़ोन नंबर (वैकल्पिक)</string>
     <string name="onb_phone_hint">सिर्फ़ इंटरनेट मिलने पर बचाव सर्वर को भेजा जाता है। मेश पर कभी नहीं।</string>
     <string name="status_nearest">सबसे पास का बचाव दल: %1$s, %2$s दूर, लगभग %3$d मिनट (अनुमान)</string>
+
+    <!-- Phase 10: ambulance request -->
+    <string name="amb_card_title">किसी को एम्बुलेंस चाहिए</string>
+    <string name="amb_card_body">पास की एम्बुलेंस टीमों को तुरंत अनुरोध भेजें।</string>
+    <string name="amb_title">एम्बुलेंस बुलाएँ</string>
+    <string name="amb_people">मरीज़</string>
+    <string name="amb_note_hint">क्या हुआ? जैसे: पैर में चोट, खून बह रहा है</string>
+    <string name="amb_send">एम्बुलेंस टीमों को भेजें</string>
+    <string name="amb_sending">भेज रहे हैं…</string>
+    <string name="notif_amb_title">एम्बुलेंस का अनुरोध</string>
+    <string name="notif_amb_text">%1$d मरीज़ · %2$s</string>
+    <string name="notif_amb_far">दूरी पता नहीं</string>
+    <string name="notif_amb_say">एम्बुलेंस का अनुरोध। %1$d मरीज़। %2$s।</string>
 </resources>

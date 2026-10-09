@@ -102,6 +102,10 @@ fun FirstAidScreen() {
             Text(stringResource(R.string.firstaid_contact), style = Lifeline.type.bodyStrong, color = c.ink)
         }
 
+        var ambulance by rememberSaveable { mutableStateOf(false) }
+        AmbulanceCard({ ambulance = true })
+        if (ambulance) AmbulanceSheet(onDismiss = { ambulance = false })
+
         val list = entries
         when {
             list == null -> Unit
