@@ -91,4 +91,20 @@
     <string name="perm_battery_why">ಕೆಲವು ಫೋನ್‌ಗಳು ಹಿನ್ನೆಲೆಯಲ್ಲಿ ಆ್ಯಪ್‌ಗಳನ್ನು ನಿಲ್ಲಿಸುತ್ತವೆ. ಸ್ಕ್ರೀನ್ ಆಫ್ ಆಗಿದ್ದರೂ ಸಂದೇಶ ರವಾನೆ ಮುಂದುವರಿಯಲು ಇದನ್ನು ಅನುಮತಿಸಿ.</string>
     <string name="perm_battery_more">ಆ್ಯಪ್ ಬ್ಯಾಟರಿ ಸೆಟ್ಟಿಂಗ್‌ಗಳು</string>
     <string name="perm_battery_vivo">vivo ಮತ್ತು iQOO ಫೋನ್‌ಗಳಲ್ಲಿ ಆ್ಯಪ್ ಬ್ಯಾಟರಿ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ತೆರೆದು ಹಿನ್ನೆಲೆ ಚಟುವಟಿಕೆಗೆ ಅನುಮತಿಸಿ.</string>
+
+    <!-- Phase 2: mesh status and notifications -->
+    <string name="status_mesh_searching">ಫೋನ್‌ಗಳನ್ನು ಹುಡುಕುತ್ತಿದೆ</string>
+    <plurals name="status_mesh_nearby">
+        <item quantity="one">%d ಫೋನ್ ಹತ್ತಿರದಲ್ಲಿದೆ</item>
+        <item quantity="other">%d ಫೋನ್‌ಗಳು ಹತ್ತಿರದಲ್ಲಿವೆ</item>
+    </plurals>
+    <string name="notif_channel_mesh">ಅಲರ್ಟ್ ಮುಂದೆ ಕಳುಹಿಸುವುದು</string>
+    <string name="notif_channel_replies">ನಿಮ್ಮ ಅಲರ್ಟ್‌ಗಳಿಗೆ ಉತ್ತರಗಳು</string>
+    <string name="notif_mesh_searching">ಅಲರ್ಟ್ ಮುಂದೆ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ · ಹತ್ತಿರದ ಫೋನ್‌ಗಳನ್ನು ಹುಡುಕುತ್ತಿದೆ</string>
+    <plurals name="notif_mesh_relaying">
+        <item quantity="one">ಅಲರ್ಟ್ ಮುಂದೆ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ · %d ಫೋನ್ ಹತ್ತಿರದಲ್ಲಿದೆ</item>
+        <item quantity="other">ಅಲರ್ಟ್ ಮುಂದೆ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ · %d ಫೋನ್‌ಗಳು ಹತ್ತಿರದಲ್ಲಿವೆ</item>
+    </plurals>
+    <string name="notif_stop">ನಿಲ್ಲಿಸಿ</string>
+    <string name="notif_reply">ಸಹಾಯ ಬರುತ್ತಿದೆ, ಸುಮಾರು %d ನಿಮಿಷದಲ್ಲಿ</string>
 </resources>

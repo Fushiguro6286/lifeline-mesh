@@ -91,4 +91,20 @@
     <string name="perm_battery_why">कुछ फ़ोन बैकग्राउंड में ऐप बंद कर देते हैं। इसकी अनुमति दें ताकि स्क्रीन बंद होने पर भी संदेश आगे बढ़ते रहें।</string>
     <string name="perm_battery_more">ऐप बैटरी सेटिंग्स</string>
     <string name="perm_battery_vivo">vivo और iQOO फ़ोन पर ऐप बैटरी सेटिंग्स खोलकर बैकग्राउंड गतिविधि की अनुमति भी दें।</string>
+
+    <!-- Phase 2: mesh status and notifications -->
+    <string name="status_mesh_searching">फ़ोन खोज रहे हैं</string>
+    <plurals name="status_mesh_nearby">
+        <item quantity="one">%d फ़ोन पास में</item>
+        <item quantity="other">%d फ़ोन पास में</item>
+    </plurals>
+    <string name="notif_channel_mesh">अलर्ट आगे भेजना</string>
+    <string name="notif_channel_replies">आपके अलर्ट के जवाब</string>
+    <string name="notif_mesh_searching">अलर्ट आगे भेज रहे हैं · पास के फ़ोन खोज रहे हैं</string>
+    <plurals name="notif_mesh_relaying">
+        <item quantity="one">अलर्ट आगे भेज रहे हैं · %d फ़ोन पास में</item>
+        <item quantity="other">अलर्ट आगे भेज रहे हैं · %d फ़ोन पास में</item>
+    </plurals>
+    <string name="notif_stop">रोकें</string>
+    <string name="notif_reply">मदद आ रही है, लगभग %d मिनट में</string>
 </resources>

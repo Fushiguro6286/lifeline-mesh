@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.coroutines.android)
     implementation(libs.serialization.json)
+    implementation(libs.play.services.nearby)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)

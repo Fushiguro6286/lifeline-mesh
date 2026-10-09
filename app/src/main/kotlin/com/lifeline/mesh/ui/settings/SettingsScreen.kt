@@ -91,7 +91,7 @@ fun SettingsScreen(
         Label(stringResource(R.string.settings_language))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             listOf(Language.EN to R.string.lang_en, Language.HI to R.string.lang_hi, Language.KN to R.string.lang_kn).forEach { (lang, label) ->
-                OptionCard(stringResource(label), settings.language == lang, { repository.setLanguage(lang) }, Modifier.weight(1f))
+                OptionCard(stringResource(label), settings.language == lang, { repository.setLanguage(lang) }, Modifier.weight(1f), compact = true)
             }
         }
 

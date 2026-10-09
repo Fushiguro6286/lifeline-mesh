@@ -26,6 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -40,7 +44,11 @@ import com.lifeline.mesh.AppRepository
 import com.lifeline.mesh.R
 import com.lifeline.mesh.data.Role
 import com.lifeline.mesh.data.Settings
+import com.lifeline.mesh.mesh.LinkState
+import com.lifeline.mesh.mesh.MeshHealth
+import com.lifeline.mesh.mesh.MeshService
 import com.lifeline.mesh.ui.components.EmptyState
+import com.lifeline.mesh.ui.mesh.MeshDebugScreen
 import com.lifeline.mesh.ui.components.StatusItem
 import com.lifeline.mesh.ui.components.StatusStrip
 import com.lifeline.mesh.ui.gallery.ComponentGallery
@@ -83,14 +91,25 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
     val onTab = tabs.any { t -> destination?.hasRoute(t.routeClass) == true }
+    val running by repository.meshRunning.collectAsStateWithLifecycle()
+    val neighbors by repository.neighbors.collectAsStateWithLifecycle()
+    val connected = neighbors.count { it.state == LinkState.CONNECTED }
+
+    // Start relaying as soon as the mesh permissions are there (also after granting them in Settings).
+    val context = LocalContext.current
+    LifecycleResumeEffect(Unit) {
+        if (!repository.userStoppedMesh && !running && MeshHealth.missingPermissions(context).isEmpty()) {
+            MeshService.start(context)
+        }
+        onPauseOrDispose { }
+    }
 
     Scaffold(
         containerColor = c.bg,
         topBar = {
             Column(Modifier.background(c.bg).statusBarsPadding()) {
                 StatusStrip(
-                    // Phase 0: no mesh service and no model yet, so both say so honestly.
-                    mesh = StatusItem(stringResource(R.string.status_mesh_off), c.inkMuted),
+                    mesh = meshStatus(running, connected),
                     ai = StatusItem(stringResource(R.string.status_ai_rules), c.inkMuted),
                     simulated = settings.simulationMode,
                     trailing = if (onTab) {
@@ -108,7 +127,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
     ) { padding ->
         NavHost(nav, startDestination = start, modifier = Modifier.padding(padding)) {
             composable<SosRoute> { PhasePlaceholder(R.string.ph_sos_title, R.string.ph_sos_body, R.drawable.ic_sos) { nav.navigate(GalleryRoute) } }
-            composable<MeshRoute> { PhasePlaceholder(R.string.ph_mesh_title, R.string.ph_mesh_body, R.drawable.ic_hub) { nav.navigate(GalleryRoute) } }
+            composable<MeshRoute> { MeshDebugScreen(settings, repository, onPermissions = { nav.navigate(PermissionsRoute) }) }
             composable<RescueRoute> { PhasePlaceholder(R.string.ph_rescue_title, R.string.ph_rescue_body, R.drawable.ic_health_and_safety) { nav.navigate(GalleryRoute) } }
             composable<MapRoute> { PhasePlaceholder(R.string.ph_map_title, R.string.ph_map_body, R.drawable.ic_map) { nav.navigate(GalleryRoute) } }
             composable<SettingsRoute> {
@@ -124,6 +143,16 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
             }
             composable<GalleryRoute> { ComponentGallery() }
         }
+    }
+}
+
+@Composable
+private fun meshStatus(running: Boolean, connected: Int): StatusItem {
+    val c = Lifeline.colors
+    return when {
+        !running -> StatusItem(stringResource(R.string.status_mesh_off), c.inkMuted)
+        connected == 0 -> StatusItem(stringResource(R.string.status_mesh_searching), c.warn, searching = true)
+        else -> StatusItem(pluralStringResource(R.plurals.status_mesh_nearby, connected, connected), c.link)
     }
 }
 

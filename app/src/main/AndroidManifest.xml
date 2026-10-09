@@ -62,6 +62,13 @@
         <uses-native-library android:name="libvndksupport.so" android:required="false" />
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
 
+        <!-- Relays alerts with the screen off. connectedDevice: Bluetooth/Wi-Fi links to nearby phones.
+             Android 14+ prerequisite is met by CHANGE_WIFI_STATE above. -->
+        <service
+            android:name=".mesh.MeshService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

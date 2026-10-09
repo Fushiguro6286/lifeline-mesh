@@ -101,4 +101,20 @@
     <string name="perm_battery_more">App battery settings</string>
     <string name="perm_battery_vivo">On vivo and iQOO phones, also open App battery settings and allow background activity.</string>
 
+
+    <!-- Phase 2: mesh status and notifications -->
+    <string name="status_mesh_searching">Looking for phones</string>
+    <plurals name="status_mesh_nearby">
+        <item quantity="one">%d phone nearby</item>
+        <item quantity="other">%d phones nearby</item>
+    </plurals>
+    <string name="notif_channel_mesh">Relaying alerts</string>
+    <string name="notif_channel_replies">Replies to your alerts</string>
+    <string name="notif_mesh_searching">Relaying alerts · looking for nearby phones</string>
+    <plurals name="notif_mesh_relaying">
+        <item quantity="one">Relaying alerts · %d phone nearby</item>
+        <item quantity="other">Relaying alerts · %d phones nearby</item>
+    </plurals>
+    <string name="notif_stop">Stop</string>
+    <string name="notif_reply">Help is coming, ETA %d min</string>
 </resources>

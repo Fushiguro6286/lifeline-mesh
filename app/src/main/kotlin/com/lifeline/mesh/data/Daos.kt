@@ -25,6 +25,13 @@ interface PacketDao {
 
     @Query("UPDATE packets SET uploaded = 1 WHERE id IN (:ids)")
     suspend fun markUploaded(ids: List<Long>)
+
+    @Query("UPDATE packets SET handedTo = MAX(handedTo, :count) WHERE id = :id")
+    suspend fun setHandedTo(id: Long, count: Int)
+
+    /** Packets the router should remember after a restart (store and forward keeps 6 hours). */
+    @Query("SELECT * FROM packets WHERE receivedAt >= :since ORDER BY receivedAt")
+    suspend fun since(since: Long): List<PacketEntity>
 }
 
 @Dao
@@ -37,6 +44,19 @@ interface TopologyDao {
 
     @Query("DELETE FROM topology WHERE lastHeard < :before")
     suspend fun expire(before: Long)
+
+    @Query("DELETE FROM topology")
+    suspend fun clear()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(nodes: List<TopologyEntity>)
+
+    /** The router hands over its whole table each time; keep Room identical to it. */
+    @Transaction
+    suspend fun replaceAll(nodes: List<TopologyEntity>) {
+        clear()
+        insertAll(nodes)
+    }
 }
 
 @Dao

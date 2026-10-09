@@ -247,11 +247,6 @@ private fun ChecklistRow(
     }
 }
 
-/**
- * True when Nearby Connections can advertise and discover: the nearby-devices group on Android 12+,
- * and precise location on Android 12L and older (Nearby does not need location from API 33 on).
- */
-fun meshPermissionsGranted(context: Context): Boolean {
-    val needed = permissionGroups().filter { it.key == "nearby" || (it.key == "location" && Build.VERSION.SDK_INT <= 32) }
-    return needed.all { grp -> grp.decisive.all { context.granted(it) } }
-}
+/** True when Nearby Connections can advertise and discover (see [com.lifeline.mesh.mesh.MeshHealth.requiredPermissions]). */
+fun meshPermissionsGranted(context: Context): Boolean =
+    com.lifeline.mesh.mesh.MeshHealth.missingPermissions(context).isEmpty()
