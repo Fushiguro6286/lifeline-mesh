@@ -213,9 +213,10 @@ fun RolePicker(role: UserRole, onRole: (UserRole) -> Unit) {
             Modifier.selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(Space.s),
             verticalArrangement = Arrangement.spacedBy(Space.s),
+            maxItemsInEachRow = 2,
         ) {
             listOf(UserRole.FIREFIGHTER, UserRole.AMBULANCE, UserRole.POLICE, UserRole.NDRF, UserRole.RESCUER).forEach { t ->
-                OptionCard(stringResource(teamLabel(t.code)), role == t, { onRole(t) }, compact = true)
+                OptionCard(stringResource(teamLabel(t.code)), role == t, { onRole(t) }, Modifier.weight(1f), compact = true)
             }
         }
         Text(stringResource(R.string.onb_team_note), style = Lifeline.type.caption, color = Lifeline.colors.inkMuted)

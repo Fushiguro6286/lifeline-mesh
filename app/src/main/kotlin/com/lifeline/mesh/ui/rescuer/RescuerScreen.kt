@@ -3,6 +3,12 @@ package com.lifeline.mesh.ui.rescuer
 import androidx.compose.foundation.layout.fillMaxHeight
 import android.app.Application
 import android.content.Context
+import com.lifeline.mesh.ui.components.labelRes
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -126,6 +132,9 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
     val reports = remember(active) { active.filter { it.type == PacketType.REPORT.code }.sortedByDescending { it.receivedAt } }
     var open by rememberSaveable { mutableStateOf<Long?>(null) }
     var reporting by rememberSaveable { mutableStateOf(false) }
+    // Team view (Phase 10): a team starts on "For you" (its own needs); everyone else on All.
+    val focus = com.lifeline.mesh.triage.Teams.focus(settings.role.hello)
+    var filter by rememberSaveable(settings.role) { mutableStateOf(if (focus != null) AlertFilter.Focus else AlertFilter.All) }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = Space.screen),
@@ -150,7 +159,10 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
                 )
             }
         }
-        items(ranked, key = { it.alert.id }) { r ->
+        if (ranked.isNotEmpty()) item { NeedFilters(ranked, focus, filter) { filter = it } }
+        val shown = ranked.filter { filter.matches(it, focus) }
+        if (ranked.isNotEmpty() && shown.isEmpty()) item { Muted("No alerts of this kind. Tap All to see every alert.") }
+        items(shown, key = { it.alert.id }) { r ->
             AlertCard(r, now, onOpen = { open = r.alert.id }, language = settings.language.tag)
         }
 
@@ -260,3 +272,48 @@ fun ago(context: Context, now: Long, at: Long): String {
 }
 
 fun hex4(origin: Int) = "%08x".format(origin).takeLast(4)
+
+/** Which alerts the Rescue list shows (Phase 10 team views). Ranks stay global, so #n is the same everywhere. */
+sealed interface AlertFilter : java.io.Serializable {
+    fun matches(r: RankedAlert, focus: Set<Need>?): Boolean
+    data object All : AlertFilter { private fun readResolve(): Any = All; override fun matches(r: RankedAlert, focus: Set<Need>?) = true }
+    data object Focus : AlertFilter {
+        private fun readResolve(): Any = Focus
+        override fun matches(r: RankedAlert, focus: Set<Need>?) = focus == null || r.alert.needs.any { it in focus }
+    }
+    data class One(val need: Need) : AlertFilter { override fun matches(r: RankedAlert, focus: Set<Need>?) = need in r.alert.needs }
+}
+
+/** "For you (Ambulance) · 3", "All · 7", then one chip per need present, each with its count. */
+@Composable
+private fun NeedFilters(ranked: List<RankedAlert>, focus: Set<Need>?, current: AlertFilter, onPick: (AlertFilter) -> Unit) {
+    val c = Lifeline.colors
+    val repo = (LocalContext.current.applicationContext as LifelineApp).repository
+    val role = repo.settings.collectAsStateWithLifecycle().value?.role
+    val chips = buildList {
+        if (focus != null && role != null) {
+            add(AlertFilter.Focus to "For you (${stringResource(com.lifeline.mesh.ui.onboarding.teamLabel(role.code))}) · ${ranked.count { AlertFilter.Focus.matches(it, focus) }}")
+        }
+        add(AlertFilter.All to "All · ${ranked.size}")
+        (Need.entries).forEach { n ->
+            val k = ranked.count { n in it.alert.needs }
+            if (k > 0) add(AlertFilter.One(n) to "${stringResource(n.labelRes())} · $k")
+        }
+    }
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Space.s),
+    ) {
+        chips.forEach { (f, label) ->
+            val on = f == current
+            Box(
+                Modifier.heightIn(min = com.lifeline.mesh.ui.theme.Touch.standard)
+                    .background(if (on) c.surfaceRaised else c.surface, Shapes.chip)
+                    .border(if (on) 2.dp else 1.dp, if (on) c.link else c.outline, Shapes.chip)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Tab) { onPick(f) }
+                    .padding(horizontal = Space.m),
+                contentAlignment = Alignment.Center,
+            ) { Text(label, style = Lifeline.type.label, color = if (on) c.ink else c.inkMuted) }
+        }
+    }
+}
