@@ -34,6 +34,8 @@ data class PacketEntity(
     val ackEta: Int? = null,
     /** For my packets: how many different direct neighbors have received it ("Passed to N nearby phones"). */
     val handedTo: Int = 0,
+    /** Produced in simulation mode. Simulated rows are never shown alongside real ones. */
+    val simulated: Boolean = false,
 ) {
     // Room entities with arrays need structural equality on the id only.
     override fun equals(other: Any?) = other is PacketEntity && other.id == id
@@ -75,10 +77,11 @@ data class EventEntity(
     val kind: String,
     val text: String,
     val packetId: Long?,
+    val simulated: Boolean = false,
 )
 
 /** Room row for a packet. [linkHops] = links travelled to reach this phone (0 for my own). */
-fun Packet.toEntity(raw: ByteArray, fromEndpoint: String?, linkHops: Int, mine: Boolean, receivedAt: Long): PacketEntity {
+fun Packet.toEntity(raw: ByteArray, fromEndpoint: String?, linkHops: Int, mine: Boolean, receivedAt: Long, simulated: Boolean = false): PacketEntity {
     val base = PacketEntity(
         id = header.messageId,
         type = type.code,
@@ -90,6 +93,7 @@ fun Packet.toEntity(raw: ByteArray, fromEndpoint: String?, linkHops: Int, mine: 
         fromEndpoint = fromEndpoint,
         rawBytes = raw,
         isMine = mine,
+        simulated = simulated,
     )
     fun e6(v: Int) = v / 1_000_000.0
     return when (this) {

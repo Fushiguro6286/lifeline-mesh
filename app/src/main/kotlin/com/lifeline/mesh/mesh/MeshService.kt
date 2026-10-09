@@ -42,6 +42,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -51,10 +52,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Foreground service (type connectedDevice) that owns [NearbyTransport], [Router] and [HelloBeacon], so
- * relaying continues with the screen off or the app in the background (CLAUDE.md 4 and 11).
- * Holds a partial wake lock while running: without it the CPU sleeps with the screen off and the
- * 50–300 ms forwarding delays and 10 s Hellos stall.
+ * Foreground service (type connectedDevice) that owns the transport, [Router] and [HelloBeacon], so relaying
+ * continues with the screen off or the app in the background (CLAUDE.md 4 and 11).
+ *
+ * Runs one "session" at a time: real ([NearbyTransport]) or simulated ([MeshSimulation], CLAUDE.md 7.5).
+ * Switching simulation mode in Settings ends one session and starts the other. Everything a simulated session
+ * writes is flagged simulated, so it never mixes with real packets, events or metrics.
+ *
+ * Holds a partial wake lock while running: without it the CPU sleeps with the screen off and the 50–300 ms
+ * forwarding delays and 10 s Hellos stall.
  */
 class MeshService : Service() {
 
@@ -82,13 +88,21 @@ class MeshService : Service() {
     private val dbWrites = Dispatchers.IO.limitedParallelism(1)
 
     private lateinit var repo: AppRepository
-    private var transport: NearbyTransport? = null
-    private var router: Router? = null
-    private var beacon: HelloBeacon? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var restartJob: Job? = null
     @Volatile private var radioError: String? = null
     private var receiverRegistered = false
+    private var session: Session? = null
+
+    private class Session(
+        val job: Job,
+        val router: Router,
+        val beacon: HelloBeacon,
+        val nearby: NearbyTransport?,
+        val simulation: MeshSimulation?,
+    ) {
+        val simulated get() = simulation != null
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -96,13 +110,18 @@ class MeshService : Service() {
         super.onCreate()
         repo = (application as LifelineApp).repository
         createChannels()
-        if (!goForeground(0)) {
+        if (!goForeground(0, simulated = false)) {
             stopSelf()
             return
         }
         acquireWakeLock()
         registerRadioReceiver()
-        scope.launch { startMesh() }
+        scope.launch {
+            repo.settings.filterNotNull().map { it.simulationMode }.distinctUntilChanged().collect { simulated ->
+                stopSession()
+                startSession(simulated)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -116,73 +135,110 @@ class MeshService : Service() {
     }
 
     override fun onDestroy() {
-        beacon?.stop()
-        transport?.stop()
-        repo.detachRouter(router)
-        repo.meshRunning.value = false
-        repo.neighbors.value = emptyList()
+        stopSession()
         if (receiverRegistered) runCatching { unregisterReceiver(radioReceiver) }
         wakeLock?.let { if (it.isHeld) it.release() }
         scope.cancel()
         super.onDestroy()
     }
 
-    // ------------------------------------------------------------------ mesh
+    // ------------------------------------------------------------------ sessions
 
-    private suspend fun startMesh() {
+    private suspend fun startSession(simulated: Boolean) {
         val settings = repo.settings.filterNotNull().first()
         refreshHealth()
-        if (!repo.meshHealth.value.permissionsOk) {
+        if (!simulated && !repo.meshHealth.value.permissionsOk) {
             Log.w(TAG, "missing permissions ${repo.meshHealth.value.missingPermissions}; not starting")
             stopSelf()
             return
         }
-        val t = NearbyTransport(this, scope, endpointName(settings)) { err ->
+        val job = SupervisorJob(scope.coroutineContext[Job])
+        val s = CoroutineScope(scope.coroutineContext + job)
+        val wall = { System.currentTimeMillis() / 1000 }
+
+        val simulation = if (simulated) MeshSimulation(s, SystemClock::elapsedRealtime, wall) else null
+        val nearby = if (simulated) null else NearbyTransport(this, s, endpointName(settings)) { err ->
             radioError = err
             refreshHealth()
         }
-        val r = Router(
+        val transport: Transport = simulation?.meTransport ?: nearby!!
+        val persist = Persist(simulated)
+        val router = Router(
             me = settings.originId,
-            transport = t,
-            scope = scope,
-            listener = Persist(),
+            transport = transport,
+            scope = s,
+            listener = persist,
             clock = SystemClock::elapsedRealtime,
-            wallSeconds = { System.currentTimeMillis() / 1000 },
-            peerLabel = t::nameOf,
+            wallSeconds = wall,
+            peerLabel = { id -> simulation?.label(id) ?: nearby!!.nameOf(id) },
         )
-        applySettings(r, settings)
-        r.battery = batteryPercent()
+        persist.router = router
+        applySettings(router, settings)
+        router.battery = batteryPercent()
 
         val now = System.currentTimeMillis()
-        val stored = withContext(Dispatchers.IO) { repo.database.packets().since(now - KEEP_MS) }
-        r.restore(stored.map { StoredPacket(it.rawBytes, it.isMine, ageMs = now - it.receivedAt) })
+        if (simulated) {
+            // The virtual phones start with empty memories, so the simulation starts clean too; otherwise this phone
+            // would feed them old simulated packets and Kiran would answer old alerts again.
+            withContext(dbWrites) {
+                repo.database.packets().clearSimulated()
+                repo.database.events().clearSimulated()
+                repo.database.metrics().clearSimulated()
+            }
+        }
+        val stored = withContext(Dispatchers.IO) { repo.database.packets().since(now - KEEP_MS, simulated) }
+        router.restore(stored.map {
+            StoredPacket(it.rawBytes, it.isMine, ageMs = now - it.receivedAt, delivered = !it.isMine || it.handedTo > 0)
+        })
 
-        transport = t
-        router = r
-        repo.attachRouter(r)
-        t.start()
-        beacon = HelloBeacon(r).also { it.start(scope) }
+        val beacon = HelloBeacon(router)
+        session = Session(job, router, beacon, nearby, simulation)
+        repo.attachRouter(router, simulation)
+        repo.waiting.value = router.waitingCount()
+        // Router first, radios second: the router must be listening before the first link comes up.
+        nearby?.start()
+        simulation?.start()
+        beacon.start(s)
         repo.meshRunning.value = true
-        Log.i(TAG, "mesh started as ${endpointName(settings)}, restored ${stored.size} packets")
+        goForeground(0, simulated)
+        Log.i(TAG, "mesh started (${if (simulated) "simulated" else "nearby as ${endpointName(settings)}"}), restored ${stored.size} packets")
 
-        scope.launch {
-            t.neighbors.collect { map ->
+        val neighbors: StateFlow<Map<String, Neighbor>> = simulation?.neighbors ?: nearby!!.neighbors
+        s.launch {
+            neighbors.collect { map ->
                 val list = map.values.sortedBy { it.name }
                 repo.neighbors.value = list
-                updateNotification(list.count { it.state == LinkState.CONNECTED })
+                repo.neighborOrigins.value = router.neighborOrigins()
+                updateNotification(list.count { it.state == LinkState.CONNECTED }, simulated)
             }
         }
-        scope.launch {
+        s.launch {
             repo.settings.filterNotNull().map { it.displayName to it.role }.distinctUntilChanged().collect {
-                repo.settings.value?.let { s -> applySettings(r, s) }
+                repo.settings.value?.let { st -> applySettings(router, st) }
             }
         }
-        scope.launch {
+        s.launch {
             while (isActive) {
                 delay(60_000)
-                r.battery = batteryPercent()
+                router.battery = batteryPercent()
             }
         }
+    }
+
+    private fun stopSession() {
+        val old = session ?: return
+        session = null
+        old.beacon.stop()
+        old.nearby?.stop()
+        old.simulation?.stop()
+        repo.detachRouter(old.router)
+        old.job.cancel()
+        repo.meshRunning.value = false
+        repo.neighbors.value = emptyList()
+        repo.neighborOrigins.value = emptyMap()
+        repo.waiting.value = 0
+        scope.launch(dbWrites) { repo.database.topology().clear() }
+        lastConnected = -1
     }
 
     private fun applySettings(r: Router, s: Settings) {
@@ -213,7 +269,7 @@ class MeshService : Service() {
         restartJob?.cancel()
         restartJob = scope.launch {
             delay(1_500) // let the adapter settle
-            val t = transport ?: return@launch
+            val t = session?.nearby ?: return@launch
             Log.i(TAG, "restarting radios")
             t.stop()
             t.start()
@@ -245,8 +301,9 @@ class MeshService : Service() {
 
     // ------------------------------------------------------------------ persistence
 
-    /** Writes everything the router reports into Room, which the UI observes. */
-    private inner class Persist : RouterListener {
+    /** Writes everything the router reports into Room (flagged [simulated]), which the UI observes. */
+    private inner class Persist(private val simulated: Boolean) : RouterListener {
+        lateinit var router: Router
         private val db get() = repo.database
 
         private fun write(block: suspend () -> Unit) {
@@ -255,40 +312,38 @@ class MeshService : Service() {
             }
         }
 
+        private fun metric(name: String, value: Double, unit: String, notes: String, at: Long) =
+            MetricEntity(name = name, value = value, unit = unit, backend = null, simulated = simulated, timestamp = at, notes = notes)
+
         override fun onPacket(packet: Packet, raw: ByteArray, fromPeer: String?, linkHops: Int, mine: Boolean) {
             if (!Router.storable(packet)) return
             val now = System.currentTimeMillis()
             write {
-                db.packets().insert(packet.toEntity(raw, fromPeer, linkHops, mine, now))
+                db.packets().insert(packet.toEntity(raw, fromPeer, linkHops, mine, now, simulated))
                 if (packet is Packet.Ack) db.packets().markAcked(packet.refId, packet.etaMinutes)
                 val who = "%08x".format(packet.header.origin).takeLast(4)
-                db.metrics().insert(MetricEntity(name = "packet_bytes", value = raw.size.toDouble(), unit = "bytes", backend = null,
-                    simulated = false, timestamp = now, notes = "${Router.label(packet)} ${if (mine) "sent" else "from $who"}"))
-                if (!mine) {
-                    db.metrics().insert(MetricEntity(name = "hops", value = linkHops.toDouble(), unit = "hops", backend = null,
-                        simulated = false, timestamp = now, notes = "${Router.label(packet)} from $who"))
-                }
+                val what = Router.label(packet)
+                db.metrics().insert(metric("packet_bytes", raw.size.toDouble(), "bytes", "$what ${if (mine) "sent" else "from $who"}", now))
+                if (!mine) db.metrics().insert(metric("hops", linkHops.toDouble(), "hops", "$what from $who", now))
             }
         }
 
         override fun onEvent(event: MeshEvent) {
             val now = System.currentTimeMillis()
-            write { db.events().insert(EventEntity(time = now, kind = event.kind.name, text = event.text, packetId = event.packetId)) }
+            write { db.events().insert(EventEntity(time = now, kind = event.kind.name, text = event.text, packetId = event.packetId, simulated = simulated)) }
         }
 
         override fun onReply(ack: Packet.Ack) {
             scope.launch {
                 Haptics.strong(this@MeshService)
-                showReply(ack)
+                showReply(ack, simulated)
             }
         }
 
         override fun onRoundTrip(refId: Long, responder: Int, millis: Long, hops: Int) {
             val now = System.currentTimeMillis()
-            write {
-                db.metrics().insert(MetricEntity(name = "rtt_ms", value = millis.toDouble(), unit = "ms", backend = null,
-                    simulated = false, timestamp = now, notes = "to %s over %d hops".format("%08x".format(responder).takeLast(4), hops)))
-            }
+            val note = "to %s over %d hops".format("%08x".format(responder).takeLast(4), hops)
+            write { db.metrics().insert(metric("rtt_ms", millis.toDouble(), "ms", note, now)) }
         }
 
         override fun onHandedOff(messageId: Long, peers: Int) {
@@ -304,7 +359,18 @@ class MeshService : Service() {
                     neighbors = it.neighbors.joinToString(","), lastHeard = wallNow - (clockNow - it.lastHeard), hops = it.hops,
                 )
             }
+            repo.neighborOrigins.value = router.neighborOrigins()
             write { db.topology().replaceAll(rows) }
+        }
+
+        override fun onLinkActivity(peer: String, packet: Packet, outgoing: Boolean, linkHops: Int) {
+            val origins = router.neighborOrigins()
+            repo.neighborOrigins.value = origins
+            repo.linkActivity.tryEmit(LinkEvent(peer, origins[peer], outgoing, packet, linkHops, System.currentTimeMillis()))
+        }
+
+        override fun onWaiting(count: Int) {
+            repo.waiting.value = count
         }
     }
 
@@ -328,7 +394,10 @@ class MeshService : Service() {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    private fun meshNotification(connected: Int): Notification {
+    private fun title(simulated: Boolean) =
+        if (simulated) "${getString(R.string.app_name)} · ${getString(R.string.simulated_tag)}" else getString(R.string.app_name)
+
+    private fun meshNotification(connected: Int, simulated: Boolean): Notification {
         val text = if (connected == 0) getString(R.string.notif_mesh_searching)
         else resources.getQuantityString(R.plurals.notif_mesh_relaying, connected, connected)
         val stop = PendingIntent.getService(
@@ -336,7 +405,7 @@ class MeshService : Service() {
         )
         return NotificationCompat.Builder(this, CHANNEL_MESH)
             .setSmallIcon(R.drawable.ic_hub)
-            .setContentTitle(getString(R.string.app_name))
+            .setContentTitle(title(simulated))
             .setContentText(text)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -346,9 +415,9 @@ class MeshService : Service() {
             .build()
     }
 
-    private fun goForeground(connected: Int): Boolean = try {
+    private fun goForeground(connected: Int, simulated: Boolean): Boolean = try {
         val type = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
-        ServiceCompat.startForeground(this, NOTIF_MESH, meshNotification(connected), type)
+        ServiceCompat.startForeground(this, NOTIF_MESH, meshNotification(connected, simulated), type)
         true
     } catch (e: Exception) {
         // e.g. ForegroundServiceStartNotAllowedException when the system restarts us in the background.
@@ -358,17 +427,17 @@ class MeshService : Service() {
 
     private var lastConnected = -1
 
-    private fun updateNotification(connected: Int) {
+    private fun updateNotification(connected: Int, simulated: Boolean) {
         if (connected == lastConnected) return
         lastConnected = connected
-        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_MESH, meshNotification(connected)) }
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_MESH, meshNotification(connected, simulated)) }
     }
 
-    private fun showReply(ack: Packet.Ack) {
+    private fun showReply(ack: Packet.Ack, simulated: Boolean) {
         val text = getString(R.string.notif_reply, ack.etaMinutes) + if (ack.note.isNotBlank()) " · ${ack.note}" else ""
         val n = NotificationCompat.Builder(this, CHANNEL_REPLIES)
             .setSmallIcon(R.drawable.ic_health_and_safety)
-            .setContentTitle(getString(R.string.status_help_coming))
+            .setContentTitle(if (simulated) "${getString(R.string.status_help_coming)} · ${getString(R.string.simulated_tag)}" else getString(R.string.status_help_coming))
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)

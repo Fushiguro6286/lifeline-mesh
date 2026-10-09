@@ -18,6 +18,19 @@ data class MeshEvent(val kind: Kind, val text: String, val packetId: Long? = nul
     }
 }
 
+/** A packet crossing one of this phone's links, for the Live Mesh animation. */
+data class LinkEvent(
+    /** Neighbor endpoint ID, and its origin once known from its own packets. */
+    val peer: String,
+    val peerOrigin: Int?,
+    /** True: this phone handed it to the neighbor. False: this phone received it. */
+    val outgoing: Boolean,
+    val packet: Packet,
+    /** Links travelled when it reached the receiving phone. */
+    val linkHops: Int,
+    val atMs: Long,
+)
+
 /**
  * What the router reports. Called outside the router's lock, on whatever thread delivered the packet;
  * implementations must not block.
@@ -33,10 +46,18 @@ interface RouterListener {
     /** One of my packets has now been received by [peers] different direct neighbors. */
     fun onHandedOff(messageId: Long, peers: Int) {}
     fun onTopology(nodes: List<TopologyNode>) {}
+    /**
+     * A packet crossed a link: [outgoing] = a neighbor confirmed receiving it from this phone; otherwise this phone
+     * received it (first copy only). [linkHops] = links travelled when it arrived at the receiving phone.
+     * Hellos and summaries are not reported.
+     */
+    fun onLinkActivity(peer: String, packet: Packet, outgoing: Boolean, linkHops: Int) {}
+    /** My stored packets that no neighbor has received yet (the "N waiting" badge). */
+    fun onWaiting(count: Int) {}
 }
 
 /** A packet from Room, for rebuilding router state after the app restarts. */
-class StoredPacket(val raw: ByteArray, val mine: Boolean, val ageMs: Long)
+class StoredPacket(val raw: ByteArray, val mine: Boolean, val ageMs: Long, val delivered: Boolean = true)
 
 /**
  * Controlled flooding (CLAUDE.md 7.2) with store and forward (7.3) and Hello topology (7.4).
@@ -88,6 +109,9 @@ class Router(
     private val pendingPings = HashMap<Long, Long>()
     private val rttDone = HashSet<String>()
     private val handedTo = HashMap<Long, MutableSet<String>>()
+    /** Packets at least one neighbor has received, for the waiting count. */
+    private val delivered = HashSet<Long>()
+    private var lastWaiting = -1
     private val queue = ArrayList<Outgoing>()
     private var seq = 0L
 
@@ -164,7 +188,8 @@ class Router(
             }
         }
         // My own packets go out at once; the random delay is for forwarding only.
-        targets.forEach { peer -> fx.add { transport.send(peer, raw) { ok -> onSendResult(id, peer, ok, mine = true) } } }
+        targets.forEach { peer -> fx.add { transport.send(peer, raw) { ok -> onSendResult(raw, id, peer, ok, mine = true) } } }
+        checkWaitingLocked(now, fx)
         return raw
     }
 
@@ -241,6 +266,7 @@ class Router(
             if (directIds.size > 2_000) directIds.remove(directIds.first())
         }
         fx.add { listener.onPacket(p, bytes, peer, linkHops, mine = false) }
+        if (p !is Packet.Hello) fx.add { listener.onLinkActivity(peer, p, outgoing = false, linkHops = linkHops) }
 
         when (p) {
             is Packet.Hello -> {
@@ -291,7 +317,10 @@ class Router(
         if (storable(p)) outbox.add(id, fwd, prio, now)
         val targets = peers.filter { it != peer }
         targets.forEach { enqueue(it, fwd, prio, id, mine = false, now, fx) }
-        if (p !is Packet.Hello) {
+        checkWaitingLocked(now, fx)
+        // A reply to my own packet has arrived where it was going; "holding" it would only confuse.
+        val forMe = p is Packet.Ack && p.refId in myIds
+        if (p !is Packet.Hello && !(forMe && targets.isEmpty())) {
             val what = ownerLabel(p)
             fx.add {
                 listener.onEvent(
@@ -323,31 +352,61 @@ class Router(
             queue.removeAll(due.toSet())
             due.filter { it.peer in peers }.sortedWith(compareBy<Outgoing> { it.priority }.thenBy { it.seq })
         }
-        ready.forEach { o -> transport.send(o.peer, o.bytes) { ok -> onSendResult(o.id, o.peer, ok, o.mine) } }
+        ready.forEach { o -> transport.send(o.peer, o.bytes) { ok -> onSendResult(o.bytes, o.id, o.peer, ok, o.mine) } }
     }
 
-    private fun onSendResult(id: Long, peer: String, ok: Boolean, mine: Boolean) {
-        if (!ok || !mine) return
-        val count = synchronized(lock) {
-            if (id !in myIds) return
-            val set = handedTo.getOrPut(id) { HashSet() }
-            if (!set.add(peer)) return
-            set.size
+    private fun onSendResult(bytes: ByteArray, id: Long, peer: String, ok: Boolean, mine: Boolean) {
+        if (!ok) return
+        val fx = Effects()
+        synchronized(lock) {
+            if (delivered.add(id)) checkWaitingLocked(clock(), fx)
+            if (mine && id in myIds) {
+                val set = handedTo.getOrPut(id) { HashSet() }
+                if (set.add(peer)) {
+                    val count = set.size
+                    fx.add { listener.onHandedOff(id, count) }
+                }
+            }
         }
-        listener.onHandedOff(id, count)
+        val packet = (PacketCodec.decode(bytes) as? DecodeResult.Ok)?.packet
+        if (packet != null && packet !is Packet.Hello && packet !is Packet.Summary) {
+            fx.add { listener.onLinkActivity(peer, packet, outgoing = true, linkHops = packet.header.hops + 1) }
+        }
+        fx.run()
     }
+
+    /**
+     * My own stored packets that no neighbor has received yet. Other phones' packets a relay holds are not counted:
+     * at the end of a line they would wait for nobody, and the badge would look like my alert was stuck.
+     */
+    private fun waitingLocked(now: Long) = outbox.live(now).count { it.id in myIds && it.id !in delivered }
+
+    private fun checkWaitingLocked(now: Long, fx: Effects) {
+        val n = waitingLocked(now)
+        if (n != lastWaiting) {
+            lastWaiting = n
+            fx.add { listener.onWaiting(n) }
+        }
+    }
+
+    fun waitingCount(): Int = synchronized(lock) { waitingLocked(clock()) }
 
     // ------------------------------------------------------------------ housekeeping
 
     /** Expire silent phones, old pings and old stored packets. Called by [HelloBeacon] every 10 s. */
     fun tick() {
-        val snap = synchronized(lock) {
+        val fx = Effects()
+        synchronized(lock) {
             val now = clock()
             outbox.prune(now)
             pendingPings.values.removeAll { now - it > 5 * 60_000L }
-            if (topology.expire(now)) topology.snapshot() else null
+            checkWaitingLocked(now, fx)
+            if (topology.expire(now)) {
+                val snap = topology.snapshot()
+                fx.add { listener.onTopology(snap) }
+            }
         }
-        if (snap != null) listener.onTopology(snap)
+        fx.run()
     }
 
     /** Rebuilds seen IDs, my IDs and the outbox from Room after a restart. */
@@ -360,6 +419,7 @@ class Router(
             val at = now - s.ageMs
             seen.add(id, now, seenAt = at)
             if (s.mine) myIds.add(id)
+            if (s.delivered) delivered.add(id)
             if (!storable(p)) continue
             val bytes = when {
                 s.mine -> s.raw

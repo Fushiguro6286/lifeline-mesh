@@ -2,16 +2,37 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 2, waiting for real-phone tests)
+## Current state (Phase 3 built; Phase 2 and 3 phone tests still open)
 
-- Phase 0: app, theme, components, onboarding, navigation. Phase 1: packet codec (31 tests).
-- Phase 2: mesh core. Router, SeenCache, Outbox, PeerSync, RateLimiter, HelloBeacon, VirtualMesh: 30 simulator/unit tests pass.
-  NearbyTransport (P2P_CLUSTER), MeshService (connectedDevice foreground service, partial wake lock), Room persistence,
-  health checks, and a debug panel on the Mesh tab.
-- Verified on the iQOO 15 alone (9 Oct): service runs as a foreground service, advertises and discovers, a test alert with
-  no neighbors shows "Waiting for a nearby phone", queued alerts survive force-stop and are restored, alerts created while
-  the mesh is stopped are saved and picked up on restart.
-- NOT yet verified: anything with two or more phones (A to C via B, B off/on, B screen off).
+- Phase 0: app, theme, components, onboarding, navigation. Phase 1: packet codec.
+- Phase 2: mesh core (router, store and forward, hellos), Nearby transport, foreground service, debug panel
+  (now under Settings → Developer → Mesh debug panel).
+- Phase 3: Live Mesh screen on the Mesh tab. Topology from Hellos (me centre, direct neighbors inner orbit, phones
+  further away outward), packet dots along links colored by type, arrival rings and "Alert · hop 2" labels,
+  "N waiting" badge for my undelivered packets, radar sweep when nobody is linked, tap a node for details,
+  draggable sheet with Scoreboard (hops, round trip, bytes; "Not measured" when empty) and event timeline with
+  All / Alerts / Network filters. Simulation mode and demo mode in Settings.
+- 74 unit tests pass (codec, router/simulator, graph and layout).
+- Verified on the iQOO 15 in simulation mode (9 Oct): red banner on every screen, an alert from Meena visibly hops
+  Meena → Ravi → You with labels at each hop, Kiran's reply crosses back, Simulated tags on every number,
+  node sheet, timeline. NOT yet verified with real phones.
+
+## Simulation mode (rehearsal and stage fallback)
+
+Settings → Mesh → Simulation mode. This phone plus 3 virtual phones in a line, all on the real router:
+You — Ravi (volunteer) — Meena (needs help, battery 18%) — Kiran (rescuer). Meena sends an alert 8 s after start and
+then every 40 s something new happens (check-in, report, another alert); Kiran replies "help is coming" to every alert
+4 s after it arrives and echoes pings. Buttons under the mesh: switch Ravi / Meena / Kiran off and on (store and
+forward), "Alert from Meena". Each simulation session starts clean. Simulated packets, events and metrics are stored
+apart from real ones and never shown together; every number carries a Simulated tag.
+
+Phase 3 check in simulation: switch "Ravi off", tap "Alert from Meena" (nothing reaches you; Meena holds it), switch
+"Ravi on" (it arrives through Ravi, events show "Sent N stored packets").
+
+## Phase 3 phone check (needs 3 phones)
+
+Same placement as test 2 below, Mesh tab open on C. Someone who has not seen the app should be able to say, unprompted,
+"the alert went from A to B to C" while watching C's screen. Turn on Demo mode for a projector (bigger, screen stays on).
 
 ## Phase 2 phone tests (needs 3 phones)
 
@@ -53,6 +74,8 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
 - iQOO 15 (measured 9 Oct): without the battery-optimization exemption the OS freezes the app ~10 s after the screen turns
   off, even with the foreground service running (`isFrozen=true`, wake lock disabled). With the exemption it stays a
   foreground service and keeps its wake lock. The Mesh tab shows a warning with a fix button when the exemption is missing.
+- A packet arriving over several hops is animated along the path it most likely took (shortest known path with the
+  same hop count, from Hellos). The hop count is measured; the path drawn upstream of my neighbor is inferred.
 - Endpoint name is fixed when the mesh starts; after changing your name, Stop and Start the mesh.
 - Links are not authenticated (auto-accept). Fine for an open emergency mesh; anyone with the app can join.
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -62,9 +63,13 @@ fun StatTile(
                 }
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Text(label, style = Lifeline.type.caption, color = c.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false))
+        // FlowRow: in narrow tiles the Simulated tag drops below the label instead of squeezing it.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(label, style = Lifeline.type.caption, color = c.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (simulated) {
                 Text(simulatedTag, style = Lifeline.type.caption, color = c.warn,
                     modifier = Modifier.border(1.dp, c.warn, Shapes.chip).padding(horizontal = 6.dp, vertical = 1.dp))

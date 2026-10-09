@@ -16,7 +16,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,6 +61,7 @@ fun SettingsScreen(
     repository: AppRepository,
     onPermissions: () -> Unit,
     onGallery: () -> Unit,
+    onDebug: () -> Unit,
 ) {
     val c = Lifeline.colors
     val focus = LocalFocusManager.current
@@ -106,11 +110,16 @@ fun SettingsScreen(
 
         Section(stringResource(R.string.settings_mesh))
         LinkRow(R.drawable.ic_verified_user, stringResource(R.string.settings_permissions), stringResource(R.string.settings_permissions_body), onPermissions)
+        SwitchRow(R.drawable.ic_widgets, stringResource(R.string.settings_simulation), stringResource(R.string.settings_simulation_body),
+            settings.simulationMode, repository::setSimulationMode)
+        SwitchRow(R.drawable.ic_speed, stringResource(R.string.settings_demo), stringResource(R.string.settings_demo_body),
+            settings.demoMode, repository::setDemoMode)
 
         Section(stringResource(R.string.settings_privacy))
         Text(stringResource(R.string.privacy_body), style = Lifeline.type.body, color = c.ink)
 
         Section(stringResource(R.string.settings_developer))
+        LinkRow(R.drawable.ic_hub, stringResource(R.string.settings_debug), stringResource(R.string.settings_debug_body), onDebug)
         LinkRow(R.drawable.ic_widgets, stringResource(R.string.settings_gallery), stringResource(R.string.settings_gallery_body), onGallery)
 
         Text(
@@ -128,6 +137,35 @@ private fun Section(text: String) = Text(
 
 @Composable
 private fun Label(text: String) = Text(text, style = Lifeline.type.label, color = Lifeline.colors.inkMuted)
+
+@Composable
+private fun SwitchRow(@DrawableRes icon: Int, title: String, body: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val c = Lifeline.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = Touch.standard)
+            .clip(Shapes.card)
+            .background(c.surface)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(Space.l),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Icon(painterResource(icon), null, tint = c.link, modifier = Modifier.size(24.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = Lifeline.type.bodyStrong, color = c.ink)
+            Text(body, style = Lifeline.type.caption, color = c.inkMuted)
+        }
+        Switch(
+            checked = checked, onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = c.onFill, checkedTrackColor = c.link,
+                uncheckedThumbColor = c.inkMuted, uncheckedTrackColor = c.surfaceRaised, uncheckedBorderColor = c.outline,
+            ),
+        )
+    }
+}
 
 @Composable
 private fun LinkRow(@DrawableRes icon: Int, title: String, body: String, onClick: () -> Unit) {

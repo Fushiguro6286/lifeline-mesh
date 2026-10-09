@@ -14,8 +14,8 @@ interface PacketDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(packet: PacketEntity): Long
 
-    @Query("SELECT * FROM packets ORDER BY receivedAt DESC")
-    fun observeAll(): Flow<List<PacketEntity>>
+    @Query("SELECT * FROM packets WHERE simulated = :simulated ORDER BY receivedAt DESC")
+    fun observe(simulated: Boolean): Flow<List<PacketEntity>>
 
     @Query("SELECT * FROM packets WHERE id = :id")
     suspend fun get(id: Long): PacketEntity?
@@ -26,12 +26,15 @@ interface PacketDao {
     @Query("UPDATE packets SET uploaded = 1 WHERE id IN (:ids)")
     suspend fun markUploaded(ids: List<Long>)
 
+    @Query("DELETE FROM packets WHERE simulated = 1")
+    suspend fun clearSimulated()
+
     @Query("UPDATE packets SET handedTo = MAX(handedTo, :count) WHERE id = :id")
     suspend fun setHandedTo(id: Long, count: Int)
 
     /** Packets the router should remember after a restart (store and forward keeps 6 hours). */
-    @Query("SELECT * FROM packets WHERE receivedAt >= :since ORDER BY receivedAt")
-    suspend fun since(since: Long): List<PacketEntity>
+    @Query("SELECT * FROM packets WHERE receivedAt >= :since AND simulated = :simulated ORDER BY receivedAt")
+    suspend fun since(since: Long, simulated: Boolean): List<PacketEntity>
 }
 
 @Dao
@@ -64,8 +67,11 @@ interface MetricDao {
     @Insert
     suspend fun insert(metric: MetricEntity)
 
-    @Query("SELECT * FROM metrics ORDER BY timestamp DESC")
-    fun observeAll(): Flow<List<MetricEntity>>
+    @Query("DELETE FROM metrics WHERE simulated = 1")
+    suspend fun clearSimulated()
+
+    @Query("SELECT * FROM metrics WHERE simulated = :simulated ORDER BY timestamp DESC")
+    fun observe(simulated: Boolean): Flow<List<MetricEntity>>
 
     @Query("SELECT * FROM metrics ORDER BY timestamp")
     suspend fun all(): List<MetricEntity>
@@ -85,8 +91,11 @@ interface EventDao {
         trim(CAP)
     }
 
-    @Query("SELECT * FROM events ORDER BY time DESC, rowId DESC")
-    fun observeAll(): Flow<List<EventEntity>>
+    @Query("DELETE FROM events WHERE simulated = 1")
+    suspend fun clearSimulated()
+
+    @Query("SELECT * FROM events WHERE simulated = :simulated ORDER BY time DESC, rowId DESC")
+    fun observe(simulated: Boolean): Flow<List<EventEntity>>
 
     companion object {
         const val CAP = 500

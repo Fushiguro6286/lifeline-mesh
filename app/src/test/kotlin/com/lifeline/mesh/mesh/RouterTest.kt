@@ -368,4 +368,35 @@ class RouterTest {
         sim.advance(1_000)
         assertEquals(mapOf("A" to a.origin, "C" to c.origin), b.router.neighborOrigins())
     }
+
+    // ------------------------------------------------------------------ live mesh view feeds
+
+    @Test fun linkActivityTracesTheAlertAcrossEachLink() = runTest {
+        val sim = MeshSimulator(this)
+        val (a, b, c) = sim.line("A", "B", "C")
+        sim.advance(1_000)
+        a.activity.clear(); b.activity.clear(); c.activity.clear()
+
+        a.sendAlert()
+        sim.advance(2_000)
+
+        val alertOnly = { n: MeshSimulator.Node -> n.activity.filter { it.label == "alert" } }
+        assertEquals(listOf(MeshSimulator.Activity("B", "alert", true, 1)), alertOnly(a))
+        assertEquals(listOf(MeshSimulator.Activity("A", "alert", false, 1), MeshSimulator.Activity("C", "alert", true, 2)), alertOnly(b))
+        assertEquals(listOf(MeshSimulator.Activity("B", "alert", false, 2)), alertOnly(c))
+    }
+
+    @Test fun waitingCountsStoredPacketsNobodyHasYet() = runTest {
+        val sim = MeshSimulator(this)
+        val a = sim.node("A")
+        sim.node("B")
+        a.sendAlert(); a.sendAlert()
+        sim.advance(100)
+        assertEquals(2, a.waiting)
+        assertEquals(2, a.router.waitingCount())
+
+        sim.mesh.link("A", "B")
+        sim.advance(2_000)
+        assertEquals(0, a.waiting)
+    }
 }

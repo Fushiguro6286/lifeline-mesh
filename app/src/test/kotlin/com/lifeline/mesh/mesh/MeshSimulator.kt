@@ -29,6 +29,8 @@ class MeshSimulator(
         val roundTrips = mutableListOf<RoundTrip>()
         val handedOff = mutableMapOf<Long, Int>()
         var topology: List<TopologyNode> = emptyList()
+        val activity = mutableListOf<Activity>()
+        var waiting = 0
 
         val router = Router(
             me = origin,
@@ -52,6 +54,10 @@ class MeshSimulator(
         }
         override fun onHandedOff(messageId: Long, peers: Int) { handedOff[messageId] = peers }
         override fun onTopology(nodes: List<TopologyNode>) { topology = nodes }
+        override fun onLinkActivity(peer: String, packet: Packet, outgoing: Boolean, linkHops: Int) {
+            activity.add(Activity(peer, Router.label(packet), outgoing, linkHops))
+        }
+        override fun onWaiting(count: Int) { waiting = count }
 
         fun received(type: Class<out Packet>) = packets.filter { type.isInstance(it.packet) }
         fun alerts() = packets.mapNotNull { r -> (r.packet as? Packet.Alert)?.let { r } }
@@ -65,6 +71,7 @@ class MeshSimulator(
     }
 
     data class Received(val packet: Packet, val from: String?, val linkHops: Int, val bytes: Int)
+    data class Activity(val peer: String, val label: String, val outgoing: Boolean, val linkHops: Int)
     data class RoundTrip(val refId: Long, val responder: Int, val millis: Long, val hops: Int)
 
     fun node(name: String, role: HelloRole = HelloRole.NEEDS_HELP): Node {

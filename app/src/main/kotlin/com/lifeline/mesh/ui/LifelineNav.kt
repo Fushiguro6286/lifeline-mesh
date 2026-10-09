@@ -48,6 +48,7 @@ import com.lifeline.mesh.mesh.LinkState
 import com.lifeline.mesh.mesh.MeshHealth
 import com.lifeline.mesh.mesh.MeshService
 import com.lifeline.mesh.ui.components.EmptyState
+import com.lifeline.mesh.ui.mesh.LiveMeshScreen
 import com.lifeline.mesh.ui.mesh.MeshDebugScreen
 import com.lifeline.mesh.ui.components.StatusItem
 import com.lifeline.mesh.ui.components.StatusStrip
@@ -66,6 +67,7 @@ import kotlin.reflect.KClass
 @Serializable object SettingsRoute
 @Serializable object PermissionsRoute
 @Serializable object GalleryRoute
+@Serializable object DebugRoute
 
 private data class Tab(
     val route: Any,
@@ -97,8 +99,9 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
 
     // Start relaying as soon as the mesh permissions are there (also after granting them in Settings).
     val context = LocalContext.current
-    LifecycleResumeEffect(Unit) {
-        if (!repository.userStoppedMesh && !running && MeshHealth.missingPermissions(context).isEmpty()) {
+    LifecycleResumeEffect(settings.simulationMode) {
+        val canRun = settings.simulationMode || MeshHealth.missingPermissions(context).isEmpty()
+        if (!repository.userStoppedMesh && !running && canRun) {
             MeshService.start(context)
         }
         onPauseOrDispose { }
@@ -127,7 +130,10 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
     ) { padding ->
         NavHost(nav, startDestination = start, modifier = Modifier.padding(padding)) {
             composable<SosRoute> { PhasePlaceholder(R.string.ph_sos_title, R.string.ph_sos_body, R.drawable.ic_sos) { nav.navigate(GalleryRoute) } }
-            composable<MeshRoute> { MeshDebugScreen(settings, repository, onPermissions = { nav.navigate(PermissionsRoute) }) }
+            composable<MeshRoute> {
+                LiveMeshScreen(settings, repository, onDebug = { nav.navigate(DebugRoute) }, onPermissions = { nav.navigate(PermissionsRoute) })
+            }
+            composable<DebugRoute> { MeshDebugScreen(settings, repository, onPermissions = { nav.navigate(PermissionsRoute) }) }
             composable<RescueRoute> { PhasePlaceholder(R.string.ph_rescue_title, R.string.ph_rescue_body, R.drawable.ic_health_and_safety) { nav.navigate(GalleryRoute) } }
             composable<MapRoute> { PhasePlaceholder(R.string.ph_map_title, R.string.ph_map_body, R.drawable.ic_map) { nav.navigate(GalleryRoute) } }
             composable<SettingsRoute> {
@@ -136,6 +142,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
                     repository = repository,
                     onPermissions = { nav.navigate(PermissionsRoute) },
                     onGallery = { nav.navigate(GalleryRoute) },
+                    onDebug = { nav.navigate(DebugRoute) },
                 )
             }
             composable<PermissionsRoute> {
@@ -163,6 +170,7 @@ private fun SubScreenTitle(destination: androidx.navigation.NavDestination?, onB
         destination?.hasRoute(SettingsRoute::class) == true -> stringResource(R.string.nav_settings)
         destination?.hasRoute(PermissionsRoute::class) == true -> stringResource(R.string.settings_permissions)
         destination?.hasRoute(GalleryRoute::class) == true -> stringResource(R.string.settings_gallery)
+        destination?.hasRoute(DebugRoute::class) == true -> stringResource(R.string.settings_debug)
         else -> ""
     }
     Row(Modifier.heightIn(min = 56.dp).padding(end = Space.screen), verticalAlignment = Alignment.CenterVertically) {

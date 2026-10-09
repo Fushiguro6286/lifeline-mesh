@@ -11,7 +11,9 @@ import com.lifeline.mesh.data.SettingsStore
 import com.lifeline.mesh.data.ThemeMode
 import com.lifeline.mesh.data.TopologyEntity
 import com.lifeline.mesh.data.toEntity
+import com.lifeline.mesh.mesh.LinkEvent
 import com.lifeline.mesh.mesh.MeshEvent
+import com.lifeline.mesh.mesh.MeshSimulation
 import com.lifeline.mesh.mesh.MeshHealth
 import com.lifeline.mesh.mesh.Neighbor
 import com.lifeline.mesh.mesh.Router
@@ -21,7 +23,13 @@ import com.lifeline.mesh.packet.PacketCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -47,26 +55,55 @@ class AppRepository(
     fun setLanguage(language: Language) = scope.launch { settingsStore.setLanguage(language) }
     fun setTheme(mode: ThemeMode) = scope.launch { settingsStore.setTheme(mode) }
     fun setOnboardingDone() = scope.launch { settingsStore.setOnboardingDone(true) }
+    fun setSimulationMode(on: Boolean) = scope.launch { settingsStore.setSimulationMode(on) }
+    fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
 
     // ------------------------------------------------------------------ Room
 
-    val packets: StateFlow<List<PacketEntity>> = database.packets().observeAll().stateIn(scope, SharingStarted.Eagerly, emptyList())
-    val events: StateFlow<List<EventEntity>> = database.events().observeAll().stateIn(scope, SharingStarted.Eagerly, emptyList())
+    /** Simulation mode decides which rows the UI sees: real and simulated data are never shown together. */
+    private val simulated = settings.map { it?.simulationMode ?: false }.distinctUntilChanged()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val packets: StateFlow<List<PacketEntity>> =
+        simulated.flatMapLatest { database.packets().observe(it) }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val events: StateFlow<List<EventEntity>> =
+        simulated.flatMapLatest { database.events().observe(it) }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val metrics: StateFlow<List<MetricEntity>> =
+        simulated.flatMapLatest { database.metrics().observe(it) }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+    /** Holds the current session only (cleared when the mesh stops or the mode changes). */
     val topology: StateFlow<List<TopologyEntity>> = database.topology().observeAll().stateIn(scope, SharingStarted.Eagerly, emptyList())
-    val metrics: StateFlow<List<MetricEntity>> = database.metrics().observeAll().stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     // ------------------------------------------------------------------ live mesh state (written by MeshService)
 
     val meshRunning = MutableStateFlow(false)
     val neighbors = MutableStateFlow<List<Neighbor>>(emptyList())
     val meshHealth = MutableStateFlow(MeshHealth())
+    /** Direct neighbor endpoint → origin, once learned from the neighbor's own packets. */
+    val neighborOrigins = MutableStateFlow<Map<String, Int>>(emptyMap())
+    /** Stored packets no neighbor has received yet. */
+    val waiting = MutableStateFlow(0)
+    /** Packets crossing this phone's links, live, for the Live Mesh animation. Not stored. */
+    val linkActivity = MutableSharedFlow<LinkEvent>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    /** The running simulation, when simulation mode is on (for its on-screen controls). */
+    val simulation = MutableStateFlow<MeshSimulation?>(null)
     /** The user pressed Stop; don't auto-start the mesh again until they press Start or reopen the app. */
     @Volatile var userStoppedMesh = false
 
     @Volatile private var router: Router? = null
 
-    fun attachRouter(r: Router) { router = r }
-    fun detachRouter(r: Router?) { if (router === r) router = null }
+    fun attachRouter(r: Router, sim: MeshSimulation?) {
+        router = r
+        simulation.value = sim
+    }
+
+    fun detachRouter(r: Router?) {
+        if (router === r) {
+            router = null
+            simulation.value = null
+        }
+    }
 
     /**
      * Sends a packet this phone created. [build] gets a fresh header (TTL 5, hops 0).
@@ -87,9 +124,10 @@ class AppRepository(
         val raw = PacketCodec.encode(p)
         scope.launch {
             val now = System.currentTimeMillis()
-            database.packets().insert(p.toEntity(raw, null, 0, mine = true, receivedAt = now))
+            val sim = s.simulationMode
+            database.packets().insert(p.toEntity(raw, null, 0, mine = true, receivedAt = now, simulated = sim))
             database.events().insert(EventEntity(time = now, kind = MeshEvent.Kind.QUEUED.name,
-                text = "Your ${Router.label(p)} is saved. The mesh is not running yet.", packetId = id))
+                text = "Your ${Router.label(p)} is saved. The mesh is not running yet.", packetId = id, simulated = sim))
         }
         return p
     }
