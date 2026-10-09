@@ -112,6 +112,17 @@
     <string name="report_2">Water available</string>
     <string name="report_3">Shelter open</string>
     <string name="report_4">Shelter full</string>
+    <string name="report_add">Add a report</string>
+    <string name="report_sheet_title">Community report</string>
+    <string name="report_sheet_body">Tell nearby phones about a place. It is relayed like an alert and shows on every Rescue tab and map.</string>
+    <string name="report_note">Note (optional)</string>
+    <string name="report_note_hint">e.g. School hall, 200 beds</string>
+    <string name="report_loc_finding">Finding your position…</string>
+    <string name="report_loc_none">No position: the report is sent without a place.</string>
+    <string name="report_loc_approx">Position: approximate (last known)</string>
+    <string name="report_loc_exact">Position: exact, %1$d m</string>
+    <string name="report_send">Send report</string>
+    <string name="report_sending">Sending…</string>
     <string name="alert_people">%d people</string>
     <string name="alert_one_person">1 person</string>
     <string name="alert_people_unknown">People not known</string>

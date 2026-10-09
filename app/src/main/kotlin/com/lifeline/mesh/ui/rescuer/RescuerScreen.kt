@@ -124,6 +124,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
     }
     val reports = remember(active) { active.filter { it.type == PacketType.REPORT.code }.sortedByDescending { it.receivedAt } }
     var open by rememberSaveable { mutableStateOf<Long?>(null) }
+    var reporting by rememberSaveable { mutableStateOf(false) }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = Space.screen),
@@ -161,6 +162,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
 
         item { SectionTitle(stringResource(R.string.rescue_reports)) }
         if (reports.isEmpty()) item { Muted(stringResource(R.string.rescue_reports_empty)) }
+        item { SecondaryButton(stringResource(R.string.report_add), { reporting = true }, Modifier.fillMaxWidth()) }
         items(reports, key = { "r${it.id}" }) { p ->
             val title = when (p.reportType) { 1 -> R.string.report_1; 2 -> R.string.report_2; 3 -> R.string.report_3; else -> R.string.report_4 }
             val icon = when (p.reportType) { 1 -> R.drawable.ic_block; 2 -> R.drawable.ic_water_drop; else -> R.drawable.ic_groups }
@@ -180,6 +182,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
         else AlertDetailSheet(r, now, onSend = { eta, note -> repo.sendAcks(r.alert.reports.map { it.id }, eta, note); open = null }, onDismiss = { open = null },
             language = settings.language.tag)
     }
+    if (reporting) ReportSheet(onDismiss = { reporting = false })
 }
 
 private fun loadSamples(context: Context, me: GeoFix?) {
