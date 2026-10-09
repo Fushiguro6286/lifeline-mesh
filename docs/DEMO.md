@@ -2,7 +2,7 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 8 built, not yet checked on a phone; phone tests for Phases 2 to 5 still open)
+## Current state (Phase 9 in progress; Phase 8 confirmed on the iQOO 15 on 10 Oct; phone tests for Phases 2 to 5 still open)
 
 - Phases 0 to 6: app, codec, mesh, Live Mesh, simulation/demo modes, SOS send flow, Rescue tab, offline map.
 - Phase 7: on-device AI. Model ladder (assets/models.json), DeviceProfiler, ModelShortlist, ModelSelector (load → speed
@@ -17,7 +17,10 @@ Living document. Updated at the end of every phase.
   the rescuer and automatic translation of a reply note in another script for the sender ("Machine translated", original
   kept on failure); Read aloud (Settings switch, on by default) for the gate question (also a speaker button) and for
   "Help is coming" replies.
-- 145 unit tests pass.
+- Phase 9 so far: sync server (server/main.py) and ServerUploader with Settings → Sync; community reports (Rescue tab →
+  Add a report); battery drain while relaying (Benchmarks → Mesh); Settings → Export measurements (CSV, share sheet);
+  Settings → Battery and background; First aid screen (SOS tab, bottom) waiting for the vetted firstaid.json.
+- 160 unit tests pass.
 - Verified on the iQOO 15 (10 Oct): selector picks Gemma 4 E4B on GPU (TTFT 814 ms, 16.6 tok/s) and passes en/hi/kn;
   demo sentences 4/4 correct by the AI; GPU 336 ms / 22 tok/s vs CPU 1,392 ms / 17 tok/s; "please help us" gets an
   AI-written question; with the models moved away the app says "Rules only" and the send flow works on rules.
@@ -44,6 +47,42 @@ apart from real ones and never shown together; every number carries a Simulated 
 
 Phase 3 check in simulation: switch "Ravi off", tap "Alert from Meena" (nothing reaches you; Meena holds it), switch
 "Ravi on" (it arrives through Ravi, events show "Sent N stored packets").
+
+## Phase 9 phone checks
+
+Sync (laptop and phone on the same Wi-Fi):
+1. On the laptop: `cd server`, `pip install -r requirements.txt`, `python -m uvicorn main:app --host 0.0.0.0 --port 8000`.
+   Allow Python through the Windows firewall if asked. Find the laptop address with `ipconfig` (IPv4).
+2. Phone: Settings → Sync → Server URL `http://<laptop IPv4>:8000` → Save. Simulation mode off. Send something real
+   (a test alert from the Mesh debug panel, a check-in, or a report). "Waiting to upload" counts it.
+3. Expected within a few seconds (the Wi-Fi has internet): "Waiting to upload: 0", "Last upload: <time> · N packets".
+   On the laptop open `http://localhost:8000`: the packets are there; an acknowledged alert says "Help is coming".
+4. Stop the server, send another alert: Settings shows a plain error ("Cannot reach the server…") and the count stays;
+   start the server again and tap Upload now: it goes through. Same packet from two phones: stored once, "Phones that
+   uploaded it" = 2.
+5. Laptop hotspot without internet: automatic upload does not start (Android does not call it internet); Upload now works.
+
+Community report: Rescue tab → Add a report → Shelter open, note "School hall" → Send report. It appears under
+Community reports on this phone and, through the mesh, on the others (and on the map as a help point).
+
+Battery: relay on battery (not charging) for at least 15 minutes, then Benchmarks → Mesh shows "Battery drain: X %/h"
+with the start and end level. Before that it says "Not measured". Use runs of an hour or more for numbers you quote.
+
+Export: Settings → Measurements → Export measurements → the share sheet opens with a CSV (send it to yourself).
+
+First aid: SOS tab → First aid. Today it says the guides have not been added (no file yet). Once firstaid.json is in
+app/src/main/assets: each guide opens word for word with its source; "What happened?" → Find a guide picks one ("Picked
+on device" or "Picked by keywords"); a question about something not covered says "No matching guide." The emergency
+line is always on top and under every guide.
+
+firstaid.json format (you supply the text, from a trusted source; the app never writes medical text):
+```
+[
+  {"id": "bleeding", "title": "Heavy bleeding", "keywords": ["bleeding", "cut", "खून", "ರಕ್ತ"],
+   "text": "<vetted text, shown exactly as written>", "source": "<organisation, document, year>"}
+]
+```
+Keywords in all three languages help the keyword fallback. Entries without text or source are ignored.
 
 ## Phase 8 phone check (one phone is enough)
 
@@ -115,6 +154,10 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
   "Testing AI" meanwhile and the rules are used.
 - The AI card, Benchmarks, situation report and Ask the mesh texts are English only and written in the code (rescuer
   and developer screens, DESIGN.md section 9).
+- Sync uses plain HTTP to a laptop on the local network; cleartext is allowed app-wide because the address is typed at
+  runtime. Only ServerUploader opens connections.
+- First aid has no guides until firstaid.json is supplied. Its Hindi and Kannada screen texts (including "Contact
+  emergency services if you can.") are machine-drafted: check them with a native speaker first.
 - Read aloud uses the phone's TextToSpeech voices. If the phone has no Hindi or Kannada voice, it reads with the default
   voice (check Settings → Text-to-speech on each phone).
 
