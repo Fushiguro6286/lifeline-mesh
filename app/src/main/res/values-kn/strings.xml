@@ -144,4 +144,25 @@
     <string name="checkin_send">ನಾನು ಸುರಕ್ಷಿತ</string>
     <string name="checkin_sent">ಕಳುಹಿಸಲಾಗಿದೆ. ಹತ್ತಿರದ ಫೋನ್‌ಗಳು ಮುಂದೆ ಕಳುಹಿಸುತ್ತವೆ.</string>
     <string name="gate_ready">ಕಳುಹಿಸಲು ಸಿದ್ಧ.</string>
+
+    <!-- Phase 7: on-device AI -->
+    <string name="status_ai_loading">AI ಲೋಡ್ ಆಗುತ್ತಿದೆ</string>
+    <string name="status_ai_testing">AI ಪರೀಕ್ಷಿಸಲಾಗುತ್ತಿದೆ</string>
+    <string name="status_ai_ready">AI ಸಿದ್ಧ (%1$s · %2$s)</string>
+    <string name="status_ai_paused">AI ವಿರಾಮದಲ್ಲಿದೆ</string>
+    <string name="review_ai_reading">ಫೋನ್‌ನ AI ನಿಮ್ಮ ಸಂದೇಶ ಓದುತ್ತಿದೆ…</string>
+    <string name="gate_written_on_device">ಫೋನ್‌ನಲ್ಲೇ ಬರೆಯಲಾಗಿದೆ</string>
+
+    <!-- Phase 7: voice input -->
+    <string name="speak_listening">ಕೇಳಿಸಿಕೊಳ್ಳುತ್ತಿದೆ… ಈಗ ಮಾತನಾಡಿ</string>
+    <string name="speak_hint">ಏನಾಗುತ್ತಿದೆ ಎಂದು ಹೇಳಿ. ಮುಗಿದ ಮೇಲೆ "ಮುಗಿಯಿತು" ಒತ್ತಿ.</string>
+    <string name="speak_done">ಮುಗಿಯಿತು</string>
+    <string name="speak_type_instead">ಬರೆದು ತಿಳಿಸಿ</string>
+    <string name="speak_try_again">ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</string>
+    <string name="speak_err_nomatch">ಪದಗಳು ಕೇಳಿಸಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಬರೆಯಿರಿ.</string>
+    <string name="speak_err_language">ಈ ಫೋನ್‌ನಲ್ಲಿ ಈ ಭಾಷೆಗೆ ಇಂಟರ್ನೆಟ್ ಇಲ್ಲದೆ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಬರೆಯಿರಿ.</string>
+    <string name="speak_err_permission">ಧ್ವನಿಗೆ ಮೈಕ್ರೊಫೋನ್ ಅನುಮತಿ ಬೇಕು. ನೀವು ಬರೆಯಬಹುದು.</string>
+    <string name="speak_err_unavailable">ಈ ಫೋನ್‌ನಲ್ಲಿ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಬರೆಯಿರಿ.</string>
+    <string name="speak_err_other">ಧ್ವನಿ ಇನ್‌ಪುಟ್ ನಿಂತಿತು. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಬರೆಯಿರಿ.</string>
+    <string name="speak_get_pack">ಈ ಭಾಷೆಯ ಆಫ್‌ಲೈನ್ ಧ್ವನಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ (Wi-Fi)</string>
 </resources>

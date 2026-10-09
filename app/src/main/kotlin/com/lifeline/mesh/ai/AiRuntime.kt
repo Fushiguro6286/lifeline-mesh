@@ -168,6 +168,20 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
         return value
     }
 
+    /** One demo sentence through rules and the model, compared with the expected answer (PROMPTS.md, Phase 4). */
+    data class DemoResult(val text: String, val expected: AlertDraft, val rules: AlertDraft, val ai: AlertDraft?, val usedAi: Boolean) {
+        private fun right(d: AlertDraft?) = d != null && d.needs == expected.needs && d.people == expected.people
+        val rulesCorrect get() = right(rules)
+        val aiCorrect get() = right(ai)
+    }
+
+    /** Runs the four demo sentences (calls are recorded like any other). Languages that failed the probe use rules only. */
+    suspend fun testDemoSentences(): List<DemoResult> = DEMO.map { (text, expected) ->
+        val rules = RuleExtractor.extract(text)
+        val usable = canUse(scriptLanguage(text))
+        DemoResult(text, expected, rules, if (usable) extract(text) else null, usable)
+    }
+
     // ------------------------------------------------------------------ memory, install, benchmark
 
     fun onTrimMemory(level: Int) {
@@ -277,7 +291,7 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
 
     /** Re-test when the phone, its RAM, the app version or the installed models change. */
     private fun key(info: DeviceInfo, files: Map<String, File>) =
-        "${info.phone}|${info.chip}|${info.profile.totalRamMb / 1000}|${BuildConfig.VERSION_CODE}|" +
+        "${info.phone}|${info.chip}|${info.profile.totalRamMb / 1000}|${BuildConfig.VERSION_CODE}|p${Prompts.VERSION}|" +
             files.entries.sortedBy { it.key }.joinToString(",") { "${it.key}:${it.value.length()}" }
 
     private fun loadSaved(key: String): Selection? = runCatching {
@@ -290,6 +304,18 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
 
     companion object {
         private const val TAG = "AiRuntime"
+
+        /** The four demo sentences and what they must give (PROMPTS.md, Phase 4). */
+        val DEMO: List<Pair<String, AlertDraft>> = listOf(
+            "Water is rising, 5 people on the roof, one elderly person is ill" to
+                AlertDraft(setOf(com.lifeline.mesh.packet.Need.TRAPPED, com.lifeline.mesh.packet.Need.MEDICAL), 5, 3, ""),
+            "Paani badh gaya hai, chhat par 5 log hain, ek bujurg beemar hain" to
+                AlertDraft(setOf(com.lifeline.mesh.packet.Need.TRAPPED, com.lifeline.mesh.packet.Need.MEDICAL), 5, 3, ""),
+            "ಮನೆಯಲ್ಲಿ 4 ಜನ ಸಿಲುಕಿದ್ದಾರೆ, ನೀರು ಬೇಕು" to
+                AlertDraft(setOf(com.lifeline.mesh.packet.Need.TRAPPED, com.lifeline.mesh.packet.Need.WATER_FOOD), 4, 2, ""),
+            "आग लगी है, ३ लोग अंदर हैं" to
+                AlertDraft(setOf(com.lifeline.mesh.packet.Need.FIRE), 3, 3, ""),
+        )
 
         /** Parses an "llm" metric row. */
         fun decode(m: MetricEntity): LlmCallRecord? {

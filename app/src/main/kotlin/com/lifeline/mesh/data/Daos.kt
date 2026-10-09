@@ -75,6 +75,10 @@ interface MetricDao {
 
     @Query("SELECT * FROM metrics ORDER BY timestamp")
     suspend fun all(): List<MetricEntity>
+
+    /** Real measurements only (never simulated), newest first: the Benchmarks screen. */
+    @Query("SELECT * FROM metrics WHERE simulated = 0 ORDER BY timestamp DESC LIMIT 1000")
+    fun observeReal(): Flow<List<MetricEntity>>
 }
 
 @Dao

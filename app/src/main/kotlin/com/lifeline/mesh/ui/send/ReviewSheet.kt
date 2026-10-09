@@ -105,6 +105,7 @@ fun ReviewSheet(r: SendViewModel.Review, settings: Settings, vm: SendViewModel) 
                     style = Lifeline.type.caption, color = c.inkMuted,
                     modifier = Modifier.border(1.dp, c.outline, Shapes.chip).padding(horizontal = Space.s, vertical = 2.dp),
                 )
+                if (r.aiPending) Text(stringResource(R.string.review_ai_reading), style = Lifeline.type.caption, color = c.warn)
                 if (sentNote != r.draft.note) {
                     Text(stringResource(R.string.review_note_trimmed, sentNote), style = Lifeline.type.caption, color = c.inkMuted)
                 }
@@ -128,16 +129,20 @@ fun ReviewSheet(r: SendViewModel.Review, settings: Settings, vm: SendViewModel) 
                     painterResource(if (missing == null) R.drawable.ic_check_circle else R.drawable.ic_info), null,
                     tint = if (missing == null) c.safe else c.warn, modifier = Modifier.size(24.dp),
                 )
-                Text(
-                    stringResource(
-                        when (missing) {
-                            QualityGate.Missing.NEEDS -> R.string.gate_q_needs
-                            QualityGate.Missing.PEOPLE -> R.string.gate_q_people
-                            null -> R.string.gate_ready
-                        }
-                    ),
-                    style = Lifeline.type.bodyStrong, color = c.ink,
-                )
+                val aiQuestion = missing?.let { r.questions[it] }
+                Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                    Text(
+                        aiQuestion ?: stringResource(
+                            when (missing) {
+                                QualityGate.Missing.NEEDS -> R.string.gate_q_needs
+                                QualityGate.Missing.PEOPLE -> R.string.gate_q_people
+                                null -> R.string.gate_ready
+                            }
+                        ),
+                        style = Lifeline.type.bodyStrong, color = c.ink,
+                    )
+                    if (aiQuestion != null) Text(stringResource(R.string.gate_written_on_device), style = Lifeline.type.caption, color = c.inkMuted)
+                }
             }
 
             Section(stringResource(R.string.review_needs))

@@ -2,18 +2,30 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 6 built; phone tests for Phases 2 to 5 still open)
+## Current state (Phase 7 built; phone tests for Phases 2 to 5 still open; voice needs a speech pack)
 
-- Phases 0 to 5: app, codec, mesh core + Nearby + foreground service, Live Mesh, simulation/demo modes, SOS send flow,
-  Rescue tab (merge, rank, acknowledge).
-- Phase 6: Map tab. Offline MapLibre map from a bundled PMTiles archive (central Bengaluru, OSM data of 8 Oct 2026) with a
-  local Night/Daylight style (fill and line layers only), alert markers (size = people, color = severity, rank inside,
-  grey when acknowledged), help points (squares with icons), check-ins, my position, "© OpenStreetMap contributors"
-  always visible, tap an alert for the detail sheet. "Rings" view (Canvas, no file needed) one tap away and used
-  automatically if the map file is missing or MapLibre fails. Alerts without a location are counted in a banner.
-- 110 unit tests pass.
-- Verified on the iQOO 15 (9 Oct): with Wi-Fi off and no SIM ("Active default network: none"), after a force-stop, the
-  map loads fully offline with all markers; the Rings view works; the map centres on my GPS fix.
+- Phases 0 to 6: app, codec, mesh, Live Mesh, simulation/demo modes, SOS send flow, Rescue tab, offline map.
+- Phase 7: on-device AI. Model ladder (assets/models.json), DeviceProfiler, ModelShortlist, ModelSelector (load → speed
+  probe → language probe → choose → save), LiteRT-LM engine (GPU, CPU fallback), ModelInstaller (adb folder, import with
+  size + sha256 check, Wi-Fi resumable download), AiGovernor (thermal, battery saver, memory), AlertExtractor (strict JSON,
+  validated; replaces the rules draft only if valid and not yet edited), ClarifyingQuestions ("Written on device"),
+  SpeechInput (on-device recognizer, then the regular one; typed fallback), Settings → On-device AI card ("Why this
+  model?"), Benchmarks screen (demo-sentence test, GPU vs CPU, every call, probes, mesh numbers).
+- 131 unit tests pass.
+- Verified on the iQOO 15 (10 Oct): selector picks Gemma 4 E4B on GPU (TTFT 814 ms, 16.6 tok/s) and passes en/hi/kn;
+  demo sentences 4/4 correct by the AI; GPU 336 ms / 22 tok/s vs CPU 1,392 ms / 17 tok/s; "please help us" gets an
+  AI-written question; with the models moved away the app says "Rules only" and the send flow works on rules.
+- NOT verified: speaking a demo sentence (the iQOO has no offline speech pack yet: recognizer errors 13 and 12), and a
+  second, smaller phone choosing a smaller tier (unit-tested only).
+
+## Model files on a phone
+
+```
+adb shell mkdir -p /sdcard/Android/data/com.lifeline.mesh/files/models
+adb push gemma-4-E4B-it.litertlm /sdcard/Android/data/com.lifeline.mesh/files/models/
+adb push gemma-4-E2B-it.litertlm /sdcard/Android/data/com.lifeline.mesh/files/models/
+```
+Then Settings → On-device AI → Re-test (or just reopen the app). From Git Bash, prefix with `MSYS_NO_PATHCONV=1`.
 
 ## Simulation mode (rehearsal and stage fallback)
 
@@ -71,6 +83,14 @@ Words to check first, because they appear on stage: "SOS के लिए दब
 Settings and developer screens are English only on purpose (DESIGN.md section 9).
 
 ## Known issues
+
+- Voice: needs the offline speech pack for the app language. On the iQOO both recognizers report the language as
+  unavailable. Fix before the demo: Settings → (Google) Speech / "Speech Recognition & Synthesis from Google" → offline
+  speech recognition → download English (India) and Hindi; or use Speak → "Download offline voice" (Android 13+) on Wi-Fi.
+  Kannada offline voice may not exist; Kannada works by typing.
+- First launch after installing models or updating the app re-runs the probes (~30 s with E4B); the status strip says
+  "Testing AI" meanwhile and the rules are used.
+- The AI card and Benchmarks screen texts are English only and written in the code (not yet moved to strings.xml).
 
 - The offline map covers central Bengaluru (77.55–77.65 E, 12.93–13.01 N), not a confirmed venue box. Give me the venue
   and I will re-cut it (one command, see SETUP.md section 6). Outside the box the map says so; Rings still works.

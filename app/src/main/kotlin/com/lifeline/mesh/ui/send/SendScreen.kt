@@ -2,7 +2,9 @@ package com.lifeline.mesh.ui.send
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,6 +47,7 @@ import com.lifeline.mesh.ai.AlertDraft
 import com.lifeline.mesh.ai.LocationChoice
 import com.lifeline.mesh.ai.QualityGate
 import com.lifeline.mesh.ai.RuleExtractor
+import com.lifeline.mesh.ai.scriptLanguage
 import com.lifeline.mesh.data.Settings
 import com.lifeline.mesh.location.LocationProvider
 import com.lifeline.mesh.packet.Geo
@@ -70,7 +73,11 @@ import kotlinx.coroutines.launch
 /** The send flow's state: the review being edited, and which alert's delivery status to show. */
 class SendViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as LifelineApp).repository
+    private val ai = (app as LifelineApp).ai
     private val location = LocationProvider(app)
+    /** App language for gate questions (the sender's language). */
+    private var language = "en"
+    private val asked = HashSet<QualityGate.Missing>()
 
     sealed interface Loc {
         data object Finding : Loc
@@ -78,12 +85,19 @@ class SendViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** [severityChosen]: the user picked a severity, so edits to needs/people no longer change it. */
+    /**
+     * [aiPending]: the on-device model is still reading the message. [edited]: the user changed a field, so a late AI
+     * answer must not overwrite it. [questions]: model-written gate questions by missing field.
+     */
     data class Review(
         val transcript: String,
         val draft: AlertDraft,
         val loc: Loc,
         val sending: Boolean = false,
         val severityChosen: Boolean = false,
+        val aiPending: Boolean = false,
+        val edited: Boolean = false,
+        val questions: Map<QualityGate.Missing, String> = emptyMap(),
     )
 
     private val _review = MutableStateFlow<Review?>(null)
@@ -100,9 +114,25 @@ class SendViewModel(app: Application) : AndroidViewModel(app) {
 
     private var locJob: Deferred<LocationChoice> = CompletableDeferred(LocationChoice(null, true))
 
-    /** Rules run instantly on the text; GPS starts at the same time (at most 8 s). */
-    fun startReview(text: String) {
-        _review.value = Review(text, RuleExtractor.extract(text), Loc.Finding)
+    /**
+     * Rules run instantly on the text; GPS starts at the same time (at most 8 s). If the on-device model passed this
+     * language's probe, it reads the message too (6 s GPU / 10 s CPU timeout) and its answer replaces the rules draft
+     * only if it is valid and the user has not edited anything yet (CLAUDE.md 9.1).
+     */
+    fun startReview(text: String, appLanguage: String) {
+        language = appLanguage
+        asked.clear()
+        val useAi = ai.canUse(scriptLanguage(text))
+        _review.value = Review(text, RuleExtractor.extract(text), Loc.Finding, aiPending = useAi)
+        if (useAi) viewModelScope.launch {
+            val d = ai.extract(text)
+            _review.update { r ->
+                if (r == null || r.transcript != text) r
+                else if (d != null && !r.edited) r.copy(draft = d, aiPending = false)
+                else r.copy(aiPending = false)
+            }
+            askIfBlocked()
+        } else askIfBlocked()
         locJob.cancel()
         val job = viewModelScope.async { location.best() }
         locJob = job
@@ -112,14 +142,29 @@ class SendViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun edit(change: (AlertDraft) -> AlertDraft) = _review.update { r ->
-        r ?: return@update null
-        val d = change(r.draft)
-        if (r.severityChosen) r.copy(draft = d)
-        else r.copy(draft = d.copy(severity = RuleExtractor.severityFor(r.transcript, d.needs, d.people)))
+    fun edit(change: (AlertDraft) -> AlertDraft) {
+        _review.update { r ->
+            r ?: return@update null
+            val d = change(r.draft)
+            if (r.severityChosen) r.copy(draft = d, edited = true)
+            else r.copy(draft = d.copy(severity = RuleExtractor.severityFor(r.transcript, d.needs, d.people)), edited = true)
+        }
+        askIfBlocked()
     }
 
-    fun chooseSeverity(level: Int) = _review.update { it?.copy(draft = it.draft.copy(severity = level), severityChosen = true) }
+    fun chooseSeverity(level: Int) = _review.update { it?.copy(draft = it.draft.copy(severity = level), severityChosen = true, edited = true) }
+
+    /** One model-written question per missing field, in the app language (4 s timeout); else the fixed string shows. */
+    private fun askIfBlocked() {
+        val r = _review.value ?: return
+        if (r.aiPending) return
+        val missing = QualityGate.check(r.draft).ask ?: return
+        if (!asked.add(missing) || !ai.canUse(language)) return
+        viewModelScope.launch {
+            val q = ai.question(language, missing) ?: return@launch
+            _review.update { it?.copy(questions = it.questions + (missing to q)) }
+        }
+    }
 
     fun closeReview() {
         _review.value = null
@@ -202,7 +247,8 @@ fun SendScreen(settings: Settings, vm: SendViewModel = viewModel()) {
     val ack = statusAlert?.let { a -> packets.firstOrNull { it.type == PacketType.ACK.code && it.refId == a.id } }
 
     var typing by rememberSaveable { mutableStateOf(false) }
-    var speakNote by rememberSaveable { mutableStateOf(false) }
+    var speaking by rememberSaveable { mutableStateOf(false) }
+    var typedStart by rememberSaveable { mutableStateOf("") }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.screen, vertical = Space.l),
@@ -222,30 +268,38 @@ fun SendScreen(settings: Settings, vm: SendViewModel = viewModel()) {
 
         Text(stringResource(R.string.sos_or), style = Lifeline.type.label, color = c.inkMuted)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-            BigIconButton(R.drawable.ic_mic, stringResource(R.string.speak), { speakNote = true; typing = true }, Modifier.weight(1f))
-            BigIconButton(R.drawable.ic_keyboard, stringResource(R.string.type), { speakNote = false; typing = true }, Modifier.weight(1f))
+            BigIconButton(R.drawable.ic_mic, stringResource(R.string.speak), { speaking = true }, Modifier.weight(1f))
+            BigIconButton(R.drawable.ic_keyboard, stringResource(R.string.type), { typedStart = ""; typing = true }, Modifier.weight(1f))
         }
 
         CheckInCard(sentAt = checkInAt, onSafe = { vm.checkIn(settings.displayName) })
         Spacer(Modifier.height(Space.l))
     }
 
+    if (speaking) {
+        SpeakSheet(
+            language = settings.language.tag,
+            onDone = { text -> speaking = false; vm.startReview(text, settings.language.tag) },
+            onType = { partial -> speaking = false; typedStart = partial; typing = true },
+            onDismiss = { speaking = false },
+        )
+    }
     if (typing) {
         TypeSheet(
-            speakNote = speakNote,
-            onDone = { text -> typing = false; vm.startReview(text) },
+            initial = typedStart,
+            onDone = { text -> typing = false; vm.startReview(text, settings.language.tag) },
             onDismiss = { typing = false },
         )
     }
     review?.let { r -> ReviewSheet(r, settings, vm) }
 }
 
-/** Typed input. Until speech arrives (Phase 7), Speak opens this too, saying so honestly. */
+/** Typed input, always available (and the fallback when voice is not). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TypeSheet(speakNote: Boolean, onDone: (String) -> Unit, onDismiss: () -> Unit) {
+private fun TypeSheet(initial: String, onDone: (String) -> Unit, onDismiss: () -> Unit) {
     val c = Lifeline.colors
-    var text by rememberSaveable { mutableStateOf("") }
+    var text by rememberSaveable { mutableStateOf(initial) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     ModalBottomSheet(
@@ -259,7 +313,6 @@ private fun TypeSheet(speakNote: Boolean, onDone: (String) -> Unit, onDismiss: (
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
             Text(stringResource(R.string.sos_type_title), style = Lifeline.type.title, color = c.ink)
-            if (speakNote) Text(stringResource(R.string.sos_speak_later), style = Lifeline.type.body, color = c.warn)
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(500) },
@@ -274,6 +327,121 @@ private fun TypeSheet(speakNote: Boolean, onDone: (String) -> Unit, onDismiss: (
                 PrimaryButton(stringResource(R.string.sos_continue), { onDone(text.trim()) }, Modifier.weight(2f), enabled = text.isNotBlank())
             }
             Spacer(Modifier.size(Space.s))
+        }
+    }
+}
+
+/**
+ * Listening panel (DESIGN.md 8.2): live transcript and a level meter; Done (or a pause) ends it and opens the review.
+ * Uses the on-device recognizer where the phone has one. Any problem says what happened and offers typing.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SpeakSheet(language: String, onDone: (String) -> Unit, onType: (String) -> Unit, onDismiss: () -> Unit) {
+    val c = Lifeline.colors
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val speech = remember { com.lifeline.mesh.ai.SpeechInput(context) }
+    var text by remember { mutableStateOf("") }
+    var level by remember { mutableStateOf(0f) }
+    var listening by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<Int?>(null) }
+    val doneNow by androidx.compose.runtime.rememberUpdatedState(onDone)
+
+    fun listen() {
+        error = null
+        listening = true
+        speech.start(language) { e ->
+            when (e) {
+                com.lifeline.mesh.ai.SpeechInput.Event.Ready -> listening = true
+                is com.lifeline.mesh.ai.SpeechInput.Event.Partial -> text = e.text
+                is com.lifeline.mesh.ai.SpeechInput.Event.Level -> level = e.rmsDb
+                is com.lifeline.mesh.ai.SpeechInput.Event.Final -> { listening = false; text = e.text; doneNow(e.text) }
+                is com.lifeline.mesh.ai.SpeechInput.Event.Failed -> {
+                    listening = false
+                    if (e.reason == com.lifeline.mesh.ai.SpeechInput.Reason.NO_MATCH && text.isNotBlank()) doneNow(text)
+                    else error = when (e.reason) {
+                        com.lifeline.mesh.ai.SpeechInput.Reason.NO_MATCH -> R.string.speak_err_nomatch
+                        com.lifeline.mesh.ai.SpeechInput.Reason.LANGUAGE_UNAVAILABLE -> R.string.speak_err_language
+                        com.lifeline.mesh.ai.SpeechInput.Reason.NO_PERMISSION -> R.string.speak_err_permission
+                        else -> R.string.speak_err_other
+                    }
+                }
+            }
+        }
+    }
+
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) listen() else error = R.string.speak_err_permission }
+
+    LaunchedEffect(Unit) {
+        when {
+            !speech.available() -> error = R.string.speak_err_unavailable
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED -> listen()
+            else -> permission.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { speech.destroy() } }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = c.surface,
+        shape = Shapes.sheet,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Space.screen).padding(bottom = Space.xl),
+            verticalArrangement = Arrangement.spacedBy(Space.l),
+        ) {
+            Text(stringResource(R.string.speak), style = Lifeline.type.headline, color = c.ink)
+            val status = error?.let { stringResource(it) } ?: if (listening) stringResource(R.string.speak_listening) else ""
+            if (status.isNotEmpty()) Text(status, style = Lifeline.type.bodyStrong, color = if (error != null) c.warn else c.link)
+            Text(
+                text.ifBlank { stringResource(R.string.speak_hint) },
+                style = Lifeline.type.title, color = if (text.isBlank()) c.inkMuted else c.ink,
+                modifier = Modifier.fillMaxWidth().padding(vertical = Space.s),
+            )
+            LevelMeter(level, listening)
+            if (error == R.string.speak_err_language && speech.canDownloadPack()) {
+                SecondaryButton(stringResource(R.string.speak_get_pack), { speech.downloadPack(language) }, Modifier.fillMaxWidth())
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                SecondaryButton(stringResource(R.string.speak_type_instead), { speech.destroy(); onType(text) }, Modifier.weight(1f))
+                if (error != null && error != R.string.speak_err_unavailable && error != R.string.speak_err_language) {
+                    PrimaryButton(stringResource(R.string.speak_try_again), { text = ""; listen() }, Modifier.weight(1f))
+                } else {
+                    PrimaryButton(
+                        stringResource(R.string.speak_done),
+                        { if (listening) speech.stop() else if (text.isNotBlank()) onDone(text) },
+                        Modifier.weight(1f),
+                        enabled = listening || text.isNotBlank(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Twelve bars that follow the microphone level; static with reduced motion. */
+@Composable
+private fun LevelMeter(rmsDb: Float, active: Boolean) {
+    val c = Lifeline.colors
+    val reduced = Lifeline.reducedMotion
+    val norm = ((rmsDb + 2f) / 12f).coerceIn(0f, 1f)
+    val animated by androidx.compose.animation.core.animateFloatAsState(if (active) norm else 0f, label = "level")
+    Row(
+        Modifier.fillMaxWidth().height(40.dp),
+        horizontalArrangement = Arrangement.spacedBy(Space.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        for (i in 0 until 12) {
+            val shape = 1f - kotlin.math.abs(i - 5.5f) / 7f
+            val h = if (reduced) (if (active) 0.5f else 0.1f) else (0.12f + animated * shape).coerceIn(0.1f, 1f)
+            androidx.compose.foundation.layout.Box(
+                Modifier.weight(1f).fillMaxHeight(h)
+                    .background(if (active) c.link else c.outline, Shapes.chip)
+            )
         }
     }
 }

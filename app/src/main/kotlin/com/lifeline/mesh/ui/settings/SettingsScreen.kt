@@ -62,6 +62,7 @@ fun SettingsScreen(
     onPermissions: () -> Unit,
     onGallery: () -> Unit,
     onDebug: () -> Unit,
+    onBenchmarks: () -> Unit,
 ) {
     val c = Lifeline.colors
     val focus = LocalFocusManager.current
@@ -114,6 +115,9 @@ fun SettingsScreen(
             settings.simulationMode, repository::setSimulationMode)
         SwitchRow(R.drawable.ic_speed, stringResource(R.string.settings_demo), stringResource(R.string.settings_demo_body),
             settings.demoMode, repository::setDemoMode)
+
+        Section("On-device AI")
+        AiSettingsCard(onBenchmarks)
 
         Section(stringResource(R.string.settings_privacy))
         Text(stringResource(R.string.privacy_body), style = Lifeline.type.body, color = c.ink)

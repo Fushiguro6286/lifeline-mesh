@@ -71,6 +71,7 @@ import kotlin.reflect.KClass
 @Serializable object PermissionsRoute
 @Serializable object GalleryRoute
 @Serializable object DebugRoute
+@Serializable object BenchmarksRoute
 
 private data class Tab(
     val route: Any,
@@ -116,7 +117,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
             Column(Modifier.background(c.bg).statusBarsPadding()) {
                 StatusStrip(
                     mesh = meshStatus(running, connected),
-                    ai = StatusItem(stringResource(R.string.status_ai_rules), c.inkMuted),
+                    ai = aiStatus(),
                     simulated = settings.simulationMode,
                     trailing = if (onTab) {
                         {
@@ -154,13 +155,32 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
                     onPermissions = { nav.navigate(PermissionsRoute) },
                     onGallery = { nav.navigate(GalleryRoute) },
                     onDebug = { nav.navigate(DebugRoute) },
+                    onBenchmarks = { nav.navigate(BenchmarksRoute) },
                 )
             }
             composable<PermissionsRoute> {
                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.screen)) { PermissionsChecklist() }
             }
             composable<GalleryRoute> { ComponentGallery() }
+            composable<BenchmarksRoute> { com.lifeline.mesh.ui.settings.BenchmarksScreen() }
         }
+    }
+}
+
+@Composable
+private fun aiStatus(): StatusItem {
+    val c = Lifeline.colors
+    val ai = (LocalContext.current.applicationContext as com.lifeline.mesh.LifelineApp).ai
+    val status by ai.status.collectAsStateWithLifecycle()
+    val gov by ai.governor.state.collectAsStateWithLifecycle()
+    return when (val s = status) {
+        is com.lifeline.mesh.ai.AiStatus.Ready ->
+            if (gov.pauseNonEssential) StatusItem(stringResource(R.string.status_ai_paused), c.warn)
+            else StatusItem(stringResource(R.string.status_ai_ready, s.model, s.backend.name), c.safe)
+        is com.lifeline.mesh.ai.AiStatus.Loading -> StatusItem(stringResource(R.string.status_ai_loading), c.warn, searching = true)
+        is com.lifeline.mesh.ai.AiStatus.Testing -> StatusItem(stringResource(R.string.status_ai_testing), c.warn, searching = true)
+        com.lifeline.mesh.ai.AiStatus.Idle -> StatusItem(stringResource(R.string.status_ai_loading), c.inkMuted)
+        is com.lifeline.mesh.ai.AiStatus.RulesOnly -> StatusItem(stringResource(R.string.status_ai_rules), c.inkMuted)
     }
 }
 
@@ -182,6 +202,7 @@ private fun SubScreenTitle(destination: androidx.navigation.NavDestination?, onB
         destination?.hasRoute(PermissionsRoute::class) == true -> stringResource(R.string.settings_permissions)
         destination?.hasRoute(GalleryRoute::class) == true -> stringResource(R.string.settings_gallery)
         destination?.hasRoute(DebugRoute::class) == true -> stringResource(R.string.settings_debug)
+        destination?.hasRoute(BenchmarksRoute::class) == true -> "Benchmarks"
         else -> ""
     }
     Row(Modifier.heightIn(min = 56.dp).padding(end = Space.screen), verticalAlignment = Alignment.CenterVertically) {

@@ -154,4 +154,25 @@
     <string name="checkin_send">I\'m safe</string>
     <string name="checkin_sent">Sent. Nearby phones will pass it on.</string>
     <string name="gate_ready">Ready to send.</string>
+
+    <!-- Phase 7: on-device AI -->
+    <string name="status_ai_loading">AI loading</string>
+    <string name="status_ai_testing">Testing AI</string>
+    <string name="status_ai_ready">AI ready (%1$s · %2$s)</string>
+    <string name="status_ai_paused">AI paused</string>
+    <string name="review_ai_reading">On-device AI is reading your message…</string>
+    <string name="gate_written_on_device">Written on device</string>
+
+    <!-- Phase 7: voice input -->
+    <string name="speak_listening">Listening… speak now</string>
+    <string name="speak_hint">Say what is happening. Tap Done when you finish.</string>
+    <string name="speak_done">Done</string>
+    <string name="speak_type_instead">Type instead</string>
+    <string name="speak_try_again">Try again</string>
+    <string name="speak_err_nomatch">I could not hear words. Try again, or type.</string>
+    <string name="speak_err_language">Voice input for this language is not available offline on this phone. Please type.</string>
+    <string name="speak_err_permission">Voice needs the microphone permission. You can type instead.</string>
+    <string name="speak_err_unavailable">Voice input is not available on this phone. Please type.</string>
+    <string name="speak_err_other">Voice input stopped. Try again, or type.</string>
+    <string name="speak_get_pack">Download offline voice for this language (Wi-Fi)</string>
 </resources>

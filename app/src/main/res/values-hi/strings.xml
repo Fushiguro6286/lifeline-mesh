@@ -144,4 +144,25 @@
     <string name="checkin_send">मैं सुरक्षित हूँ</string>
     <string name="checkin_sent">भेज दिया। पास के फ़ोन इसे आगे भेजेंगे।</string>
     <string name="gate_ready">भेजने के लिए तैयार।</string>
+
+    <!-- Phase 7: on-device AI -->
+    <string name="status_ai_loading">AI लोड हो रहा है</string>
+    <string name="status_ai_testing">AI जाँच रहे हैं</string>
+    <string name="status_ai_ready">AI तैयार (%1$s · %2$s)</string>
+    <string name="status_ai_paused">AI रुका है</string>
+    <string name="review_ai_reading">फ़ोन पर AI आपका संदेश पढ़ रहा है…</string>
+    <string name="gate_written_on_device">फ़ोन पर लिखा गया</string>
+
+    <!-- Phase 7: voice input -->
+    <string name="speak_listening">सुन रहे हैं… अब बोलिए</string>
+    <string name="speak_hint">बताइए क्या हो रहा है। बोल लें तो "हो गया" दबाएँ।</string>
+    <string name="speak_done">हो गया</string>
+    <string name="speak_type_instead">लिखकर बताएँ</string>
+    <string name="speak_try_again">फिर कोशिश करें</string>
+    <string name="speak_err_nomatch">शब्द सुनाई नहीं दिए। फिर कोशिश करें या लिखें।</string>
+    <string name="speak_err_language">इस फ़ोन पर इस भाषा में बिना इंटरनेट बोलकर लिखना उपलब्ध नहीं है। कृपया लिखें।</string>
+    <string name="speak_err_permission">बोलने के लिए माइक्रोफ़ोन की अनुमति चाहिए। आप लिख भी सकते हैं।</string>
+    <string name="speak_err_unavailable">इस फ़ोन पर बोलकर लिखना उपलब्ध नहीं है। कृपया लिखें।</string>
+    <string name="speak_err_other">बोलकर लिखना रुक गया। फिर कोशिश करें या लिखें।</string>
+    <string name="speak_get_pack">इस भाषा की ऑफ़लाइन आवाज़ डाउनलोड करें (Wi-Fi)</string>
 </resources>
