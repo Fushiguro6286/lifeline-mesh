@@ -81,7 +81,13 @@ class RescuerViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 /** Alerts older than this are no longer "active" (store and forward keeps 6 hours too). */
-private const val ACTIVE_MS = 6 * 60 * 60 * 1000L
+const val ACTIVE_MS = 6 * 60 * 60 * 1000L
+
+/** Ranked merged alerts from stored packets: the same list on the Rescue tab and the Map. */
+fun rankAlerts(packets: List<PacketEntity>, me: GeoFix?, now: Long): List<RankedAlert> = Ranker.rank(
+    Merger.merge(packets.filter { it.type == PacketType.ALERT.code && !it.isMine && now - it.receivedAt < ACTIVE_MS }.map { it.toReport() }),
+    me?.lat, me?.lon,
+)
 
 /** Packet row → triage input. Lat/lon 0/0 means "no position" (the sender had no fix). */
 fun PacketEntity.toReport(): AlertReport {
@@ -111,9 +117,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, vm: RescuerViewMod
     LaunchedEffect(Unit) { while (true) { delay(30_000); now = System.currentTimeMillis() } }
 
     val active = packets.filter { now - it.receivedAt < ACTIVE_MS }
-    val ranked = remember(active, me) {
-        Ranker.rank(Merger.merge(active.filter { it.type == PacketType.ALERT.code && !it.isMine }.map { it.toReport() }), me?.lat, me?.lon)
-    }
+    val ranked = remember(active, me) { rankAlerts(active, me, now) }
     val checkIns = remember(active) {
         active.filter { it.type == PacketType.CHECK_IN.code && !it.isMine }.groupBy { it.origin }.map { (_, l) -> l.maxBy { it.receivedAt } }
             .sortedByDescending { it.receivedAt }

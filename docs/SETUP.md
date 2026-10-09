@@ -191,7 +191,15 @@ NPU (optional experiment): only with a `.litertlm` built for this exact chip plu
    ```
    pmtiles extract <protomaps build URL>.pmtiles venue.pmtiles --bbox=<minLon>,<minLat>,<maxLon>,<maxLat> --maxzoom=15
    ```
-3. Put `venue.pmtiles` in `app/src/main/assets/map/` and reference it in the style as `pmtiles://asset://map/venue.pmtiles` (supported in MapLibre Android 11.7.0+; local `file://` paths also work).
+3. Put `venue.pmtiles` in `app/src/main/assets/map/`. **Correction (checked 9 Oct 2026):** the MapLibre Android docs say
+   `pmtiles://asset://` is *not* supported. The app copies the archive from assets into app storage on first use and opens
+   it as `pmtiles://file://<absolute path>` (see `ui/map/MapSupport.kt`).
+
+   Current file (9 Oct 2026): central Bengaluru, bbox 77.55,12.93,77.65,13.01, max zoom 15, Protomaps build 20261008
+   (basemap v4.15.2), 8.2 MB. To re-cut for the exact venue, change the bbox and run (then update `MapAssets` bounds):
+   ```
+   pmtiles extract https://build.protomaps.com/20261008.pmtiles app/src/main/assets/map/venue.pmtiles --bbox=<minLon>,<minLat>,<maxLon>,<maxLat> --maxzoom=15
+   ```
 4. Style: write a small `style.json` with only fill and line layers (water, land use, roads, buildings) in Night and Daylight colors. Without text layers, no glyph files are needed. Our own markers are drawn as circle layers or Compose overlays. If labels are wanted later, bundle the needed glyph and sprite files from the Protomaps basemap assets and point to them with `asset://` URLs.
 5. Show "© OpenStreetMap contributors" (and Protomaps credit if their docs ask for it).
 6. Do not bulk-download tiles from openstreetmap.org servers; their tile usage policy forbids it.

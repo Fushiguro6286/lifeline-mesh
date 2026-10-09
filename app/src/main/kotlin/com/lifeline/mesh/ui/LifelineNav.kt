@@ -51,6 +51,7 @@ import com.lifeline.mesh.ui.components.EmptyState
 import com.lifeline.mesh.ui.mesh.LiveMeshScreen
 import com.lifeline.mesh.ui.send.SendScreen
 import com.lifeline.mesh.ui.rescuer.RescuerScreen
+import com.lifeline.mesh.ui.map.OfflineMapScreen
 import com.lifeline.mesh.ui.mesh.MeshDebugScreen
 import com.lifeline.mesh.ui.components.StatusItem
 import com.lifeline.mesh.ui.components.StatusStrip
@@ -145,7 +146,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
                     }
                 })
             }
-            composable<MapRoute> { PhasePlaceholder(R.string.ph_map_title, R.string.ph_map_body, R.drawable.ic_map) { nav.navigate(GalleryRoute) } }
+            composable<MapRoute> { OfflineMapScreen(settings) }
             composable<SettingsRoute> {
                 SettingsScreen(
                     settings = settings,

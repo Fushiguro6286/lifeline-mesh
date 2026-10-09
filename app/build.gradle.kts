@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.play.services.nearby)
     implementation(libs.play.services.location)
     implementation(libs.coroutines.play.services)
+    implementation(libs.maplibre.android)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)

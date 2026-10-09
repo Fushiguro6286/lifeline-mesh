@@ -1,0 +1,65 @@
+{
+  "version": 8,
+  "name": "Lifeline offline",
+  "metadata": {
+    "note": "Fill and line layers only (no text, so no glyphs or sprites). {{...}} tokens are filled in by MapStyle.kt with the Night or Daylight palette; {{PMTILES}} with pmtiles://file://<copied archive>. Data: Protomaps basemap v4 (OpenStreetMap)."
+  },
+  "sources": {
+    "base": {
+      "type": "vector",
+      "url": "{{PMTILES}}",
+      "attribution": "© OpenStreetMap contributors"
+    }
+  },
+  "layers": [
+    { "id": "background", "type": "background", "paint": { "background-color": "{{bg}}" } },
+    { "id": "earth", "type": "fill", "source": "base", "source-layer": "earth", "paint": { "fill-color": "{{land}}" } },
+    {
+      "id": "landcover", "type": "fill", "source": "base", "source-layer": "landcover",
+      "paint": { "fill-color": "{{green}}", "fill-opacity": 0.5 }
+    },
+    {
+      "id": "landuse-green", "type": "fill", "source": "base", "source-layer": "landuse",
+      "filter": ["in", ["get", "kind"], ["literal", ["park", "forest", "wood", "grass", "garden", "golf_course", "cemetery", "nature_reserve", "playground", "recreation_ground", "meadow", "farmland", "allotments"]]],
+      "paint": { "fill-color": "{{green}}" }
+    },
+    {
+      "id": "landuse-hospital", "type": "fill", "source": "base", "source-layer": "landuse",
+      "filter": ["in", ["get", "kind"], ["literal", ["hospital", "school", "university", "college"]]],
+      "paint": { "fill-color": "{{civic}}" }
+    },
+    { "id": "water", "type": "fill", "source": "base", "source-layer": "water", "paint": { "fill-color": "{{water}}" } },
+    {
+      "id": "buildings", "type": "fill", "source": "base", "source-layer": "buildings", "minzoom": 14,
+      "paint": { "fill-color": "{{building}}", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0, 15, 1] }
+    },
+    {
+      "id": "roads-path", "type": "line", "source": "base", "source-layer": "roads", "minzoom": 14,
+      "filter": ["in", ["get", "kind"], ["literal", ["path", "other"]]],
+      "paint": { "line-color": "{{roadMinor}}", "line-width": 1, "line-dasharray": [2, 2] }
+    },
+    {
+      "id": "roads-rail", "type": "line", "source": "base", "source-layer": "roads",
+      "filter": ["==", ["get", "kind"], "rail"],
+      "paint": { "line-color": "{{roadMinor}}", "line-width": 1.2, "line-dasharray": [3, 3] }
+    },
+    {
+      "id": "roads-minor", "type": "line", "source": "base", "source-layer": "roads", "minzoom": 12,
+      "filter": ["==", ["get", "kind"], "minor_road"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": { "line-color": "{{roadMinor}}", "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 12, 0.4, 15, 2.5, 18, 10] }
+    },
+    {
+      "id": "roads-major", "type": "line", "source": "base", "source-layer": "roads",
+      "filter": ["==", ["get", "kind"], "major_road"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": { "line-color": "{{roadMajor}}", "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 10, 0.6, 15, 4, 18, 14] }
+    },
+    {
+      "id": "roads-highway", "type": "line", "source": "base", "source-layer": "roads",
+      "filter": ["==", ["get", "kind"], "highway"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": { "line-color": "{{roadHighway}}", "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 9, 0.8, 15, 6, 18, 18] }
+    }
+  ]
+}

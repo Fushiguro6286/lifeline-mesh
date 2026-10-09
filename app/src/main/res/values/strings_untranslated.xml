@@ -137,4 +137,19 @@
     <string name="ago_now">just now</string>
     <string name="ago_min">%d min ago</string>
     <string name="ago_hour">%d h ago</string>
+
+    <!-- Map (Phase 6). English only. -->
+    <string name="map_mode_map">Map</string>
+    <string name="map_mode_rings">Rings</string>
+    <string name="map_attribution">© OpenStreetMap contributors · Protomaps</string>
+    <string name="map_missing">Offline map file not found. Showing distances and directions instead.</string>
+    <string name="map_failed">The offline map could not be drawn. Showing distances and directions instead.</string>
+    <string name="map_preparing">Preparing the offline map…</string>
+    <string name="map_you">You</string>
+    <string name="map_centre">Map centre (your location is unknown)</string>
+    <plurals name="map_no_location">
+        <item quantity="one">%d alert has no location and is not on the map</item>
+        <item quantity="other">%d alerts have no location and are not on the map</item>
+    </plurals>
+    <string name="map_outside">Your position is outside the offline map area.</string>
 </resources>

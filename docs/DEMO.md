@@ -2,27 +2,18 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 5 built; phone tests for Phases 2 to 5 still open)
+## Current state (Phase 6 built; phone tests for Phases 2 to 5 still open)
 
-- Phases 0 to 4: app, codec, mesh core + Nearby + foreground service, Live Mesh, simulation/demo modes, SOS send flow.
-- Phase 5: Rescue tab. Merger (same needs, within 60 m and 15 min; positionless reports merge only from the same phone)
-  and Ranker (severity, reports, distance), header numbers (active alerts, people, urgent, acknowledged), ranked alert
-  cards with distance and direction from the rescuer's GPS, detail sheet with every merged report, ETA picker
-  (10/20/30/60 min), optional 40-byte note and "Send help is coming" (one Ack per merged report, max 5), check-ins and
-  community reports. "Load sample alerts" (simulation mode only; samples are simulated rows). Situation report and
-  Ask the mesh: placeholder card until Phase 8.
+- Phases 0 to 5: app, codec, mesh core + Nearby + foreground service, Live Mesh, simulation/demo modes, SOS send flow,
+  Rescue tab (merge, rank, acknowledge).
+- Phase 6: Map tab. Offline MapLibre map from a bundled PMTiles archive (central Bengaluru, OSM data of 8 Oct 2026) with a
+  local Night/Daylight style (fill and line layers only), alert markers (size = people, color = severity, rank inside,
+  grey when acknowledged), help points (squares with icons), check-ins, my position, "© OpenStreetMap contributors"
+  always visible, tap an alert for the detail sheet. "Rings" view (Canvas, no file needed) one tap away and used
+  automatically if the map file is missing or MapLibre fails. Alerts without a location are counted in a banner.
 - 110 unit tests pass.
-- Verified on the iQOO 15 in simulation mode (9 Oct): samples + Meena's alert give 6 ranked alerts; the two flood reports
-  merge into one card (5 people, 2 reports, 300 m N); Kiran's reply to Meena's alert shows that card as acknowledged;
-  acknowledging rank 1 with ETA 30 min and a note sends two replies on the mesh and the card dims.
-
-## Phase 5 phone test (needs 2 or 3 phones)
-
-1. C: Settings → role Rescuer. A and C (and B between them) on the Mesh tab show each other.
-2. A: SOS tab → Type "Water is rising, 5 people on the roof, one elderly person is ill" → Continue → Send alert.
-3. C: Rescue tab shows it as rank 1 (Trapped · Medical, 5 people, Urgent, distance from C). Tap Acknowledge → 20 min →
-   Send help is coming.
-4. A: vibrates, "Help is coming · ETA 20 min" notification, and the SOS card turns green with ETA 20 min.
+- Verified on the iQOO 15 (9 Oct): with Wi-Fi off and no SIM ("Active default network: none"), after a force-stop, the
+  map loads fully offline with all markers; the Rings view works; the map centres on my GPS fix.
 
 ## Simulation mode (rehearsal and stage fallback)
 
@@ -80,6 +71,11 @@ Words to check first, because they appear on stage: "SOS के लिए दब
 Settings and developer screens are English only on purpose (DESIGN.md section 9).
 
 ## Known issues
+
+- The offline map covers central Bengaluru (77.55–77.65 E, 12.93–13.01 N), not a confirmed venue box. Give me the venue
+  and I will re-cut it (one command, see SETUP.md section 6). Outside the box the map says so; Rings still works.
+- My position on the map is a dot, not an arrow: the app does not read the compass, so an arrow would claim a heading
+  it does not know.
 
 - RuleExtractor was written from scratch: the web prototype's source was not on this laptop. If you have it, the rules
   can be aligned with it. Behaviour is pinned by RuleExtractorTest.
