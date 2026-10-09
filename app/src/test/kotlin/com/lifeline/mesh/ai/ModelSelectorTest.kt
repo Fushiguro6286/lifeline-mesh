@@ -38,7 +38,7 @@ class FakeLlmEngine(
             }
             else -> "?"
         }
-        return LlmResult(text, ttftMs, tokPerSec, 20, 32, ttftMs + 800)
+        return LlmResult(text, ttftMs, tokPerSec, 20, 32, ttftMs + 800, feature = request.feature)
     }
 
     override fun close() { closed = true }

@@ -23,6 +23,8 @@ data class LlmResult(
     val totalMs: Long,
     val timedOut: Boolean = false,
     val error: String? = null,
+    /** Copied from the request, for the metric row. */
+    val feature: String = "",
 ) {
     val ok get() = !timedOut && error == null && text.isNotBlank()
 }

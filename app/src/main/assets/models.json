@@ -1,0 +1,50 @@
+[
+  {
+    "id": "gemma4-e4b",
+    "name": "Gemma 4 E4B",
+    "fileName": "gemma-4-E4B-it.litertlm",
+    "sizeBytes": 3659530240,
+    "sha256": "0b2a8980ce155fd97673d8e820b4d29d9c7d99b8fa6806f425d969b145bd52e0",
+    "downloadUrl": "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm",
+    "gated": false,
+    "license": "Apache-2.0",
+    "tier": 1,
+    "minTotalRamMb": 8000,
+    "minAvailRamMbCpu": 3800,
+    "minAvailRamMbGpu": 1500,
+    "storageHeadroomMb": 1000,
+    "backends": ["GPU", "CPU"]
+  },
+  {
+    "id": "gemma4-e2b",
+    "name": "Gemma 4 E2B",
+    "fileName": "gemma-4-E2B-it.litertlm",
+    "sizeBytes": 2588147712,
+    "sha256": "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c",
+    "downloadUrl": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+    "gated": false,
+    "license": "Apache-2.0",
+    "tier": 2,
+    "minTotalRamMb": 6000,
+    "minAvailRamMbCpu": 2200,
+    "minAvailRamMbGpu": 1200,
+    "storageHeadroomMb": 800,
+    "backends": ["GPU", "CPU"]
+  },
+  {
+    "id": "gemma3-1b",
+    "name": "Gemma 3 1B",
+    "fileName": "gemma3-1b-it-int4.litertlm",
+    "sizeBytes": 584417280,
+    "sha256": null,
+    "downloadUrl": null,
+    "gated": true,
+    "license": "Gemma",
+    "tier": 3,
+    "minTotalRamMb": 4000,
+    "minAvailRamMbCpu": 1400,
+    "minAvailRamMbGpu": 1400,
+    "storageHeadroomMb": 400,
+    "backends": ["CPU", "GPU"]
+  }
+]

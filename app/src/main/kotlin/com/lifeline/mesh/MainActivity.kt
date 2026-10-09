@@ -48,6 +48,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val repository = (application as LifelineApp).repository
+        // Select and load the local model in the background (CLAUDE.md 9.8 warm-up); the UI never waits for it.
+        (application as LifelineApp).ai.start()
 
         // Changing the language in onboarding or Settings recreates the activity with the new locale.
         lifecycleScope.launch {
