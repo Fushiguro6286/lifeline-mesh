@@ -69,8 +69,12 @@ class StoredPacket(val raw: ByteArray, val mine: Boolean, val ageMs: Long, val d
  *
  * Duplicates are checked before the rate limit (spec lists the rate limit first): otherwise every extra copy
  * of one packet, arriving through a different neighbor, would use up the origin's 10-per-minute budget.
- * Hellos are deduplicated in their own small cache and are not rate limited, so 6 Hellos a minute from every
- * phone cannot push real alerts out of the 2,000-entry seen cache or over the limit.
+ * Hellos and Positions ("beacons") are deduplicated in their own small cache and are not rate limited, so 6 Hellos
+ * and 2 Positions a minute from every phone cannot push real alerts out of the 2,000-entry seen cache or over the
+ * limit. Beacons are never stored for store and forward (a 6-hour-old position is wrong, not late) and make no events.
+ *
+ * Packets fetched from the sync server come in through [onReceived] with the peer [INTERNET]: they are deduplicated,
+ * stored and relayed into the local mesh like any other, and the UI marks them "via internet".
  *
  * Thread-safe: callbacks may come from radio threads and the UI at the same time.
  */
@@ -99,7 +103,7 @@ class Router(
     private val peers = LinkedHashSet<String>()
     private val peerOrigin = HashMap<String, Int>()
     private val seen = SeenCache()
-    private val helloSeen = SeenCache(capacity = 512, expiryMs = 120_000L)
+    private val helloSeen = SeenCache(capacity = 1_024, expiryMs = 300_000L)
     private val rate = RateLimiter()
     private val outbox = Outbox()
     private val topology = Topology()
@@ -151,6 +155,11 @@ class Router(
     /** Ping for one of my packets; any rescuer (or the packet's first receiver) echoes it back. */
     fun sendPing(refId: Long): ByteArray = originate(Packet.Ping(newHeader(), refId, echo = false))
 
+    /** My live position (Phase 10); the role and name come from the settings the service applied. */
+    fun sendPosition(latE6: Int, lonE6: Int, accuracy: Int) {
+        originate(Packet.Position(newHeader(), latE6, lonE6, accuracy, role, displayName))
+    }
+
     fun sendHello() {
         val hello = synchronized(lock) {
             Packet.Hello(
@@ -168,7 +177,7 @@ class Router(
         val raw = PacketCodec.encode(packet)
         val now = clock()
         val id = packet.header.messageId
-        if (packet is Packet.Hello) {
+        if (beacon(packet)) {
             helloSeen.add(id, now)
         } else {
             seen.add(id, now)
@@ -178,7 +187,7 @@ class Router(
         if (packet is Packet.Ping && !packet.echo) pendingPings[packet.refId] = now
         val targets = peers.toList()
         fx.add { listener.onPacket(packet, raw, null, 0, mine = true) }
-        if (packet !is Packet.Hello) {
+        if (!beacon(packet)) {
             val what = label(packet)
             fx.add {
                 listener.onEvent(
@@ -232,7 +241,7 @@ class Router(
         val now = clock()
         val h = p.header
         val id = h.messageId
-        if (h.hops == 0 && h.origin != me) peerOrigin[peer] = h.origin
+        if (h.hops == 0 && h.origin != me && peer != INTERNET) peerOrigin[peer] = h.origin
 
         when {
             p is Packet.Summary -> {
@@ -244,7 +253,7 @@ class Router(
                 return
             }
             h.origin == me -> return // one of mine came back around the mesh
-            p is Packet.Hello -> if (!helloSeen.add(id, now)) return
+            beacon(p) -> if (!helloSeen.add(id, now)) return
             else -> {
                 if (seen.contains(id, now)) {
                     val what = ownerLabel(p)
@@ -261,12 +270,12 @@ class Router(
         }
 
         val linkHops = h.hops + 1
-        if (linkHops == 1 && p !is Packet.Hello) {
+        if (linkHops == 1 && !beacon(p) && peer != INTERNET) {
             directIds.add(id)
             if (directIds.size > 2_000) directIds.remove(directIds.first())
         }
         fx.add { listener.onPacket(p, bytes, peer, linkHops, mine = false) }
-        if (p !is Packet.Hello) fx.add { listener.onLinkActivity(peer, p, outgoing = false, linkHops = linkHops) }
+        if (!beacon(p) && peer != INTERNET) fx.add { listener.onLinkActivity(peer, p, outgoing = false, linkHops = linkHops) }
 
         when (p) {
             is Packet.Hello -> {
@@ -282,7 +291,7 @@ class Router(
                 }
             }
             is Packet.Ping -> if (!p.echo) {
-                if (role == HelloRole.RESCUER || p.refId in directIds) {
+                if (role.isTeam || p.refId in directIds) {
                     originateLocked(Packet.Ping(newHeader(), p.refId, echo = true), fx)
                 }
             } else {
@@ -299,14 +308,15 @@ class Router(
             else -> Unit
         }
 
-        if (p !is Packet.Hello) {
-            val what = ownerLabel(p)
-            fx.add { listener.onEvent(MeshEvent(MeshEvent.Kind.RECEIVED, "${what.replaceFirstChar { it.uppercase() }} arrived · ${phones(linkHops, "hop")}.", id)) }
+        if (!beacon(p)) {
+            val what = ownerLabel(p).replaceFirstChar { it.uppercase() }
+            val text = if (peer == INTERNET) "$what arrived over the internet." else "$what arrived · ${phones(linkHops, "hop")}."
+            fx.add { listener.onEvent(MeshEvent(MeshEvent.Kind.RECEIVED, text, id)) }
         }
 
         // Forward.
         if (h.ttl == 0) {
-            if (p !is Packet.Hello) {
+            if (!beacon(p)) {
                 val what = ownerLabel(p)
                 fx.add { listener.onEvent(MeshEvent(MeshEvent.Kind.TTL_END, "${what.replaceFirstChar { it.uppercase() }} reached its hop limit; not passed on.", id)) }
             }
@@ -320,7 +330,7 @@ class Router(
         checkWaitingLocked(now, fx)
         // A reply to my own packet has arrived where it was going; "holding" it would only confuse.
         val forMe = p is Packet.Ack && p.refId in myIds
-        if (p !is Packet.Hello && !(forMe && targets.isEmpty())) {
+        if (!beacon(p) && !(forMe && targets.isEmpty())) {
             val what = ownerLabel(p)
             fx.add {
                 listener.onEvent(
@@ -369,7 +379,7 @@ class Router(
             }
         }
         val packet = (PacketCodec.decode(bytes) as? DecodeResult.Ok)?.packet
-        if (packet != null && packet !is Packet.Hello && packet !is Packet.Summary) {
+        if (packet != null && !beacon(packet) && packet !is Packet.Summary) {
             fx.add { listener.onLinkActivity(peer, packet, outgoing = true, linkHops = packet.header.hops + 1) }
         }
         fx.run()
@@ -414,7 +424,7 @@ class Router(
         val now = clock()
         for (s in stored) {
             val p = (PacketCodec.decode(s.raw) as? DecodeResult.Ok)?.packet ?: continue
-            if (p is Packet.Hello || p is Packet.Summary) continue
+            if (beacon(p) || p is Packet.Summary) continue
             val id = p.header.messageId
             val at = now - s.ageMs
             seen.add(id, now, seenAt = at)
@@ -454,9 +464,16 @@ class Router(
             is Packet.CheckIn -> 3
             is Packet.Report -> 4
             is Packet.Hello -> 5
+            is Packet.Position -> 5
         }
 
         /** Kept for store and forward. Pings and hellos only matter live. */
+        /** Pseudo-peer for packets fetched from the sync server. */
+        const val INTERNET = "internet"
+
+        /** Hello and Position: own dedup cache, no rate limit, no events, no store and forward. */
+        fun beacon(p: Packet): Boolean = p is Packet.Hello || p is Packet.Position
+
         fun storable(p: Packet): Boolean =
             p is Packet.Alert || p is Packet.CheckIn || p is Packet.Ack || p is Packet.Report
 
@@ -467,6 +484,7 @@ class Router(
             is Packet.Report -> "report"
             is Packet.Ping -> if (p.echo) "ping echo" else "ping"
             is Packet.Hello -> "hello"
+            is Packet.Position -> "position"
             is Packet.Summary -> "summary"
         }
 

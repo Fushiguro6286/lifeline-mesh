@@ -7,10 +7,12 @@ enum class Need(val bit: Int, val label: String) {
     WATER_FOOD(4, "water_food"),
     FIRE(8, "fire"),
     ROAD_BLOCKED(16, "road_blocked"),
-    PANIC(32, "panic");
+    PANIC(32, "panic"),
+    /** A helper asks for an ambulance (Phase 10): Ambulance teams get a strong alarm. Set only by that request. */
+    AMBULANCE(64, "ambulance");
 
     companion object {
-        /** The needs a person can pick on the review sheet (panic is set only by the SOS hold). */
+        /** The needs a person can pick on the review sheet (panic and ambulance are set only by their own buttons). */
         val selectable = listOf(TRAPPED, MEDICAL, WATER_FOOD, FIRE, ROAD_BLOCKED)
 
         fun fromMask(mask: Int): Set<Need> = entries.filterTo(LinkedHashSet()) { mask and it.bit != 0 }

@@ -35,6 +35,7 @@
     <string name="need_water_food">Water or food</string>
     <string name="need_fire">Fire</string>
     <string name="need_road_blocked">Road blocked</string>
+    <string name="need_ambulance">Ambulance needed</string>
 
     <string name="severity_0">Info</string>
     <string name="severity_1">Moderate</string>

@@ -50,7 +50,11 @@ object SituationReport {
     }
 
     /** Plain words for a need: "water or food", "road blocked". */
-    fun needWord(n: Need): String = if (n == Need.WATER_FOOD) "water or food" else n.label.replace('_', ' ')
+    fun needWord(n: Need): String = when (n) {
+        Need.WATER_FOOD -> "water or food"
+        Need.AMBULANCE -> "ambulance requested"
+        else -> n.label.replace('_', ' ')
+    }
 
     fun needLabels(needs: Set<Need>): String =
         if (Need.PANIC in needs) "SOS" else needs.joinToString(", ") { needWord(it) }.ifBlank { "unspecified" }

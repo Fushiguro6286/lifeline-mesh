@@ -15,6 +15,8 @@ enum class PacketType(val code: Int, val relayable: Boolean) {
     REPORT(4, true),
     PING(5, true),
     HELLO(6, true),
+    /** Live position beacon (Phase 10): relayed like a Hello, never stored or uploaded. */
+    POSITION(7, true),
     SUMMARY(15, false);
 
     companion object {
@@ -46,9 +48,14 @@ enum class ReportType(val code: Int) {
     }
 }
 
-/** Hello role byte. Same codes as [com.lifeline.mesh.data.Role], kept separate so this package stays pure. */
+/**
+ * Role byte (Hello and Position). Same codes as [com.lifeline.mesh.data.Role], kept separate so this package stays pure.
+ * 3 and up are rescue teams; 3 is "other rescue team".
+ */
 enum class HelloRole(val code: Int) {
-    NEEDS_HELP(1), VOLUNTEER(2), RESCUER(3);
+    NEEDS_HELP(1), VOLUNTEER(2), RESCUER(3), FIREFIGHTER(4), AMBULANCE(5), POLICE(6), NDRF(7);
+
+    val isTeam: Boolean get() = code >= RESCUER.code
 
     companion object {
         fun fromCode(code: Int): HelloRole? = entries.firstOrNull { it.code == code }
@@ -132,6 +139,22 @@ sealed interface Packet {
         }
     }
 
+    /**
+     * Where a phone is now (Phase 10). Sent every 30 s while it moves, every 2 min otherwise; TTL 5 like an alert.
+     * Teams see every position; other phones show only teams' (the filter is in the UI, not cryptographic).
+     */
+    data class Position(
+        override val header: Header,
+        val latE6: Int,
+        val lonE6: Int,
+        val accuracy: Int,
+        val role: HelloRole,
+        val name: String = "",
+    ) : Packet {
+        override val type get() = PacketType.POSITION
+        init { require(accuracy in 0..255) }
+    }
+
     /** Control packet sent once per new link; never relayed. */
     data class Summary(
         override val header: Header,
@@ -150,6 +173,7 @@ fun Packet.withHeader(h: Header): Packet = when (this) {
     is Packet.Report -> copy(header = h)
     is Packet.Ping -> copy(header = h)
     is Packet.Hello -> copy(header = h)
+    is Packet.Position -> copy(header = h)
     is Packet.Summary -> copy(header = h)
 }
 

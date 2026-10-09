@@ -32,6 +32,7 @@
     <string name="need_water_food">ನೀರು ಅಥವಾ ಆಹಾರ</string>
     <string name="need_fire">ಬೆಂಕಿ</string>
     <string name="need_road_blocked">ರಸ್ತೆ ಬಂದ್</string>
+    <string name="need_ambulance">ಆಂಬ್ಯುಲೆನ್ಸ್ ಬೇಕು</string>
 
     <string name="severity_0">ಮಾಹಿತಿ</string>
     <string name="severity_1">ಮಧ್ಯಮ</string>

@@ -399,4 +399,55 @@ class RouterTest {
         sim.advance(2_000)
         assertEquals(0, a.waiting)
     }
+
+    // ------------------------------------------------------------------ Phase 10: positions and internet
+
+    @Test fun positionsRelayWithoutStoringOrEventsOrRateLimit() = runTest {
+        val sim = MeshSimulator(this)
+        val (a, b, c) = sim.line("A", "B", "C")
+        sim.advance(1_000)
+        // 15 positions in a minute: far over the 10-per-minute alert limit, none may be dropped.
+        repeat(15) { a.router.sendPosition(12_971_599, 77_594_566, 2); sim.advance(1_000) }
+        sim.advance(2_000)
+        assertEquals(15, c.received(Packet.Position::class.java).size)
+        assertTrue(b.eventsOf(MeshEvent.Kind.RATE_LIMITED).isEmpty())
+        // Beacons make no timeline events and are not kept for store and forward.
+        assertTrue(c.events.none { it.text.contains("position") })
+        assertEquals(0, b.router.outboxSize())
+        assertEquals(2, c.received(Packet.Position::class.java).first().linkHops)
+    }
+
+    @Test fun teamRolesAnswerPings() = runTest {
+        val sim = MeshSimulator(this)
+        sim.node("A"); sim.node("B"); sim.node("C", HelloRole.AMBULANCE)
+        sim.line("A", "B", "C")
+        sim.advance(1_000)
+        val alert = sim["A"].sendAlert()
+        sim.advance(2_000)
+        sim["A"].router.sendPing(alert.header.messageId)
+        sim.advance(3_000)
+        assertTrue(sim["A"].roundTrips.any { it.responder == sim["C"].origin })
+    }
+
+    @Test fun packetsFromTheInternetAreStoredRelayedAndDeduplicated() = runTest {
+        val sim = MeshSimulator(this)
+        val (a, b, c) = sim.line("A", "B", "C")
+        sim.advance(1_000)
+        // An alert from a phone far away, fetched from the server by B.
+        val far = Packet.Alert(com.lifeline.mesh.packet.Header(42L, 0x7777, 4, 1, 1_000), 12_971_599, 77_594_566, 2, 3, 3, 2, "far")
+        val raw = PacketCodec.encode(far)
+        b.router.onReceived(Router.INTERNET, raw)
+        sim.advance(2_000)
+        assertEquals(Router.INTERNET, b.alerts().single().from)
+        // Relayed into the local mesh to both neighbors.
+        assertEquals(1, a.alerts().size)
+        assertEquals(1, c.alerts().size)
+        assertTrue(b.events.any { it.text.contains("over the internet") })
+        // The same alert fetched again is a duplicate, not a second alert.
+        b.router.onReceived(Router.INTERNET, raw)
+        sim.advance(2_000)
+        assertEquals(1, b.alerts().size)
+        // The internet pseudo-peer is never treated as a neighbor.
+        assertTrue(Router.INTERNET !in b.router.neighborOrigins())
+    }
 }

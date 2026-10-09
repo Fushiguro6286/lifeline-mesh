@@ -40,6 +40,7 @@ fun Need.iconRes(): Int = when (this) {
     Need.FIRE -> R.drawable.ic_local_fire_department
     Need.ROAD_BLOCKED -> R.drawable.ic_block
     Need.PANIC -> R.drawable.ic_sos
+    Need.AMBULANCE -> R.drawable.ic_emergency
 }
 
 @StringRes
@@ -50,6 +51,7 @@ fun Need.labelRes(): Int = when (this) {
     Need.FIRE -> R.string.need_fire
     Need.ROAD_BLOCKED -> R.string.need_road_blocked
     Need.PANIC -> R.string.sos_a11y_action
+    Need.AMBULANCE -> R.string.need_ambulance
 }
 
 /** Icon + label toggle. Selected = surfaceRaised with a link outline (DESIGN.md section 6). */

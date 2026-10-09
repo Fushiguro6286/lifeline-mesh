@@ -91,6 +91,27 @@ class PacketCodecTest {
         }
     }
 
+    @Test fun positionRoundTrip() {
+        HelloRole.entries.forEach { role ->
+            val p = Packet.Position(h, lat, lon, 3, role, "Kiran")
+            assertEquals(p, roundTrip(p))
+        }
+        val bare = Packet.Position(h, lat, lon, Geo.ACCURACY_UNKNOWN, HelloRole.AMBULANCE)
+        assertEquals(bare, roundTrip(bare))
+        assertEquals(PacketCodec.HEADER_SIZE + 10, PacketCodec.encode(bare).size)
+        // Name trimmed to 16 bytes on a whole character; longer on the wire is malformed.
+        val long = roundTrip(Packet.Position(h, lat, lon, 1, HelloRole.NDRF, "ಎನ್‌ಡಿಆರ್‌ಎಫ್ ತಂಡ")) as Packet.Position
+        assertTrue(long.name.toByteArray().size <= PacketCodec.MAX_POSITION_NAME)
+        val tooLong = ByteBuffer.allocate(10 + 17).apply { putInt(lat); putInt(lon); put(1); put(5); put(ByteArray(17) { 'a'.code.toByte() }) }.array()
+        assertEquals("name too long", malformed(raw(0x17, tooLong)))
+    }
+
+    @Test fun ambulanceNeedBitRoundTrips() {
+        val p = Packet.Alert(h, lat, lon, 2, Need.toMask(listOf(Need.AMBULANCE, Need.MEDICAL)), 3, 1, "")
+        assertEquals(p, roundTrip(p))
+        assertEquals(setOf(Need.MEDICAL, Need.AMBULANCE), Need.fromMask((roundTrip(p) as Packet.Alert).needs))
+    }
+
     @Test fun helloNoNeighborsNoName() {
         val p = Packet.Hello(h, 0, HelloRole.VOLUNTEER, emptyList())
         assertEquals(p, roundTrip(p))
@@ -208,7 +229,7 @@ class PacketCodecTest {
     }
 
     @Test fun unknownType() {
-        for (t in listOf(0, 7, 8, 9, 10, 11, 12, 13, 14)) {
+        for (t in listOf(0, 8, 9, 10, 11, 12, 13, 14)) {
             assertTrue("type $t", malformed(raw(0x10 or t, ByteArray(20))).startsWith("unknown type"))
         }
     }
@@ -227,7 +248,7 @@ class PacketCodecTest {
 
     @Test fun outOfRangeFields() {
         assertEquals("severity out of range", malformed(raw(0x11, alertBody(ByteArray(0), sev = 4))))
-        assertEquals("unknown needs bits", malformed(raw(0x11, alertBody(ByteArray(0), needs = 64))))
+        assertEquals("unknown needs bits", malformed(raw(0x11, alertBody(ByteArray(0), needs = 128))))
         assertEquals("latitude out of range", malformed(raw(0x11, alertBody(ByteArray(0), lat = 90_000_001))))
         val badLon = ByteBuffer.allocate(12).apply { putInt(0); putInt(-180_000_001); put(0); put(1); put(1); put(1) }.array()
         assertEquals("longitude out of range", malformed(raw(0x11, badLon)))
@@ -235,8 +256,10 @@ class PacketCodecTest {
             val r = ByteBuffer.allocate(10).apply { putInt(lat); putInt(lon); put(1); put(k.toByte()) }.array()
             assertEquals("unknown report type", malformed(raw(0x14, r)))
         }
-        for (role in listOf(0, 4)) {
+        for (role in listOf(0, 8)) {
             assertEquals("unknown role", malformed(raw(0x16, byteArrayOf(50, role.toByte(), 0))))
+            val pos = ByteBuffer.allocate(10).apply { putInt(lat); putInt(lon); put(1); put(role.toByte()) }.array()
+            assertEquals("unknown role", malformed(raw(0x17, pos)))
         }
         val ping2 = ByteBuffer.allocate(9).apply { putLong(1); put(2) }.array()
         assertEquals("bad echo flag", malformed(raw(0x15, ping2)))
@@ -292,6 +315,7 @@ class PacketCodecTest {
             Packet.Report(h, lat, lon, 1, ReportType.ROAD_BLOCKED, "Bridge"),
             Packet.Ping(h, 7, false),
             Packet.Hello(h, 80, HelloRole.RESCUER, listOf(1, 2, 3), "Ravi"),
+            Packet.Position(h, lat, lon, 2, HelloRole.AMBULANCE, "Kiran"),
             Packet.Summary(h, listOf(1, 2, 3)),
         ).map { PacketCodec.encode(it) }
         repeat(20_000) {
@@ -339,6 +363,7 @@ class PacketCodecTest {
             "Ack, note \"Boat coming, stay on roof\"" to Packet.Ack(h, 7, 20, "Boat coming, stay on roof"),
             "Ping" to Packet.Ping(h, 7, false),
             "Hello, 3 neighbors, name \"Asha\"" to Packet.Hello(h.copy(ttl = 2), 80, HelloRole.NEEDS_HELP, listOf(1, 2, 3), "Asha"),
+            "Position, ambulance, name \"Kiran\"" to Packet.Position(h, lat, lon, 2, HelloRole.AMBULANCE, "Kiran"),
             "Summary, 100 ids (largest packet)" to Packet.Summary(h, List(100) { it.toLong() }),
         )
         println("PACKET SIZES (encoded bytes, header ${PacketCodec.HEADER_SIZE}):")

@@ -115,6 +115,7 @@ fun Packet.toEntity(raw: ByteArray, fromEndpoint: String?, linkHops: Int, mine: 
         is Packet.Report -> base.copy(lat = e6(latE6), lon = e6(lonE6), accuracy = accuracy, reportType = reportType.code, note = note)
         is Packet.Ping -> base.copy(refId = refId)
         is Packet.Hello -> base.copy(name = name)
+        is Packet.Position -> base.copy(name = name) // never stored; kept total for completeness
         is Packet.Summary -> base
     }
 }

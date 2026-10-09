@@ -156,10 +156,11 @@ Every packet starts with a 19-byte header:
 | 3 | Ack | referenced message ID (8), ETA minutes (1), note ≤ 40 bytes |
 | 4 | Community report | lat (4), lon (4), accuracy (1), report type (1: road blocked, 2: water available, 3: shelter open, 4: shelter full), note ≤ 60 bytes |
 | 5 | Ping | referenced message ID (8), echo flag (1) |
-| 6 | Hello | battery % (1), role (1: needs help, 2: volunteer, 3: rescuer), neighbor count (1), neighbor origins (4 each, max 16), display name ≤ 16 bytes |
+| 6 | Hello | battery % (1), role (1: needs help, 2: volunteer, 3: other rescue team, 4: firefighter, 5: ambulance, 6: police, 7: NDRF; 3 and up are teams), neighbor count (1), neighbor origins (4 each, max 16), display name ≤ 16 bytes |
+| 7 | Position (Phase 10, beacon like Hello: not rate limited, not stored, no events) | lat (4), lon (4), accuracy (1), role (1, as Hello), display name ≤ 16 bytes |
 | 15 | Summary (control, never relayed) | count (1), up to 100 message IDs (8 each) |
 
-Needs bitmask: 1 trapped, 2 medical, 4 water or food, 8 fire, 16 road blocked, 32 panic SOS.
+Needs bitmask: 1 trapped, 2 medical, 4 water or food, 8 fire, 16 road blocked, 32 panic SOS, 64 ambulance requested (Phase 10).
 
 `PacketCodec` rejects malformed packets (short, unknown version/type, oversized note, invalid UTF-8 trimmed safely) without crashing. Notes are trimmed on whole UTF-8 characters, never mid-character. Unit tests cover every type, maximum lengths, Hindi and Kannada notes, and malformed input.
 

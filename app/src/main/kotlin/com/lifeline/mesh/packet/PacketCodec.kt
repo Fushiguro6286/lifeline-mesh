@@ -31,8 +31,9 @@ object PacketCodec {
     const val MAX_HELLO_NAME = 16
     const val MAX_HELLO_NEIGHBORS = 16
     const val MAX_SUMMARY_IDS = 100
+    const val MAX_POSITION_NAME = 16
 
-    private const val KNOWN_NEEDS_MASK = 0x3F
+    private const val KNOWN_NEEDS_MASK = 0x7F
 
     // ---------------------------------------------------------------- encode
 
@@ -73,6 +74,12 @@ object PacketCodec {
                     put(p.battery.toByte()); put(p.role.code.toByte()); put(p.neighbors.size.toByte())
                     p.neighbors.forEach { putInt(it) }
                     put(name)
+                }.array()
+            }
+            is Packet.Position -> {
+                val name = utf8Trimmed(p.name, MAX_POSITION_NAME)
+                ByteBuffer.allocate(10 + name.size).apply {
+                    putInt(p.latE6); putInt(p.lonE6); put(p.accuracy.toByte()); put(p.role.code.toByte()); put(name)
                 }.array()
             }
             is Packet.Summary -> ByteBuffer.allocate(1 + 8 * p.ids.size).apply {
@@ -176,6 +183,12 @@ object PacketCodec {
                 buf.need(4 * count)
                 val neighbors = List(count) { buf.int }
                 Packet.Hello(header, battery, role, neighbors, buf.text(MAX_HELLO_NAME, "name"))
+            }
+            PacketType.POSITION -> {
+                buf.need(10)
+                val lat = buf.lat(); val lon = buf.lon(); val acc = buf.u8()
+                val role = HelloRole.fromCode(buf.u8()) ?: bad("unknown role")
+                Packet.Position(header, lat, lon, acc, role, buf.text(MAX_POSITION_NAME, "name"))
             }
             PacketType.SUMMARY -> {
                 buf.need(1)

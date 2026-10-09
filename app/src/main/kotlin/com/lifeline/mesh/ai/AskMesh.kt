@@ -105,6 +105,7 @@ object AskMesh {
         listOf("fire", "smoke", "burn").any { q.contains(it) } -> Need.FIRE
         listOf("water", "food", "hungry", "thirst").any { q.contains(it) } -> Need.WATER_FOOD
         listOf("road", "blocked", "bridge").any { q.contains(it) } -> Need.ROAD_BLOCKED
+        listOf("ambulance").any { q.contains(it) } -> Need.AMBULANCE
         listOf("sos", "panic").any { q.contains(it) } -> Need.PANIC
         else -> null
     }
@@ -112,6 +113,7 @@ object AskMesh {
     private fun needWord(n: Need) = when (n) {
         Need.TRAPPED -> "trapped"; Need.MEDICAL -> "medical"; Need.WATER_FOOD -> "water or food"
         Need.FIRE -> "fire"; Need.ROAD_BLOCKED -> "road blocked"; Need.PANIC -> "SOS"
+        Need.AMBULANCE -> "ambulance requested"
     }
 
     private fun severityWord(s: Int) = when (s) { 3 -> "urgent"; 2 -> "high"; 1 -> "moderate"; else -> "info" }
