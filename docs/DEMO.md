@@ -2,7 +2,7 @@
 
 Living document. Updated at the end of every phase.
 
-## Current state (Phase 7 built; phone tests for Phases 2 to 5 still open; voice needs a speech pack)
+## Current state (Phase 8 built, not yet checked on a phone; phone tests for Phases 2 to 5 still open)
 
 - Phases 0 to 6: app, codec, mesh, Live Mesh, simulation/demo modes, SOS send flow, Rescue tab, offline map.
 - Phase 7: on-device AI. Model ladder (assets/models.json), DeviceProfiler, ModelShortlist, ModelSelector (load → speed
@@ -11,7 +11,13 @@ Living document. Updated at the end of every phase.
   validated; replaces the rules draft only if valid and not yet edited), ClarifyingQuestions ("Written on device"),
   SpeechInput (on-device recognizer, then the regular one; typed fallback), Settings → On-device AI card ("Why this
   model?"), Benchmarks screen (demo-sentence test, GPU vs CPU, every call, probes, mesh numbers).
-- 131 unit tests pass.
+- Phase 8: Rescue tab situation report card (numbers computed in Kotlin, template shown at once, model phrasing only if
+  every number checks out, "Written on device", refresh, read aloud); "Ask the mesh" screen (4 quick chips, typed
+  questions, tappable #n citations that open the alert, "Rules" label on the fallback); "Translate" on alert notes for
+  the rescuer and automatic translation of a reply note in another script for the sender ("Machine translated", original
+  kept on failure); Read aloud (Settings switch, on by default) for the gate question (also a speaker button) and for
+  "Help is coming" replies.
+- 145 unit tests pass.
 - Verified on the iQOO 15 (10 Oct): selector picks Gemma 4 E4B on GPU (TTFT 814 ms, 16.6 tok/s) and passes en/hi/kn;
   demo sentences 4/4 correct by the AI; GPU 336 ms / 22 tok/s vs CPU 1,392 ms / 17 tok/s; "please help us" gets an
   AI-written question; with the models moved away the app says "Rules only" and the send flow works on rules.
@@ -38,6 +44,23 @@ apart from real ones and never shown together; every number carries a Simulated 
 
 Phase 3 check in simulation: switch "Ravi off", tap "Alert from Meena" (nothing reaches you; Meena holds it), switch
 "Ravi on" (it arrives through Ravi, events show "Sent N stored packets").
+
+## Phase 8 phone check (one phone is enough)
+
+On the iQOO 15 with the models installed and "AI ready" in the status strip:
+
+1. Settings → Mesh → Simulation mode on, then the Rescue tab → "Load sample alerts". The situation report shows the
+   computed lines at once; within a few seconds they change and "Written on device" appears. Every number in the lines
+   must match the alert list. Tap the speaker: it reads the report.
+2. Tap "Ask the mesh". Tap each quick chip. Expected: an answer with #n chips and "Answered from N stored alerts · Written
+   on device"; tapping #1 opens that alert. Type a question with no answer (e.g. "Is anyone on the roof of the temple?"):
+   "No matching alerts." or a rules answer, never invented alerts.
+3. Set the app language to Hindi, open an alert with an English note, tap "अनुवाद करें": a Hindi line plus "मशीन से
+   अनुवाद".
+4. Send tab: type "please help us" → review sheet reads the question aloud (Read aloud on); the speaker button repeats it.
+5. Fallback: move the models away (adb shell mv .../files/models .../files/models_off), reopen. Status "Rules only". The
+   report shows the computed lines with no "Written on device"; Ask answers carry the "Rules" label; no Translate button
+   appears; nothing waits or crashes. Move the models back afterwards.
 
 ## Phase 3 phone check (needs 3 phones)
 
@@ -90,7 +113,10 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
   Kannada offline voice may not exist; Kannada works by typing.
 - First launch after installing models or updating the app re-runs the probes (~30 s with E4B); the status strip says
   "Testing AI" meanwhile and the rules are used.
-- The AI card and Benchmarks screen texts are English only and written in the code (not yet moved to strings.xml).
+- The AI card, Benchmarks, situation report and Ask the mesh texts are English only and written in the code (rescuer
+  and developer screens, DESIGN.md section 9).
+- Read aloud uses the phone's TextToSpeech voices. If the phone has no Hindi or Kannada voice, it reads with the default
+  voice (check Settings → Text-to-speech on each phone).
 
 - The offline map covers central Bengaluru (77.55–77.65 E, 12.93–13.01 N), not a confirmed venue box. Give me the venue
   and I will re-cut it (one command, see SETUP.md section 6). Outside the box the map says so; Rings still works.
@@ -99,8 +125,6 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
 
 - RuleExtractor was written from scratch: the web prototype's source was not on this laptop. If you have it, the rules
   can be aligned with it. Behaviour is pinned by RuleExtractorTest.
-- Speak opens the typing panel and says voice is not ready yet (speech arrives in Phase 7). The speaker button on the
-  gate question arrives with ReadAloud in Phase 8.
 - "Approximate" location is shown to the sender only; the packet format has no flag for it (the accuracy byte carries the
   fix's own accuracy).
 - Notes longer than 60 bytes are trimmed on whole characters; the review sheet shows exactly what is sent ("Sent as").

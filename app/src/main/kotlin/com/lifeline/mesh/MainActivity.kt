@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun Context.withLocale(tag: String): Context {
+internal fun Context.withLocale(tag: String): Context {
     val locale = Locale.forLanguageTag(tag)
     val config = Configuration(resources.configuration)
     config.setLocales(LocaleList(locale))

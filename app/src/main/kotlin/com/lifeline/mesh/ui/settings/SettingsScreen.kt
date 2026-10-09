@@ -115,6 +115,8 @@ fun SettingsScreen(
             settings.simulationMode, repository::setSimulationMode)
         SwitchRow(R.drawable.ic_speed, stringResource(R.string.settings_demo), stringResource(R.string.settings_demo_body),
             settings.demoMode, repository::setDemoMode)
+        SwitchRow(R.drawable.ic_volume_up, "Read aloud", "Reads the question on the review sheet and \"Help is coming\" replies out loud.",
+            settings.readAloud, repository::setReadAloud)
 
         Section("On-device AI")
         AiSettingsCard(onBenchmarks)

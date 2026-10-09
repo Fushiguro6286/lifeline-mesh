@@ -165,4 +165,11 @@
     <string name="speak_err_unavailable">इस फ़ोन पर बोलकर लिखना उपलब्ध नहीं है। कृपया लिखें।</string>
     <string name="speak_err_other">बोलकर लिखना रुक गया। फिर कोशिश करें या लिखें।</string>
     <string name="speak_get_pack">इस भाषा की ऑफ़लाइन आवाज़ डाउनलोड करें (Wi-Fi)</string>
+
+    <!-- Phase 8 -->
+    <string name="machine_translated">मशीन से अनुवाद</string>
+    <string name="translate_action">अनुवाद करें</string>
+    <string name="translating">फ़ोन पर अनुवाद हो रहा है…</string>
+    <string name="translate_failed">अनुवाद नहीं हो सका; मूल संदेश दिखा रहे हैं।</string>
+    <string name="listen">सुनें</string>
 </resources>

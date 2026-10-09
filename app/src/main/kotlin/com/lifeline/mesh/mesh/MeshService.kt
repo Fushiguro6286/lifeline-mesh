@@ -27,6 +27,7 @@ import com.lifeline.mesh.AppRepository
 import com.lifeline.mesh.LifelineApp
 import com.lifeline.mesh.MainActivity
 import com.lifeline.mesh.R
+import com.lifeline.mesh.withLocale
 import com.lifeline.mesh.data.EventEntity
 import com.lifeline.mesh.data.MetricEntity
 import com.lifeline.mesh.data.Settings
@@ -105,6 +106,12 @@ class MeshService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /** Notifications and read-aloud in the app language, not the phone's (they reach a frightened user). */
+    override fun attachBaseContext(newBase: Context) {
+        val lang = (newBase.applicationContext as LifelineApp).settingsStore.languageBlocking()
+        super.attachBaseContext(newBase.withLocale(lang.tag))
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -337,6 +344,11 @@ class MeshService : Service() {
             scope.launch {
                 Haptics.strong(this@MeshService)
                 showReply(ack, simulated)
+                val s = repo.settings.value
+                if (s?.readAloud == true) {
+                    val text = getString(R.string.status_help_coming) + ". " + getString(R.string.notif_reply, ack.etaMinutes)
+                    (application as LifelineApp).readAloud.speak(text, s.language.tag)
+                }
             }
         }
 

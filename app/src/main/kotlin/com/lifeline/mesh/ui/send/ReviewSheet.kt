@@ -130,18 +130,24 @@ fun ReviewSheet(r: SendViewModel.Review, settings: Settings, vm: SendViewModel) 
                     tint = if (missing == null) c.safe else c.warn, modifier = Modifier.size(24.dp),
                 )
                 val aiQuestion = missing?.let { r.questions[it] }
-                Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                    Text(
-                        aiQuestion ?: stringResource(
-                            when (missing) {
-                                QualityGate.Missing.NEEDS -> R.string.gate_q_needs
-                                QualityGate.Missing.PEOPLE -> R.string.gate_q_people
-                                null -> R.string.gate_ready
-                            }
-                        ),
-                        style = Lifeline.type.bodyStrong, color = c.ink,
-                    )
+                val shown = aiQuestion ?: stringResource(
+                    when (missing) {
+                        QualityGate.Missing.NEEDS -> R.string.gate_q_needs
+                        QualityGate.Missing.PEOPLE -> R.string.gate_q_people
+                        null -> R.string.gate_ready
+                    }
+                )
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                    Text(shown, style = Lifeline.type.bodyStrong, color = c.ink)
                     if (aiQuestion != null) Text(stringResource(R.string.gate_written_on_device), style = Lifeline.type.caption, color = c.inkMuted)
+                }
+                if (missing != null) {
+                    val app = context.applicationContext as com.lifeline.mesh.LifelineApp
+                    androidx.compose.material3.IconButton(onClick = { app.readAloud.speak(shown, settings.language.tag) }) {
+                        Icon(painterResource(R.drawable.ic_volume_up), stringResource(R.string.listen), tint = c.link, modifier = Modifier.size(24.dp))
+                    }
+                    // Read the question aloud when it appears (or changes), if read-aloud is on.
+                    androidx.compose.runtime.LaunchedEffect(shown) { if (settings.readAloud) app.readAloud.speak(shown, settings.language.tag) }
                 }
             }
 

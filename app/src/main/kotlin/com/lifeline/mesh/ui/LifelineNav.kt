@@ -72,6 +72,7 @@ import kotlin.reflect.KClass
 @Serializable object GalleryRoute
 @Serializable object DebugRoute
 @Serializable object BenchmarksRoute
+@Serializable object AskRoute
 
 private data class Tab(
     val route: Any,
@@ -139,7 +140,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
             }
             composable<DebugRoute> { MeshDebugScreen(settings, repository, onPermissions = { nav.navigate(PermissionsRoute) }) }
             composable<RescueRoute> {
-                RescuerScreen(settings, onOpenMesh = {
+                RescuerScreen(settings, onAsk = { nav.navigate(AskRoute) }, onOpenMesh = {
                     nav.navigate(MeshRoute) {
                         popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
@@ -163,6 +164,7 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
             }
             composable<GalleryRoute> { ComponentGallery() }
             composable<BenchmarksRoute> { com.lifeline.mesh.ui.settings.BenchmarksScreen() }
+            composable<AskRoute> { com.lifeline.mesh.ui.rescuer.AskMeshScreen() }
         }
     }
 }
@@ -203,6 +205,7 @@ private fun SubScreenTitle(destination: androidx.navigation.NavDestination?, onB
         destination?.hasRoute(GalleryRoute::class) == true -> stringResource(R.string.settings_gallery)
         destination?.hasRoute(DebugRoute::class) == true -> stringResource(R.string.settings_debug)
         destination?.hasRoute(BenchmarksRoute::class) == true -> "Benchmarks"
+        destination?.hasRoute(AskRoute::class) == true -> "Ask the mesh"
         else -> ""
     }
     Row(Modifier.heightIn(min = 56.dp).padding(end = Space.screen), verticalAlignment = Alignment.CenterVertically) {

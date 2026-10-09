@@ -10,6 +10,7 @@ class LifelineApp : Application() {
     val settingsStore by lazy { SettingsStore(this) }
     val repository by lazy { AppRepository(database, settingsStore) }
     val ai by lazy { com.lifeline.mesh.ai.AiRuntime(this, database) }
+    val readAloud by lazy { com.lifeline.mesh.ai.ReadAloud(this) }
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)

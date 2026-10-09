@@ -165,4 +165,11 @@
     <string name="speak_err_unavailable">ಈ ಫೋನ್‌ನಲ್ಲಿ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಬರೆಯಿರಿ.</string>
     <string name="speak_err_other">ಧ್ವನಿ ಇನ್‌ಪುಟ್ ನಿಂತಿತು. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಬರೆಯಿರಿ.</string>
     <string name="speak_get_pack">ಈ ಭಾಷೆಯ ಆಫ್‌ಲೈನ್ ಧ್ವನಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ (Wi-Fi)</string>
+
+    <!-- Phase 8 -->
+    <string name="machine_translated">ಯಂತ್ರ ಅನುವಾದ</string>
+    <string name="translate_action">ಅನುವಾದಿಸಿ</string>
+    <string name="translating">ಫೋನ್‌ನಲ್ಲಿ ಅನುವಾದಿಸಲಾಗುತ್ತಿದೆ…</string>
+    <string name="translate_failed">ಅನುವಾದ ಆಗಲಿಲ್ಲ; ಮೂಲ ಸಂದೇಶ ತೋರಿಸಲಾಗಿದೆ.</string>
+    <string name="listen">ಕೇಳಿ</string>
 </resources>

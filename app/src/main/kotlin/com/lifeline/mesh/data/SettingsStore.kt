@@ -35,6 +35,8 @@ data class Settings(
     val demoMode: Boolean,
     val theme: ThemeMode,
     val onboardingDone: Boolean,
+    /** Read gate questions and replies aloud (DESIGN.md 10). */
+    val readAloud: Boolean = true,
 ) {
     /** Last 4 hex digits of the origin, used in endpoint names like "Asha-3fa1". */
     val originShort: String get() = "%08x".format(originId).takeLast(4)
@@ -54,6 +56,7 @@ class SettingsStore(private val context: Context) {
         val DEMO = booleanPreferencesKey("demo_mode")
         val THEME = stringPreferencesKey("theme")
         val ONBOARDED = booleanPreferencesKey("onboarding_done")
+        val READ_ALOUD = booleanPreferencesKey("read_aloud")
     }
 
     private val store get() = context.dataStore
@@ -86,6 +89,7 @@ class SettingsStore(private val context: Context) {
         demoMode = p[Keys.DEMO] ?: false,
         theme = p[Keys.THEME]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SYSTEM,
         onboardingDone = p[Keys.ONBOARDED] ?: false,
+        readAloud = p[Keys.READ_ALOUD] ?: true,
     )
 
     suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16) }
@@ -97,6 +101,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setDemoMode(on: Boolean) = store.edit { it[Keys.DEMO] = on }
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
     suspend fun setOnboardingDone(done: Boolean) = store.edit { it[Keys.ONBOARDED] = done }
+    suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
 
     /**
      * The chosen language, read synchronously. Only for Activity.attachBaseContext, which must

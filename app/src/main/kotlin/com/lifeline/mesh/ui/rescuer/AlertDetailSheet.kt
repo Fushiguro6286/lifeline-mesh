@@ -55,7 +55,7 @@ private val ETAS = listOf(10, 20, 30, 60)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String) -> Unit, onDismiss: () -> Unit) {
+fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String) -> Unit, onDismiss: () -> Unit, language: String = "en") {
     val c = Lifeline.colors
     val a = r.alert
     val context = LocalContext.current
@@ -99,7 +99,7 @@ fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String)
                 Column(Modifier.fillMaxWidth().background(c.surfaceRaised, Shapes.card).padding(Space.m)) {
                     Text(stringResource(R.string.detail_report_row, hex4(rep.origin), rep.hops, ago(context, now, rep.receivedAt)),
                         style = Lifeline.type.label, color = c.ink)
-                    if (rep.note.isNotBlank()) Text("“${rep.note}”", style = Lifeline.type.body, color = c.ink)
+                    if (rep.note.isNotBlank()) com.lifeline.mesh.ui.components.TranslatableNote(rep.note, language)
                 }
             }
 

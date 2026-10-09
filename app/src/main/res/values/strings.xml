@@ -175,4 +175,11 @@
     <string name="speak_err_unavailable">Voice input is not available on this phone. Please type.</string>
     <string name="speak_err_other">Voice input stopped. Try again, or type.</string>
     <string name="speak_get_pack">Download offline voice for this language (Wi-Fi)</string>
+
+    <!-- Phase 8 -->
+    <string name="machine_translated">Machine translated</string>
+    <string name="translate_action">Translate</string>
+    <string name="translating">Translating on device…</string>
+    <string name="translate_failed">Could not translate; showing the original.</string>
+    <string name="listen">Read aloud</string>
 </resources>

@@ -168,6 +168,27 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
         return value
     }
 
+    /** Three phrased report lines, validated against the facts; null = show the computed template. */
+    suspend fun report(f: SituationFacts): List<String>? = nonEssential { e ->
+        val r = e.generate(SituationReport.request(f))
+        (if (r.ok) SituationReport.validate(r.text, f) else null) to r
+    }
+
+    /** A model answer that cites existing alerts; null = use the rule-based answer. */
+    suspend fun ask(question: String, ranked: List<com.lifeline.mesh.triage.RankedAlert>): MeshAnswer? = nonEssential { e ->
+        val r = e.generate(AskMesh.request(question, ranked))
+        (if (r.ok) AskMesh.validate(r.text, minOf(ranked.size, 25)) else null) to r
+    }
+
+    /** Translation into [target]; null = keep the original. */
+    suspend fun translate(text: String, target: String): String? {
+        if (!canUse(target)) return null
+        return nonEssential { e ->
+            val r = e.generate(Translator.request(text, target))
+            (if (r.ok) Translator.validate(r.text, text, target) else null) to r
+        }
+    }
+
     /** One demo sentence through rules and the model, compared with the expected answer (PROMPTS.md, Phase 4). */
     data class DemoResult(val text: String, val expected: AlertDraft, val rules: AlertDraft, val ai: AlertDraft?, val usedAi: Boolean) {
         private fun right(d: AlertDraft?) = d != null && d.needs == expected.needs && d.people == expected.people

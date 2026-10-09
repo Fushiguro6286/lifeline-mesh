@@ -60,6 +60,7 @@ class AppRepository(
     fun setOnboardingDone() = scope.launch { settingsStore.setOnboardingDone(true) }
     fun setSimulationMode(on: Boolean) = scope.launch { settingsStore.setSimulationMode(on) }
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
+    fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
 
     // ------------------------------------------------------------------ Room
 

@@ -41,7 +41,7 @@ import com.lifeline.mesh.ui.theme.Space
  * direction, reports merged, time, note, and Acknowledge. Acknowledged cards dim and show the ETA that was sent.
  */
 @Composable
-fun AlertCard(r: RankedAlert, now: Long, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun AlertCard(r: RankedAlert, now: Long, onOpen: () -> Unit, modifier: Modifier = Modifier, language: String = "en") {
     val c = Lifeline.colors
     val a = r.alert
     val context = LocalContext.current
@@ -76,7 +76,7 @@ fun AlertCard(r: RankedAlert, now: Long, onOpen: () -> Unit, modifier: Modifier 
                     " · " + ago(context, now, a.lastAt),
                 style = Lifeline.type.caption, color = c.inkMuted,
             )
-            if (a.note.isNotBlank()) Text("“${a.note}”", style = Lifeline.type.body, color = c.ink)
+            if (a.note.isNotBlank()) com.lifeline.mesh.ui.components.TranslatableNote(a.note, language)
             if (a.acked) {
                 Text(stringResource(R.string.alert_eta_sent, a.ackEta ?: 0), style = Lifeline.type.bodyStrong, color = c.safe)
             } else {

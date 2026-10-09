@@ -105,7 +105,7 @@ fun PacketEntity.toReport(): AlertReport {
  * reports. Every count is computed in Kotlin from packets stored on this phone.
  */
 @Composable
-fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, vm: RescuerViewModel = viewModel()) {
+fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit, vm: RescuerViewModel = viewModel()) {
     val c = Lifeline.colors
     val context = LocalContext.current
     val repo = (context.applicationContext as LifelineApp).repository
@@ -131,7 +131,11 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, vm: RescuerViewMod
     ) {
         item { Spacer(Modifier.height(Space.s)) }
         item { Header(ranked, settings.simulationMode) }
-        item { ReportPlaceholder() }
+        item {
+            val facts = remember(ranked, checkIns) { com.lifeline.mesh.ai.SituationReport.facts(ranked, checkIns.size, ::distanceText) }
+            SituationReportCard(facts)
+        }
+        item { PrimaryButtonRow(onAsk) }
         item { SectionTitle(stringResource(R.string.rescue_alerts) + if (ranked.isEmpty()) "" else " · ${ranked.size}") }
         if (ranked.isEmpty()) {
             item {
@@ -145,7 +149,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, vm: RescuerViewMod
             }
         }
         items(ranked, key = { it.alert.id }) { r ->
-            AlertCard(r, now, onOpen = { open = r.alert.id })
+            AlertCard(r, now, onOpen = { open = r.alert.id }, language = settings.language.tag)
         }
 
         item { SectionTitle(stringResource(R.string.rescue_checkins)) }
@@ -173,7 +177,8 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, vm: RescuerViewMod
     open?.let { id ->
         val r = ranked.firstOrNull { it.alert.id == id }
         if (r == null) open = null
-        else AlertDetailSheet(r, now, onSend = { eta, note -> repo.sendAcks(r.alert.reports.map { it.id }, eta, note); open = null }, onDismiss = { open = null })
+        else AlertDetailSheet(r, now, onSend = { eta, note -> repo.sendAcks(r.alert.reports.map { it.id }, eta, note); open = null }, onDismiss = { open = null },
+            language = settings.language.tag)
     }
 }
 
@@ -200,13 +205,10 @@ private fun Header(ranked: List<RankedAlert>, simulated: Boolean) {
     }
 }
 
+/** "Ask the mesh" entry (DESIGN.md 8.4 floating Ask button, placed in the list so it never covers a card). */
 @Composable
-private fun ReportPlaceholder() {
-    val c = Lifeline.colors
-    Column(Modifier.fillMaxWidth().background(c.surface, Shapes.card).padding(Space.l), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-        Text(stringResource(R.string.rescue_report_title), style = Lifeline.type.title, color = c.ink)
-        Text(stringResource(R.string.rescue_report_soon), style = Lifeline.type.caption, color = c.inkMuted)
-    }
+private fun PrimaryButtonRow(onAsk: () -> Unit) {
+    com.lifeline.mesh.ui.components.PrimaryButton("Ask the mesh", onAsk, Modifier.fillMaxWidth())
 }
 
 @Composable

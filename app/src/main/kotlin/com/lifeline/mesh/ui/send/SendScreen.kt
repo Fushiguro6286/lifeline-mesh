@@ -258,7 +258,7 @@ fun SendScreen(settings: Settings, vm: SendViewModel = viewModel()) {
         Text(stringResource(R.string.sos_greeting), style = Lifeline.type.title, color = c.ink, textAlign = TextAlign.Center)
 
         if (statusAlert != null) {
-            DeliveryStatusCard(statusAlert, ack, onSendAnother = { vm.dismissStatus(statusAlert.id) })
+            DeliveryStatusCard(statusAlert, ack, onSendAnother = { vm.dismissStatus(statusAlert.id) }, language = settings.language.tag)
         } else {
             // Room around the 200 dp button for its signal rings.
             Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {

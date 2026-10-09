@@ -97,7 +97,6 @@
     <string name="rescue_urgent">Urgent</string>
     <string name="rescue_acked">Acknowledged</string>
     <string name="rescue_report_title">Situation report</string>
-    <string name="rescue_report_soon">A three-line summary written on this phone, and "Ask the mesh", arrive in Phase 8.</string>
     <string name="rescue_alerts">Alerts</string>
     <string name="rescue_empty_title">No alerts yet</string>
     <string name="rescue_empty_body">Alerts from nearby phones appear here as soon as they arrive, ranked by urgency.</string>

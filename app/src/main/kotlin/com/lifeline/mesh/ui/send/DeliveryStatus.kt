@@ -35,7 +35,7 @@ import com.lifeline.mesh.ui.theme.Space
  * → "Help is coming" once an Ack for this alert arrives. Then the card turns safe-green with the ETA.
  */
 @Composable
-fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: () -> Unit, modifier: Modifier = Modifier) {
+fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: () -> Unit, modifier: Modifier = Modifier, language: String = "en") {
     val c = Lifeline.colors
     val context = LocalContext.current
     val acked = alert.acked || ack != null
@@ -55,7 +55,7 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
         if (acked) {
             Text(stringResource(R.string.status_help_coming), style = Lifeline.type.headline, color = c.safe, modifier = Modifier.semantics { heading() })
             eta?.let { Text(stringResource(R.string.status_eta, it), style = Lifeline.type.display, color = c.ink) }
-            ack?.note?.takeIf { it.isNotBlank() }?.let { Text("“$it”", style = Lifeline.type.body, color = c.ink) }
+            ack?.note?.takeIf { it.isNotBlank() }?.let { com.lifeline.mesh.ui.components.TranslatableNote(it, language, auto = true) }
         } else {
             Text(stringResource(R.string.status_title), style = Lifeline.type.title, color = c.ink, modifier = Modifier.semantics { heading() })
         }
