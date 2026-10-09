@@ -42,3 +42,22 @@ NPU: not tried (no SM8850 build of the model; see Benchmarks screen).
 ## Mesh on real phones
 
 Hops, round trip, battery: not measured yet (needs phones B and C).
+
+How each is measured by the app (Benchmarks → Mesh, and the CSV export):
+
+- **Hops** (`hops`): hop count in the packet when it arrives, one row per received packet.
+- **Packet size** (`packet_bytes`): encoded bytes of every packet sent or received.
+- **Round trip** (`rtt_ms`): Ping with echo (CLAUDE.md 7.2), timed on the sender's own clock; clocks are never compared
+  across phones.
+- **Battery drain** (`battery_drain`, %/h): `BatteryMonitor` takes the level at relay start (first sample on battery),
+  then one sample a minute while a real mesh session runs. A rate is stored every 5 minutes once 15 minutes on battery
+  have passed. Charging, or the level going up, starts over. Android reports whole percent, so a 15-minute run is
+  coarse (1 % = 4 %/h); quote rates from runs of an hour or more. The note says the start and end level, minutes, and
+  how many phones were connected. The screen state is not controlled: note it yourself when you run a test.
+
+## Export
+
+Settings → Measurements → Export measurements writes `files/exports/measurements-YYYYMMDD-HHMM.csv` (app storage) and
+opens the share sheet. Columns: `time_utc,name,value,unit,backend,simulated,notes`. Simulated rows say `yes` in
+`simulated`; filter them out before quoting numbers. LLM calls are rows named `llm` (total ms in `value`, details in `notes`) and
+selector probes are `probe`.

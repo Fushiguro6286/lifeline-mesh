@@ -148,7 +148,11 @@ fun BenchmarksScreen() {
                 MetricLine("Packet sizes", metrics.filter { it.name == "packet_bytes" }, "bytes")
                 MetricLine("Hops on arrival", metrics.filter { it.name == "hops" }, "hops")
                 MetricLine("Round trips", metrics.filter { it.name == "rtt_ms" }, "ms")
-                Text("Battery drain: Not measured (Phase 9).", style = Lifeline.type.body, color = c.inkMuted)
+                val drain = metrics.firstOrNull { it.name == "battery_drain" }
+                if (drain == null) Text("Battery drain: Not measured (needs 15 minutes of relaying on battery).",
+                    style = Lifeline.type.body, color = c.inkMuted)
+                else Text("Battery drain: %.1f %%/h · %s · %s".format(drain.value, drain.notes, time(drain.timestamp)),
+                    style = Lifeline.type.body, color = c.ink)
             }
         }
         item { Spacer() }

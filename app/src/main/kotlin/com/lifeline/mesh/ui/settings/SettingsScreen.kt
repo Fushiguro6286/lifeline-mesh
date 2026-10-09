@@ -24,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -111,6 +113,7 @@ fun SettingsScreen(
 
         Section(stringResource(R.string.settings_mesh))
         LinkRow(R.drawable.ic_verified_user, stringResource(R.string.settings_permissions), stringResource(R.string.settings_permissions_body), onPermissions)
+        BatteryRow()
         SwitchRow(R.drawable.ic_widgets, stringResource(R.string.settings_simulation), stringResource(R.string.settings_simulation_body),
             settings.simulationMode, repository::setSimulationMode)
         SwitchRow(R.drawable.ic_speed, stringResource(R.string.settings_demo), stringResource(R.string.settings_demo_body),
@@ -123,6 +126,9 @@ fun SettingsScreen(
 
         Section("Sync")
         SyncCard(settings, repository)
+
+        Section("Measurements")
+        ExportRow()
 
         Section(stringResource(R.string.settings_privacy))
         Text(stringResource(R.string.privacy_body), style = Lifeline.type.body, color = c.ink)
@@ -189,6 +195,52 @@ private fun SyncCard(settings: Settings, repository: AppRepository) {
             Modifier.fillMaxWidth(),
         )
     }
+}
+
+/**
+ * Battery restrictions (CLAUDE.md 11): without the exemption the iQOO freezes the app ~10 s after the screen turns off.
+ * Re-checked whenever the screen comes back (returning from the system dialog).
+ */
+@Composable
+private fun BatteryRow() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var exempt by remember { mutableStateOf(isExempt(context)) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { exempt = isExempt(context); onPauseOrDispose { } }
+    LinkRow(
+        R.drawable.ic_battery_5_bar,
+        "Battery and background",
+        if (exempt) "Allowed. On vivo/iQOO also allow background activity in the app's battery settings."
+        else "Not allowed: this phone stops relaying soon after the screen turns off. Tap to allow.",
+        onClick = {
+            val pkg = android.net.Uri.parse("package:${context.packageName}")
+            val intents = if (exempt) listOf(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg))
+            else listOf(
+                android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg),
+                android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
+            )
+            intents.firstOrNull { runCatching { context.startActivity(it) }.isSuccess }
+        },
+    )
+}
+
+private fun isExempt(context: android.content.Context) =
+    context.getSystemService(android.os.PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+
+/** Export measurements (CLAUDE.md 10): CSV of every metric to app files, then the share sheet. */
+@Composable
+private fun ExportRow() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var result by remember { mutableStateOf<String?>(null) }
+    LinkRow(R.drawable.ic_speed, "Export measurements", result ?: "Writes every measurement to a CSV file and opens the share sheet.", onClick = {
+        scope.launch {
+            val out = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.lifeline.mesh.metrics.Metrics.export(context) } }
+            out.onSuccess { r ->
+                if (r == null) result = "Nothing measured yet."
+                else { result = "Exported ${r.first} measurements."; context.startActivity(r.second) }
+            }.onFailure { result = "Export failed: ${it.message}" }
+        }
+    })
 }
 
 @Composable

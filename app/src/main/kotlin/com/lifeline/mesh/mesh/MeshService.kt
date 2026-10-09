@@ -33,6 +33,7 @@ import com.lifeline.mesh.data.MetricEntity
 import com.lifeline.mesh.data.Settings
 import com.lifeline.mesh.data.TopologyEntity
 import com.lifeline.mesh.data.toEntity
+import com.lifeline.mesh.metrics.BatteryMonitor
 import com.lifeline.mesh.packet.HelloRole
 import com.lifeline.mesh.packet.Packet
 import com.lifeline.mesh.ui.components.Haptics
@@ -224,10 +225,25 @@ class MeshService : Service() {
                 repo.settings.value?.let { st -> applySettings(router, st) }
             }
         }
+        // Battery for Hellos every minute; on real phones also the drain while relaying (CLAUDE.md 10), stored every
+        // 5 minutes once 15 minutes on battery have passed. Never in simulation: it would be this phone's drain anyway.
+        val battery = if (simulated) null else BatteryMonitor()
         s.launch {
+            var lastStored = 0L
             while (isActive) {
                 delay(60_000)
-                router.battery = batteryPercent()
+                val pct = batteryPercent()
+                router.battery = pct
+                val now = System.currentTimeMillis()
+                val d = battery?.onSample(BatteryMonitor.Sample(now, pct, isCharging())) ?: continue
+                if (now - lastStored < 5 * 60_000L) continue
+                lastStored = now
+                val linked = repo.neighbors.value.count { it.state == LinkState.CONNECTED }
+                val note = "${d.fromPct}% to ${d.toPct}% over ${d.minutes} min while relaying, $linked phones connected now"
+                launch(dbWrites) {
+                    repo.database.metrics().insert(MetricEntity(name = "battery_drain", value = d.pctPerHour, unit = "%/h",
+                        backend = null, simulated = false, timestamp = now, notes = note))
+                }
             }
         }
     }
@@ -297,6 +313,8 @@ class MeshService : Service() {
     private fun batteryPercent(): Int =
         getSystemService(BatteryManager::class.java)?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
             ?.takeIf { it in 0..100 } ?: 255
+
+    private fun isCharging(): Boolean = getSystemService(BatteryManager::class.java)?.isCharging ?: false
 
     private fun acquireWakeLock() {
         val pm = getSystemService(PowerManager::class.java) ?: return

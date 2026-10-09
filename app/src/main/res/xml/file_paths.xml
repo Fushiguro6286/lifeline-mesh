@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the measurement exports are shareable (Settings → Export measurements). -->
+<paths>
+    <files-path name="exports" path="exports/" />
+</paths>
