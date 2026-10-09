@@ -182,7 +182,7 @@ private fun AboutYouPage(
     SectionLabel(stringResource(R.string.onb_language))
     Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
         listOf(Language.EN to R.string.lang_en, Language.HI to R.string.lang_hi, Language.KN to R.string.lang_kn).forEach { (lang, label) ->
-            OptionCard(stringResource(label), selected = language == lang, onClick = { onLanguage(lang) }, modifier = Modifier.weight(1f))
+            OptionCard(stringResource(label), selected = language == lang, onClick = { onLanguage(lang) }, modifier = Modifier.weight(1f), compact = true)
         }
     }
 
@@ -207,6 +207,8 @@ fun OptionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int? = null,
+    /** Narrow cards (three in a row): no check mark, tighter padding; the outline still marks selection. */
+    compact: Boolean = false,
 ) {
     val c = Lifeline.colors
     Row(
@@ -217,13 +219,13 @@ fun OptionCard(
             .background(if (selected) c.surfaceRaised else c.surface)
             .border(if (selected) 2.dp else 1.dp, if (selected) c.link else c.outline, Shapes.card)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = Space.l, vertical = Space.m),
+            .padding(horizontal = if (compact) Space.m else Space.l, vertical = Space.m),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         if (icon != null) Icon(painterResource(icon), null, tint = if (selected) c.link else c.inkMuted, modifier = Modifier.size(24.dp))
         Text(text, style = Lifeline.type.bodyStrong, color = c.ink, modifier = Modifier.weight(1f))
-        if (selected) Icon(painterResource(R.drawable.ic_check), null, tint = c.link, modifier = Modifier.size(20.dp))
+        if (selected && !compact) Icon(painterResource(R.drawable.ic_check), null, tint = c.link, modifier = Modifier.size(20.dp))
     }
 }
 
