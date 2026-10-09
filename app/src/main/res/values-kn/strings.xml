@@ -58,7 +58,7 @@
     <string name="onb_role">ನೀವು ಇದನ್ನು ಹೇಗೆ ಬಳಸುತ್ತೀರಿ?</string>
     <string name="role_needs_help">ನನಗೆ ಸಹಾಯ ಬೇಕು</string>
     <string name="role_volunteer">ನಾನು ಸ್ವಯಂಸೇವಕ</string>
-    <string name="role_rescuer">ನಾನು ರಕ್ಷಣಾ ಸಿಬ್ಬಂದಿ</string>
+    <string name="role_rescuer">ನಾನು ರಕ್ಷಣಾ ತಂಡದಲ್ಲಿದ್ದೇನೆ</string>
     <string name="onb3_title">ಅನುಮತಿ ನೀಡಿ</string>
     <string name="onb3_body">ಪ್ರತಿ ಅನುಮತಿಯು ಆ್ಯಪ್‌ನ ಒಂದು ಭಾಗವನ್ನು ಕೆಲಸ ಮಾಡಿಸುತ್ತದೆ. ನಂತರ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಬದಲಾಯಿಸಬಹುದು.</string>
     <string name="next">ಮುಂದೆ</string>
@@ -188,4 +188,15 @@
     <string name="firstaid_source">ಮೂಲ: %s</string>
     <string name="firstaid_by_ai">ಫೋನ್‌ನಲ್ಲಿ ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ</string>
     <string name="firstaid_by_keywords">ಪದಗಳಿಂದ ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ</string>
+
+    <!-- Phase 10: profile -->
+    <string name="onb_team">ಯಾವ ತಂಡ?</string>
+    <string name="team_fire">ಅಗ್ನಿಶಾಮಕ</string>
+    <string name="team_ambulance">ಆಂಬ್ಯುಲೆನ್ಸ್</string>
+    <string name="team_police">ಪೊಲೀಸ್</string>
+    <string name="team_ndrf">NDRF / SDRF</string>
+    <string name="team_other">ಇತರ ತಂಡ</string>
+    <string name="onb_team_note">ತಂಡವನ್ನು ಪರಿಶೀಲಿಸಲಾಗುವುದಿಲ್ಲ.</string>
+    <string name="onb_phone">ಫೋನ್ ಸಂಖ್ಯೆ (ಐಚ್ಛಿಕ)</string>
+    <string name="onb_phone_hint">ಇಂಟರ್ನೆಟ್ ಸಿಕ್ಕಾಗ ಮಾತ್ರ ರಕ್ಷಣಾ ಸರ್ವರ್‌ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಮೆಶ್ ಮೂಲಕ ಎಂದಿಗೂ ಇಲ್ಲ.</string>
 </resources>

@@ -266,7 +266,7 @@ class MeshService : Service() {
 
     private fun applySettings(r: Router, s: Settings) {
         r.displayName = s.displayName
-        r.role = HelloRole.fromCode(s.role.code) ?: HelloRole.NEEDS_HELP
+        r.role = s.role.hello
     }
 
     /** "Asha-3fa1"; a phone without a name is "Phone-3fa1". */

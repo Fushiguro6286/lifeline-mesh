@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity() {
                     onName = repository::setDisplayName,
                     onLanguage = repository::setLanguage,
                     onRole = repository::setRole,
+                    onPhone = repository::setPhone,
                     onDone = repository::setOnboardingDone,
                 )
                 else -> MainScaffold(settings, repository)

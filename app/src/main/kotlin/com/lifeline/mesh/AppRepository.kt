@@ -62,6 +62,8 @@ class AppRepository(
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
     fun setServerUrl(url: String) = scope.launch { settingsStore.setServerUrl(url) }
+    fun setPhone(phone: String) = scope.launch { settingsStore.setPhone(phone) }
+    fun setTravel(travel: com.lifeline.mesh.triage.Travel) = scope.launch { settingsStore.setTravel(travel) }
     val lastUpload: StateFlow<Pair<Long, Int>?> = settingsStore.lastUpload.stateIn(scope, SharingStarted.Eagerly, null)
 
     // ------------------------------------------------------------------ Room

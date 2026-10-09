@@ -62,7 +62,7 @@
     <string name="onb_role">How will you use it?</string>
     <string name="role_needs_help">I need help</string>
     <string name="role_volunteer">I\'m a volunteer</string>
-    <string name="role_rescuer">I\'m a rescuer</string>
+    <string name="role_rescuer">I\'m on a rescue team</string>
     <string name="onb3_title">Allow access</string>
     <string name="onb3_body">Each one keeps a part of the app working. You can change them later in Settings.</string>
     <string name="next">Next</string>
@@ -198,4 +198,15 @@
     <string name="firstaid_source">Source: %s</string>
     <string name="firstaid_by_ai">Picked on device</string>
     <string name="firstaid_by_keywords">Picked by keywords</string>
+
+    <!-- Phase 10: profile -->
+    <string name="onb_team">Which team?</string>
+    <string name="team_fire">Fire service</string>
+    <string name="team_ambulance">Ambulance</string>
+    <string name="team_police">Police</string>
+    <string name="team_ndrf">NDRF / SDRF</string>
+    <string name="team_other">Other team</string>
+    <string name="onb_team_note">Team roles are not verified.</string>
+    <string name="onb_phone">Phone number (optional)</string>
+    <string name="onb_phone_hint">Sent only to the rescue server when this phone has internet. Never over the mesh.</string>
 </resources>

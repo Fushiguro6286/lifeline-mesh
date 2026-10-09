@@ -151,6 +151,10 @@ fun MeshCanvas(
         1 to painterResource(R.drawable.ic_person),
         2 to painterResource(R.drawable.ic_volunteer_activism),
         3 to painterResource(R.drawable.ic_health_and_safety),
+        4 to painterResource(R.drawable.ic_local_fire_department),
+        5 to painterResource(R.drawable.ic_emergency),
+        6 to painterResource(R.drawable.ic_local_police),
+        7 to painterResource(R.drawable.ic_boat),
     )
     val summary = buildString {
         append("Mesh. You")

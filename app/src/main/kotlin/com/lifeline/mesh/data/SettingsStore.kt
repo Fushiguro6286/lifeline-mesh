@@ -19,8 +19,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import java.security.SecureRandom
 
-/** Values match the Hello packet role byte. */
-enum class Role(val code: Int) { NEEDS_HELP(1), VOLUNTEER(2), RESCUER(3) }
+/** Values match the Hello/Position role byte. RESCUER = "other rescue team"; 3 and up are teams (Phase 10). */
+enum class Role(val code: Int) {
+    NEEDS_HELP(1), VOLUNTEER(2), RESCUER(3), FIREFIGHTER(4), AMBULANCE(5), POLICE(6), NDRF(7);
+
+    val isTeam: Boolean get() = code >= RESCUER.code
+    val hello: com.lifeline.mesh.packet.HelloRole get() = com.lifeline.mesh.packet.HelloRole.fromCode(code)!!
+}
 
 enum class Language(val tag: String) { EN("en"), HI("hi"), KN("kn") }
 
@@ -39,7 +44,13 @@ data class Settings(
     val onboardingDone: Boolean,
     /** Read gate questions and replies aloud (DESIGN.md 10). */
     val readAloud: Boolean = true,
+    /** Optional; never sent over the mesh, only with this phone's own uploads to the sync server (Phase 10). */
+    val phone: String = "",
+    /** How I travel to help, for travel-time estimates; null = the default for my role. */
+    val travelChoice: com.lifeline.mesh.triage.Travel? = null,
 ) {
+    val travel: com.lifeline.mesh.triage.Travel get() = travelChoice ?: com.lifeline.mesh.triage.Teams.defaultTravel(role.hello)
+
     /** Last 4 hex digits of the origin, used in endpoint names like "Asha-3fa1". */
     val originShort: String get() = "%08x".format(originId).takeLast(4)
 }
@@ -59,6 +70,8 @@ class SettingsStore(private val context: Context) {
         val THEME = stringPreferencesKey("theme")
         val ONBOARDED = booleanPreferencesKey("onboarding_done")
         val READ_ALOUD = booleanPreferencesKey("read_aloud")
+        val PHONE = stringPreferencesKey("phone")
+        val TRAVEL = stringPreferencesKey("travel")
         val LAST_UPLOAD_AT = longPreferencesKey("last_upload_at")
         val LAST_UPLOAD_COUNT = intPreferencesKey("last_upload_count")
     }
@@ -94,6 +107,8 @@ class SettingsStore(private val context: Context) {
         theme = p[Keys.THEME]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SYSTEM,
         onboardingDone = p[Keys.ONBOARDED] ?: false,
         readAloud = p[Keys.READ_ALOUD] ?: true,
+        phone = p[Keys.PHONE] ?: "",
+        travelChoice = p[Keys.TRAVEL]?.let { runCatching { com.lifeline.mesh.triage.Travel.valueOf(it) }.getOrNull() },
     )
 
     suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16) }
@@ -106,6 +121,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
     suspend fun setOnboardingDone(done: Boolean) = store.edit { it[Keys.ONBOARDED] = done }
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
+    suspend fun setPhone(phone: String) = store.edit { it[Keys.PHONE] = phone.filter { c -> c.isDigit() || c == '+' }.take(16) }
+    suspend fun setTravel(travel: com.lifeline.mesh.triage.Travel) = store.edit { it[Keys.TRAVEL] = travel.name }
 
     /** Last successful upload (time ms, packets sent). Kept out of [Settings] so an upload doesn't recompose the app. */
     val lastUpload: Flow<Pair<Long, Int>?> = store.data.map { p -> p[Keys.LAST_UPLOAD_AT]?.let { it to (p[Keys.LAST_UPLOAD_COUNT] ?: 0) } }

@@ -58,7 +58,7 @@
     <string name="onb_role">आप इसका उपयोग कैसे करेंगे?</string>
     <string name="role_needs_help">मुझे मदद चाहिए</string>
     <string name="role_volunteer">मैं स्वयंसेवक हूँ</string>
-    <string name="role_rescuer">मैं बचावकर्मी हूँ</string>
+    <string name="role_rescuer">मैं बचाव दल में हूँ</string>
     <string name="onb3_title">अनुमति दें</string>
     <string name="onb3_body">हर अनुमति ऐप के एक हिस्से को चालू रखती है। आप इन्हें बाद में सेटिंग्स में बदल सकते हैं।</string>
     <string name="next">आगे</string>
@@ -188,4 +188,15 @@
     <string name="firstaid_source">स्रोत: %s</string>
     <string name="firstaid_by_ai">फ़ोन पर चुना गया</string>
     <string name="firstaid_by_keywords">शब्दों से चुना गया</string>
+
+    <!-- Phase 10: profile -->
+    <string name="onb_team">कौन सा दल?</string>
+    <string name="team_fire">दमकल</string>
+    <string name="team_ambulance">एम्बुलेंस</string>
+    <string name="team_police">पुलिस</string>
+    <string name="team_ndrf">NDRF / SDRF</string>
+    <string name="team_other">अन्य दल</string>
+    <string name="onb_team_note">दल की पुष्टि नहीं की जाती।</string>
+    <string name="onb_phone">फ़ोन नंबर (वैकल्पिक)</string>
+    <string name="onb_phone_hint">सिर्फ़ इंटरनेट मिलने पर बचाव सर्वर को भेजा जाता है। मेश पर कभी नहीं।</string>
 </resources>

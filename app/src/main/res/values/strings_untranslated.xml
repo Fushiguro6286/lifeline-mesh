@@ -69,7 +69,11 @@
     <string name="node_you">This phone</string>
     <string name="node_role_1">Needs help</string>
     <string name="node_role_2">Volunteer</string>
-    <string name="node_role_3">Rescuer</string>
+    <string name="node_role_3">Rescue team</string>
+    <string name="node_role_4">Fire service</string>
+    <string name="node_role_5">Ambulance</string>
+    <string name="node_role_6">Police</string>
+    <string name="node_role_7">NDRF / SDRF</string>
     <string name="node_role_unknown">Role not heard yet</string>
     <string name="node_battery">Battery %d%%</string>
     <string name="node_battery_unknown">Battery not reported</string>

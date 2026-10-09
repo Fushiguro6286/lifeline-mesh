@@ -257,7 +257,9 @@ private fun NodeDetails(node: GraphNode, graph: MeshGraph, packetsFrom: Int, wai
         if (node.ring != Ring.ME) {
             Text(
                 when (node.role) { 1 -> stringResource(R.string.node_role_1); 2 -> stringResource(R.string.node_role_2)
-                    3 -> stringResource(R.string.node_role_3); else -> stringResource(R.string.node_role_unknown) },
+                    3 -> stringResource(R.string.node_role_3); 4 -> stringResource(R.string.node_role_4)
+                    5 -> stringResource(R.string.node_role_5); 6 -> stringResource(R.string.node_role_6)
+                    7 -> stringResource(R.string.node_role_7); else -> stringResource(R.string.node_role_unknown) },
                 style = Lifeline.type.bodyStrong, color = c.ink,
             )
             Text(

@@ -91,9 +91,18 @@ fun SettingsScreen(
         )
 
         Label(stringResource(R.string.settings_role))
-        OptionCard(stringResource(R.string.role_needs_help), settings.role == UserRole.NEEDS_HELP, { repository.setRole(UserRole.NEEDS_HELP) }, icon = R.drawable.ic_person)
-        OptionCard(stringResource(R.string.role_volunteer), settings.role == UserRole.VOLUNTEER, { repository.setRole(UserRole.VOLUNTEER) }, icon = R.drawable.ic_volunteer_activism)
-        OptionCard(stringResource(R.string.role_rescuer), settings.role == UserRole.RESCUER, { repository.setRole(UserRole.RESCUER) }, icon = R.drawable.ic_health_and_safety)
+        com.lifeline.mesh.ui.onboarding.RolePicker(settings.role) { repository.setRole(it) }
+        if (settings.role != UserRole.NEEDS_HELP) {
+            Label("How you travel to help (for time estimates)")
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                com.lifeline.mesh.triage.Travel.entries.forEach { t ->
+                    OptionCard(t.label.replaceFirstChar { it.uppercase() }, settings.travel == t, { repository.setTravel(t) },
+                        Modifier.weight(1f), compact = true)
+                }
+            }
+        }
+        var phone by rememberSaveable(settings.phone) { mutableStateOf(settings.phone) }
+        com.lifeline.mesh.ui.onboarding.PhoneField(phone) { phone = it; repository.setPhone(it) }
 
         Label(stringResource(R.string.settings_language))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {

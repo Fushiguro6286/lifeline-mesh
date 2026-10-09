@@ -77,11 +77,13 @@ fun OnboardingScreen(
     onName: (String) -> Unit,
     onLanguage: (Language) -> Unit,
     onRole: (UserRole) -> Unit,
+    onPhone: (String) -> Unit,
     onDone: () -> Unit,
 ) {
     val c = Lifeline.colors
     var page by rememberSaveable { mutableIntStateOf(0) }
     var name by rememberSaveable { mutableStateOf(settings.displayName) }
+    var phone by rememberSaveable { mutableStateOf(settings.phone) }
 
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding()) {
         Column(
@@ -90,7 +92,7 @@ fun OnboardingScreen(
         ) {
             when (page) {
                 0 -> WelcomePage()
-                1 -> AboutYouPage(name, { name = it }, settings.language, onLanguage, settings.role, onRole)
+                1 -> AboutYouPage(name, { name = it }, settings.language, onLanguage, settings.role, onRole, phone, { phone = it })
                 else -> {
                     Title(stringResource(R.string.onb3_title))
                     Text(stringResource(R.string.onb3_body), style = Lifeline.type.body, color = c.inkMuted)
@@ -106,7 +108,7 @@ fun OnboardingScreen(
                 PrimaryButton(
                     text = stringResource(if (page == PAGES - 1) R.string.finish else R.string.next),
                     onClick = {
-                        if (page == 1) onName(name)
+                        if (page == 1) { onName(name); onPhone(phone) }
                         if (page < PAGES - 1) page++ else onDone()
                     },
                     modifier = Modifier.weight(if (page > 0) 2f else 1f),
@@ -166,6 +168,8 @@ private fun AboutYouPage(
     onLanguage: (Language) -> Unit,
     role: UserRole,
     onRole: (UserRole) -> Unit,
+    phone: String,
+    onPhone: (String) -> Unit,
 ) {
     Title(stringResource(R.string.onb2_title))
     OutlinedTextField(
@@ -187,12 +191,56 @@ private fun AboutYouPage(
     }
 
     SectionLabel(stringResource(R.string.onb_role))
+    RolePicker(role, onRole)
+    PhoneField(phone, onPhone)
+    Spacer(Modifier.height(Space.s))
+}
+
+/**
+ * Role (Phase 10): I need help, volunteer, or a rescue team, then which team. Shared by onboarding and Settings.
+ * Team roles are self-declared and say so.
+ */
+@Composable
+fun RolePicker(role: UserRole, onRole: (UserRole) -> Unit) {
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(Space.s)) {
         OptionCard(stringResource(R.string.role_needs_help), role == UserRole.NEEDS_HELP, { onRole(UserRole.NEEDS_HELP) }, icon = R.drawable.ic_person)
         OptionCard(stringResource(R.string.role_volunteer), role == UserRole.VOLUNTEER, { onRole(UserRole.VOLUNTEER) }, icon = R.drawable.ic_volunteer_activism)
-        OptionCard(stringResource(R.string.role_rescuer), role == UserRole.RESCUER, { onRole(UserRole.RESCUER) }, icon = R.drawable.ic_health_and_safety)
+        OptionCard(stringResource(R.string.role_rescuer), role.isTeam, { if (!role.isTeam) onRole(UserRole.RESCUER) }, icon = R.drawable.ic_health_and_safety)
     }
-    Spacer(Modifier.height(Space.s))
+    if (role.isTeam) {
+        SectionLabel(stringResource(R.string.onb_team))
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+            verticalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            listOf(UserRole.FIREFIGHTER, UserRole.AMBULANCE, UserRole.POLICE, UserRole.NDRF, UserRole.RESCUER).forEach { t ->
+                OptionCard(stringResource(teamLabel(t.code)), role == t, { onRole(t) }, compact = true)
+            }
+        }
+        Text(stringResource(R.string.onb_team_note), style = Lifeline.type.caption, color = Lifeline.colors.inkMuted)
+    }
+}
+
+/** Short team name for a role code (3–7); 1 and 2 have their own words. */
+fun teamLabel(code: Int): Int = when (code) {
+    4 -> R.string.team_fire; 5 -> R.string.team_ambulance; 6 -> R.string.team_police; 7 -> R.string.team_ndrf
+    else -> R.string.team_other
+}
+
+/** Optional phone number; says exactly where it goes. */
+@Composable
+fun PhoneField(phone: String, onPhone: (String) -> Unit) {
+    OutlinedTextField(
+        value = phone,
+        onValueChange = { v -> onPhone(v.filter { it.isDigit() || it == '+' }.take(16)) },
+        label = { Text(stringResource(R.string.onb_phone)) },
+        supportingText = { Text(stringResource(R.string.onb_phone_hint), style = Lifeline.type.caption) },
+        singleLine = true,
+        textStyle = Lifeline.type.body,
+        keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone, imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
