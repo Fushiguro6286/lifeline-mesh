@@ -12,7 +12,7 @@ Living document. Updated at the end of every phase.
   "N waiting" badge for my undelivered packets, radar sweep when nobody is linked, tap a node for details,
   draggable sheet with Scoreboard (hops, round trip, bytes; "Not measured" when empty) and event timeline with
   All / Alerts / Network filters. Simulation mode and demo mode in Settings.
-- 74 unit tests pass (codec, router/simulator, graph and layout).
+- 73 unit tests pass (codec, router/simulator, graph and layout).
 - Verified on the iQOO 15 in simulation mode (9 Oct): red banner on every screen, an alert from Meena visibly hops
   Meena → Ravi → You with labels at each hop, Kiran's reply crosses back, Simulated tags on every number,
   node sheet, timeline. NOT yet verified with real phones.
