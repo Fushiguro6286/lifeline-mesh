@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window colors only; the Compose theme owns everything else (ui/theme/Color.kt). -->
+    <color name="window_bg">#F4F7F8</color>
+    <color name="launcher_bg">#0B1620</color>
+</resources>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Lifeline Mesh</string>
+
+    <!-- Navigation and status strip -->
+    <string name="nav_sos">SOS</string>
+    <string name="nav_mesh">Mesh</string>
+    <string name="nav_rescue">Rescue</string>
+    <string name="nav_map">Map</string>
+    <string name="nav_settings">Settings</string>
+    <string name="status_mesh_off">Mesh not running</string>
+    <string name="status_ai_rules">Rules only</string>
+    <string name="simulated_banner">Simulated mesh: numbers are not real</string>
+    <string name="simulated_tag">Simulated</string>
+    <string name="not_measured">Not measured</string>
+    <string name="back">Back</string>
+
+    <!-- SOS flow -->
+    <string name="sos_greeting">No network? You can still be heard.</string>
+    <string name="sos_hold">Hold for SOS</string>
+    <string name="sos_keep_holding">Keep holding</string>
+    <string name="sos_cancelled">Cancelled</string>
+    <string name="sos_sent">Sent</string>
+    <string name="sos_a11y_action">Send SOS</string>
+    <string name="sos_confirm_title">Send SOS now?</string>
+    <string name="sos_confirm_body">This sends an emergency alert to phones near you.</string>
+    <string name="sos_confirm_send">Send SOS</string>
+    <string name="cancel">Cancel</string>
+    <string name="speak">Speak</string>
+    <string name="type">Type</string>
+    <string name="im_safe">I\'m safe</string>
+
+    <string name="need_trapped">Trapped</string>
+    <string name="need_medical">Medical</string>
+    <string name="need_water_food">Water or food</string>
+    <string name="need_fire">Fire</string>
+    <string name="need_road_blocked">Road blocked</string>
+
+    <string name="severity_0">Info</string>
+    <string name="severity_1">Moderate</string>
+    <string name="severity_2">High</string>
+    <string name="severity_3">Urgent</string>
+
+    <string name="status_created">Created</string>
+    <string name="status_waiting">Waiting for a nearby phone</string>
+    <string name="status_waiting_detail">Stay where you are; it will send automatically.</string>
+    <plurals name="status_passed">
+        <item quantity="one">Passed to %d nearby phone</item>
+        <item quantity="other">Passed to %d nearby phones</item>
+    </plurals>
+    <string name="status_help_coming">Help is coming</string>
+    <string name="bytes_label">bytes</string>
+
+    <!-- Onboarding -->
+    <string name="onb1_title">Help that travels phone to phone.</string>
+    <string name="onb1_body">When the network is down, your alert hops from phone to phone until it reaches someone who can help.</string>
+    <string name="onb2_title">About you</string>
+    <string name="onb_name_label">Your name (optional)</string>
+    <string name="onb_name_hint">Shown to nearby phones, for example Asha</string>
+    <string name="onb_language">Language</string>
+    <string name="onb_role">How will you use it?</string>
+    <string name="role_needs_help">I need help</string>
+    <string name="role_volunteer">I\'m a volunteer</string>
+    <string name="role_rescuer">I\'m a rescuer</string>
+    <string name="onb3_title">Allow access</string>
+    <string name="onb3_body">Each one keeps a part of the app working. You can change them later in Settings.</string>
+    <string name="next">Next</string>
+    <string name="finish">Start</string>
+    <string name="onb_step">Step %1$d of %2$d</string>
+
+    <string name="lang_en" translatable="false">English</string>
+    <string name="lang_hi" translatable="false">हिन्दी</string>
+    <string name="lang_kn" translatable="false">ಕನ್ನಡ</string>
+
+    <!-- Permissions checklist -->
+    <string name="perm_grant">Grant</string>
+    <string name="perm_turn_on">Turn on</string>
+    <string name="perm_allow">Allow</string>
+    <string name="perm_open_settings">Open app settings</string>
+    <string name="perm_done">Done</string>
+    <string name="perm_nearby_title">Nearby devices</string>
+    <string name="perm_nearby_why">To reach phones near you without internet.</string>
+    <string name="perm_nearby_denied">Without this, your phone cannot send or pass on alerts.</string>
+    <string name="perm_location_title">Location</string>
+    <string name="perm_location_why">To add where you are to your alert.</string>
+    <string name="perm_location_denied">Alerts will have no location. On older phones, nearby phones cannot be found.</string>
+    <string name="perm_notif_title">Notifications</string>
+    <string name="perm_notif_why">To keep passing alerts with the screen off, and to show replies.</string>
+    <string name="perm_notif_denied">You may miss replies, and relaying may stop in the background.</string>
+    <string name="perm_mic_title">Microphone</string>
+    <string name="perm_mic_why">To speak your message instead of typing.</string>
+    <string name="perm_mic_denied">You can still type your message.</string>
+    <string name="perm_bt_title">Bluetooth on</string>
+    <string name="perm_bt_why">Nearby phones are reached over Bluetooth.</string>
+    <string name="perm_bt_off">Bluetooth is off. Turn it on so nearby phones can reach you.</string>
+    <string name="perm_locsvc_title">Location services on</string>
+    <string name="perm_locsvc_why">Many phones need this to find other phones.</string>
+    <string name="perm_locsvc_off">Location services are off. Turn them on so nearby phones can be found.</string>
+    <string name="perm_battery_title">Allow background activity</string>
+    <string name="perm_battery_why">Some phones stop apps in the background. Allow it so your phone keeps passing alerts with the screen off.</string>
+    <string name="perm_battery_more">App battery settings</string>
+    <string name="perm_battery_vivo">On vivo and iQOO phones, also open App battery settings and allow background activity.</string>
+
+</resources>

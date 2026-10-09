@@ -1,0 +1,12 @@
+package com.lifeline.mesh
+
+import android.app.Application
+import com.lifeline.mesh.data.AppDatabase
+import com.lifeline.mesh.data.SettingsStore
+
+/** Holds the app-wide singletons. No DI framework: screens reach these through [repository]. */
+class LifelineApp : Application() {
+    val database by lazy { AppDatabase.create(this) }
+    val settingsStore by lazy { SettingsStore(this) }
+    val repository by lazy { AppRepository(database, settingsStore) }
+}

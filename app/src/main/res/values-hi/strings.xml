@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. Machine-drafted: needs native-speaker review (see docs/DEMO.md). -->
+<resources>
+    <string name="nav_sos">SOS</string>
+    <string name="nav_mesh">मेश</string>
+    <string name="nav_rescue">बचाव</string>
+    <string name="nav_map">नक्शा</string>
+    <string name="nav_settings">सेटिंग्स</string>
+    <string name="status_mesh_off">मेश बंद है</string>
+    <string name="status_ai_rules">केवल नियम</string>
+    <string name="simulated_banner">सिम्युलेटेड मेश: ये संख्याएँ असली नहीं हैं</string>
+    <string name="simulated_tag">सिम्युलेटेड</string>
+    <string name="not_measured">मापा नहीं गया</string>
+    <string name="back">पीछे</string>
+
+    <string name="sos_greeting">नेटवर्क नहीं है? आपकी आवाज़ फिर भी पहुँच सकती है।</string>
+    <string name="sos_hold">SOS के लिए दबाकर रखें</string>
+    <string name="sos_keep_holding">दबाए रखें</string>
+    <string name="sos_cancelled">रद्द किया गया</string>
+    <string name="sos_sent">भेज दिया</string>
+    <string name="sos_a11y_action">SOS भेजें</string>
+    <string name="sos_confirm_title">अभी SOS भेजें?</string>
+    <string name="sos_confirm_body">यह आपके आस-पास के फ़ोन पर आपातकालीन संदेश भेजेगा।</string>
+    <string name="sos_confirm_send">SOS भेजें</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="speak">बोलें</string>
+    <string name="type">लिखें</string>
+    <string name="im_safe">मैं सुरक्षित हूँ</string>
+
+    <string name="need_trapped">फँसे हुए</string>
+    <string name="need_medical">चिकित्सा</string>
+    <string name="need_water_food">पानी या खाना</string>
+    <string name="need_fire">आग</string>
+    <string name="need_road_blocked">रास्ता बंद</string>
+
+    <string name="severity_0">सूचना</string>
+    <string name="severity_1">मध्यम</string>
+    <string name="severity_2">गंभीर</string>
+    <string name="severity_3">तत्काल</string>
+
+    <string name="status_created">बनाया गया</string>
+    <string name="status_waiting">पास के फ़ोन का इंतज़ार</string>
+    <string name="status_waiting_detail">जहाँ हैं वहीं रहें, यह अपने आप भेज दिया जाएगा।</string>
+    <plurals name="status_passed">
+        <item quantity="one">%d पास के फ़ोन तक पहुँचाया</item>
+        <item quantity="other">%d पास के फ़ोन तक पहुँचाया</item>
+    </plurals>
+    <string name="status_help_coming">मदद आ रही है</string>
+    <string name="bytes_label">बाइट</string>
+
+    <string name="onb1_title">मदद जो फ़ोन से फ़ोन तक पहुँचती है।</string>
+    <string name="onb1_body">नेटवर्क न होने पर भी आपका संदेश एक फ़ोन से दूसरे फ़ोन तक जाता है, जब तक वह मदद करने वाले तक न पहुँच जाए।</string>
+    <string name="onb2_title">आपके बारे में</string>
+    <string name="onb_name_label">आपका नाम (वैकल्पिक)</string>
+    <string name="onb_name_hint">पास के फ़ोन पर दिखेगा, जैसे आशा</string>
+    <string name="onb_language">भाषा</string>
+    <string name="onb_role">आप इसका उपयोग कैसे करेंगे?</string>
+    <string name="role_needs_help">मुझे मदद चाहिए</string>
+    <string name="role_volunteer">मैं स्वयंसेवक हूँ</string>
+    <string name="role_rescuer">मैं बचावकर्मी हूँ</string>
+    <string name="onb3_title">अनुमति दें</string>
+    <string name="onb3_body">हर अनुमति ऐप के एक हिस्से को चालू रखती है। आप इन्हें बाद में सेटिंग्स में बदल सकते हैं।</string>
+    <string name="next">आगे</string>
+    <string name="finish">शुरू करें</string>
+    <string name="onb_step">चरण %1$d / %2$d</string>
+
+    <string name="perm_grant">अनुमति दें</string>
+    <string name="perm_turn_on">चालू करें</string>
+    <string name="perm_allow">अनुमति दें</string>
+    <string name="perm_open_settings">ऐप सेटिंग्स खोलें</string>
+    <string name="perm_done">हो गया</string>
+    <string name="perm_nearby_title">आस-पास के डिवाइस</string>
+    <string name="perm_nearby_why">बिना इंटरनेट के पास के फ़ोन तक पहुँचने के लिए।</string>
+    <string name="perm_nearby_denied">इसके बिना आपका फ़ोन संदेश न भेज सकता है, न आगे बढ़ा सकता है।</string>
+    <string name="perm_location_title">लोकेशन</string>
+    <string name="perm_location_why">आपकी जगह संदेश में जोड़ने के लिए।</string>
+    <string name="perm_location_denied">संदेश में जगह नहीं होगी। पुराने फ़ोन पर पास के फ़ोन नहीं मिलेंगे।</string>
+    <string name="perm_notif_title">सूचनाएँ</string>
+    <string name="perm_notif_why">स्क्रीन बंद होने पर भी संदेश आगे बढ़ाने और जवाब दिखाने के लिए।</string>
+    <string name="perm_notif_denied">आप जवाब देख नहीं पाएँगे, और बैकग्राउंड में संदेश आगे बढ़ना रुक सकता है।</string>
+    <string name="perm_mic_title">माइक्रोफ़ोन</string>
+    <string name="perm_mic_why">लिखने के बजाय बोलकर संदेश देने के लिए।</string>
+    <string name="perm_mic_denied">आप फिर भी लिखकर संदेश दे सकते हैं।</string>
+    <string name="perm_bt_title">ब्लूटूथ चालू</string>
+    <string name="perm_bt_why">पास के फ़ोन ब्लूटूथ से जुड़ते हैं।</string>
+    <string name="perm_bt_off">ब्लूटूथ बंद है। इसे चालू करें ताकि पास के फ़ोन आप तक पहुँच सकें।</string>
+    <string name="perm_locsvc_title">लोकेशन सेवा चालू</string>
+    <string name="perm_locsvc_why">कई फ़ोन को दूसरे फ़ोन ढूँढने के लिए इसकी ज़रूरत होती है।</string>
+    <string name="perm_locsvc_off">लोकेशन सेवा बंद है। इसे चालू करें ताकि पास के फ़ोन मिल सकें।</string>
+    <string name="perm_battery_title">बैकग्राउंड में चलने दें</string>
+    <string name="perm_battery_why">कुछ फ़ोन बैकग्राउंड में ऐप बंद कर देते हैं। इसकी अनुमति दें ताकि स्क्रीन बंद होने पर भी संदेश आगे बढ़ते रहें।</string>
+    <string name="perm_battery_more">ऐप बैटरी सेटिंग्स</string>
+    <string name="perm_battery_vivo">vivo और iQOO फ़ोन पर ऐप बैटरी सेटिंग्स खोलकर बैकग्राउंड गतिविधि की अनुमति भी दें।</string>
+</resources>

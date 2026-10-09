@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English-only strings: Settings, developer screens and phase placeholders.
+     DESIGN.md section 9 asks for Hindi and Kannada in the SOS flow, onboarding and replies only. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <!-- Settings (English only for now) -->
+    <string name="settings_you">You</string>
+    <string name="settings_name">Name</string>
+    <string name="settings_role">Role</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_night">Night</string>
+    <string name="theme_daylight">Daylight</string>
+    <string name="settings_mesh">Mesh</string>
+    <string name="settings_permissions">Permissions and battery</string>
+    <string name="settings_permissions_body">See what the app can use, and fix what is missing.</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="privacy_body">Works without internet. Speech and messages are processed on this phone.</string>
+    <string name="settings_developer">Developer</string>
+    <string name="settings_gallery">Component gallery</string>
+    <string name="settings_gallery_body">Every shared component in both themes.</string>
+    <string name="settings_version">Version %1$s · ID %2$s</string>
+    <string name="save">Save</string>
+
+    <!-- Tabs that are built in later phases -->
+    <string name="ph_sos_title">Sending arrives in Phase 4</string>
+    <string name="ph_sos_body">The SOS button, voice and the review sheet are built after the mesh works. The gallery shows how they look.</string>
+    <string name="ph_mesh_title">The mesh starts in Phase 2</string>
+    <string name="ph_mesh_body">Phone-to-phone relaying and the live mesh view come next.</string>
+    <string name="ph_rescue_title">Rescue arrives in Phase 5</string>
+    <string name="ph_rescue_body">Ranked alerts, acknowledgements and replies come after sending works.</string>
+    <string name="ph_map_title">The map arrives in Phase 6</string>
+    <string name="ph_map_body">An offline map of the area, with alerts by severity.</string>
+    <string name="ph_action">Open component gallery</string>
+</resources>
