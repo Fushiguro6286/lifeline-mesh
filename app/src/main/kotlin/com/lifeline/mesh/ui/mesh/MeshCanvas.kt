@@ -100,6 +100,8 @@ fun MeshCanvas(
     val targets = remember(graph, size) {
         if (size.width == 0) emptyMap() else MeshLayout.compute(
             graph, size.width.toFloat(), size.height.toFloat(), margin, minRing = with(density) { 104.dp.toPx() } * scale,
+            // A node is 44 dp with its name under it: keep centres at least this far apart.
+            minGap = with(density) { 76.dp.toPx() } * scale,
         )
     }
     // Eased on-screen positions; plain map (not state): the frame clock below drives redraws.

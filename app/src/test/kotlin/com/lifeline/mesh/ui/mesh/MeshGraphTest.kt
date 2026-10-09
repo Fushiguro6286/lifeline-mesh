@@ -111,4 +111,30 @@ class MeshGraphTest {
             assertTrue("${keys[i]} and ${keys[j]} too close", hypot(a.x - b.x, a.y - b.y) > 220f)
         }
     }
+
+    @Test fun theElevenPhoneDrillHasNoOverlaps() {
+        // The simulation drill: me — Ravi(10), Divya(11); Ravi — Meena(20), Joseph(21); Divya — Lakshmi(22), Kiran(23);
+        // Meena — Farhan(30); Joseph — Suresh(31); Lakshmi — Priya(32); Farhan — Arjun(40).
+        val g = MeshGraph.build(
+            me, "Asha",
+            neighbors = listOf("R", "D").map { Neighbor("ep$it", "$it-0000", LinkState.CONNECTED, now) },
+            neighborOrigins = mapOf("epR" to 10, "epD" to 11),
+            topology = listOf(
+                hello(10, "Ravi", 1, me, 20, 21), hello(11, "Divya", 1, me, 22, 23),
+                hello(20, "Meena", 2, 10, 30), hello(21, "Joseph", 2, 10, 31), hello(22, "Lakshmi", 2, 11, 32), hello(23, "Kiran", 2, 11),
+                hello(30, "Farhan", 3, 20, 40), hello(31, "Suresh", 3, 21), hello(32, "Priya", 3, 22), hello(40, "Arjun", 4, 30),
+            ),
+            now = now,
+        )
+        val w = 1080f; val h = 1300f; val margin = 120f; val gap = 200f
+        val pos = MeshLayout.compute(g, w, h, margin, minRing = 270f, minGap = gap)
+        assertEquals(11, pos.size)
+        pos.values.forEach { p -> assertTrue(p.x in margin..w - margin && p.y in margin..h - margin) }
+        val keys = pos.keys.toList()
+        for (i in keys.indices) for (j in i + 1 until keys.size) {
+            val a = pos.getValue(keys[i]); val b = pos.getValue(keys[j])
+            assertTrue("${keys[i]} and ${keys[j]} overlap", hypot(a.x - b.x, a.y - b.y) > gap * 0.9f)
+        }
+        assertEquals(Point(w / 2, h / 2), pos.getValue("o:$me")) // I stay in the middle
+    }
 }

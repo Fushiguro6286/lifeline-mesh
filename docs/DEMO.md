@@ -51,17 +51,37 @@ adb push gemma-4-E2B-it.litertlm /sdcard/Android/data/com.lifeline.mesh/files/mo
 ```
 Then Settings → On-device AI → Re-test (or just reopen the app). From Git Bash, prefix with `MSYS_NO_PATHCONV=1`.
 
-## Simulation mode (rehearsal and stage fallback)
+## Simulation mode: the disaster drill (rehearsal, and the demo without spare phones)
 
-Settings → Mesh → Simulation mode. This phone plus 3 virtual phones in a line, all on the real router:
-You — Ravi (volunteer) — Meena (needs help, battery 18%) — Kiran (rescuer). Meena sends an alert 8 s after start and
-then every 40 s something new happens (check-in, report, another alert); Kiran replies "help is coming" to every alert
-4 s after it arrives and echoes pings. Buttons under the mesh: switch Ravi / Meena / Kiran off and on (store and
-forward), "Alert from Meena". Each simulation session starts clean. Simulated packets, events and metrics are stored
-apart from real ones and never shown together; every number carries a Simulated tag.
+Settings → Mesh → Simulation mode. This phone plus 10 virtual phones around the venue, every one run by the real
+router over an in-memory mesh. A red "Simulated mesh" banner stays on every screen and every number says Simulated.
 
-Phase 3 check in simulation: switch "Ravi off", tap "Alert from Meena" (nothing reaches you; Meena holds it), switch
-"Ravi on" (it arrives through Ravi, events show "Sent N stored packets").
+| Phone | Role | Where | Story |
+|---|---|---|---|
+| Ravi | Volunteer | 150 m N | relays; checks in |
+| Divya | Volunteer | 550 m SE | relays; asks for an ambulance; reports a shelter |
+| Meena | Needs help | 800 m NE | flood: 4 on a roof, one elderly |
+| Joseph | Needs help | 1.3 km N | tree on the road, car stuck |
+| Farhan | Needs help | 1.4 km E | kitchen fire, 3 inside |
+| Lakshmi | Needs help | 1.2 km SE | no drinking water for 8 |
+| Kiran | Ambulance | 1.8 km SW | answers ambulance requests and medical alerts |
+| Arjun | Fire service | 2.3 km NE | answers fire |
+| Priya | NDRF / SDRF | 2.1 km S | answers trapped people and anything else |
+| Suresh | Police | 2.1 km NW | answers blocked roads; reports a flooded underpass |
+
+Links (who hears whom): this phone — Ravi, Divya; Ravi — Meena, Joseph; Meena — Farhan — Arjun; Divya — Lakshmi —
+Priya; Divya — Kiran; Joseph — Suresh. Everything is at most 4 hops from this phone.
+
+What happens: from 8 s, one incident every 15 s (flood, fire, water, ambulance request, blocked road), then a shelter
+report, a road report and a check-in; after that a new incident every 50 s (or tap "Next incident" on the Mesh tab).
+The matching team answers each alert with a travel-time estimate from where it is, then drives there on the map in
+time-lapse (12× real speed). When it arrives, the person checks in safe. Your own alerts are answered the same way.
+
+Show it: Mesh tab (11 phones, packets hopping), Rescue tab (ranked alerts, "For you" if your role is a team), Map (tap
+any marker: alert → alert sheet; person, team, check-in or report → its details), SOS tab (send your own alert or an
+ambulance request and watch the team answer and drive to you). Switch a phone off on the Mesh tab to show store and
+forward. Choose your own role in Settings first: as a team you see everyone on the map; as "I need help" you see only
+the teams. Each simulation session starts clean.
 
 ## Phase 10 phone checks (3 phones; laptop server for the last two)
 

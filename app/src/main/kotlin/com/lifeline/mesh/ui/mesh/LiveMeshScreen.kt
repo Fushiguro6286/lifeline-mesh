@@ -237,7 +237,7 @@ private fun SimControls(sim: MeshSimulation, modifier: Modifier = Modifier) {
                 { sim.setOnline(name, !on) },
             )
         }
-        SecondaryButton(stringResource(R.string.sim_alert), { sim.sendAlert("Meena") })
+        SecondaryButton(stringResource(R.string.sim_alert), { sim.nextIncident() })
     }
 }
 

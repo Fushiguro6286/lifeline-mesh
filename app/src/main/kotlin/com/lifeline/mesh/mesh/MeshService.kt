@@ -166,7 +166,10 @@ class MeshService : Service() {
         val s = CoroutineScope(scope.coroutineContext + job)
         val wall = { System.currentTimeMillis() / 1000 }
 
-        val simulation = if (simulated) MeshSimulation(s, SystemClock::elapsedRealtime, wall) else null
+        // The drill happens around this phone (its fix now, or the last known one), so the demo looks right anywhere.
+        val center = if (simulated) repo.myFix.value ?: com.lifeline.mesh.location.LocationProvider(this).lastKnown() else null
+        val simulation = if (simulated) MeshSimulation(s, SystemClock::elapsedRealtime, wall,
+            centerLat = center?.lat ?: MeshSimulation.LAT, centerLon = center?.lon ?: MeshSimulation.LON) else null
         val nearby = if (simulated) null else NearbyTransport(this, s, endpointName(settings)) { err ->
             radioError = err
             refreshHealth()
@@ -233,7 +236,7 @@ class MeshService : Service() {
         s.launch {
             var last: PositionBeacon.Sent? = null
             while (isActive) {
-                val fix = repo.myFix.value ?: if (simulated) com.lifeline.mesh.ai.GeoFix(MeshSimulation.LAT, MeshSimulation.LON, 50f, 0) else null
+                val fix = repo.myFix.value ?: simulation?.let { com.lifeline.mesh.ai.GeoFix(it.centerLat, it.centerLon, 50f, 0) }
                 val now = SystemClock.elapsedRealtime()
                 if (fix != null && PositionBeacon.due(last, fix.lat, fix.lon, now)) {
                     router.sendPosition(com.lifeline.mesh.packet.Geo.toE6(fix.lat), com.lifeline.mesh.packet.Geo.toE6(fix.lon),

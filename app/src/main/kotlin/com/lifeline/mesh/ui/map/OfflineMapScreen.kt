@@ -83,12 +83,26 @@ private enum class MapMode { MAP, RINGS }
  * A help point, check-in or live position on the map. [kind]: 0 check-in, 1–4 community report type,
  * 10 + role code (11 needs help, 12 volunteer, 13–17 teams) for a phone's live position (Phase 10).
  */
-data class Place(val id: Long, val lat: Double, val lon: Double, val kind: Int, val label: String = "")
+data class Place(
+    val id: Long,
+    val lat: Double,
+    val lon: Double,
+    val kind: Int,
+    val label: String = "",
+    val note: String = "",
+    /** When it was heard here (ms), 0 if unknown. */
+    val at: Long = 0,
+    val hops: Int? = null,
+    val accuracyM: Int? = null,
+) {
+    /** Unique across kinds (a live position's id is an origin, a report's a message id). */
+    val key: String get() = "$kind:$id"
+}
 
 /** Live positions this phone may show (teams see everyone; others see only teams), as map places. */
 fun positionPlaces(all: Collection<com.lifeline.mesh.mesh.PeerPosition>, viewer: com.lifeline.mesh.packet.HelloRole, now: Long): List<Place> =
     com.lifeline.mesh.mesh.PositionBeacon.visible(all, viewer, now).map { p ->
-        Place(p.origin.toLong(), p.lat, p.lon, 10 + p.role.code, p.name)
+        Place(p.origin.toLong(), p.lat, p.lon, 10 + p.role.code, p.name, at = p.heardAt, hops = p.hops, accuracyM = p.accuracyM)
     }
 
 /**
@@ -119,6 +133,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
     var open by rememberSaveable { mutableStateOf<Long?>(null) }
+    var openPlace by rememberSaveable { mutableStateOf<String?>(null) }
 
     val file = archive?.getOrNull()
     val mapUsable = archive != null && file != null && !failed
@@ -134,7 +149,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize()) {
             if (mode == MapMode.MAP && mapUsable) {
                 key(c.isNight) {
-                    LibreMap(file!!, c, ranked, places, me, onAlertTap = { open = it }, onFail = { failed = true })
+                    LibreMap(file!!, c, ranked, places, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
                 }
                 Text(
                     stringResource(R.string.map_attribution), style = Lifeline.type.caption, color = c.ink,
@@ -143,7 +158,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
                 )
                 if (me != null && !MapAssets.contains(me!!.lat, me!!.lon)) Banner(stringResource(R.string.map_outside), Modifier.align(Alignment.TopCenter))
             } else {
-                CanvasFallbackMap(ranked, places, me, onAlertTap = { open = it }, modifier = Modifier.fillMaxSize())
+                CanvasFallbackMap(ranked, places, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, modifier = Modifier.fillMaxSize())
                 if (mode == MapMode.MAP && note != null) Banner(note, Modifier.align(Alignment.TopCenter))
             }
             val unplaced = ranked.count { it.alert.position == null }
@@ -151,6 +166,12 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
                 Banner(pluralStringResource(R.plurals.map_no_location, unplaced, unplaced), Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp))
             }
         }
+    }
+
+    openPlace?.let { key ->
+        val p = places.firstOrNull { it.key == key }
+        if (p == null) openPlace = null
+        else PlaceDetailSheet(p, me, settings, onDismiss = { openPlace = null })
     }
 
     open?.let { id ->
@@ -164,11 +185,16 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
 private fun places(packets: List<PacketEntity>, now: Long): List<Place> {
     val live = packets.filter { now - it.receivedAt < ACTIVE_MS }
     val reports = live.filter { it.type == PacketType.REPORT.code }.mapNotNull { p ->
-        val r = p.toReport(); if (r.lat == null || r.lon == null) null else Place(p.id, r.lat, r.lon, p.reportType ?: 1)
+        val r = p.toReport(); if (r.lat == null || r.lon == null) null
+        else Place(p.id, r.lat, r.lon, p.reportType ?: 1, note = p.note ?: "", at = p.receivedAt, hops = p.hops.takeIf { !p.isMine }, accuracyM = r.accuracyM)
     }
     val checkIns = live.filter { it.type == PacketType.CHECK_IN.code && !it.isMine }.groupBy { it.origin }.values
         .map { l -> l.maxBy { it.receivedAt } }
-        .mapNotNull { p -> val r = p.toReport(); if (r.lat == null || r.lon == null) null else Place(p.id, r.lat, r.lon, 0) }
+        .mapNotNull { p ->
+            val r = p.toReport()
+            if (r.lat == null || r.lon == null) null
+            else Place(p.id, r.lat, r.lon, 0, label = p.name ?: "", at = p.receivedAt, hops = p.hops, accuracyM = r.accuracyM)
+        }
     return reports + checkIns
 }
 
@@ -208,8 +234,10 @@ private fun LibreMap(
     places: List<Place>,
     me: GeoFix?,
     onAlertTap: (Long) -> Unit,
+    onPlaceTap: (String) -> Unit,
     onFail: () -> Unit,
 ) {
+    val onPlace by rememberUpdatedState(onPlaceTap)
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -290,7 +318,12 @@ private fun LibreMap(
                     val pt = m.projection.toScreenLocation(ll)
                     val f = m.queryRenderedFeatures(pt, "alerts").firstOrNull()
                     val id = f?.getStringProperty("id")?.toLongOrNull()
-                    if (id != null) { onTap(id); true } else false
+                    val place = if (id == null) m.queryRenderedFeatures(pt, "places").firstOrNull()?.getStringProperty("key") else null
+                    when {
+                        id != null -> { onTap(id); true }
+                        place != null -> { onPlace(place); true }
+                        else -> false
+                    }
                 }
             }
             mapView
@@ -337,7 +370,10 @@ private fun LibreMap(
         }
         st.getSourceAs<GeoJsonSource>("alerts")?.setGeoJson(FeatureCollection.fromFeatures(alerts))
         st.getSourceAs<GeoJsonSource>("places")?.setGeoJson(FeatureCollection.fromFeatures(places.map { p ->
-            Feature.fromGeometry(Point.fromLngLat(p.lon, p.lat)).apply { addStringProperty("icon", "place-${p.kind}") }
+            Feature.fromGeometry(Point.fromLngLat(p.lon, p.lat)).apply {
+                addStringProperty("icon", "place-${p.kind}")
+                addStringProperty("key", p.key)
+            }
         }))
         st.getSourceAs<GeoJsonSource>("me")?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(me?.let {
             Feature.fromGeometry(Point.fromLngLat(it.lon, it.lat)).apply { addStringProperty("icon", "me") }

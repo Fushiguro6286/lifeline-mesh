@@ -84,7 +84,7 @@
     <string name="node_links_none">Links: none known</string>
     <string name="node_packets">Packets from this phone stored here: %d</string>
     <string name="node_waiting">Waiting to send: %d</string>
-    <string name="sim_alert">Alert from Meena</string>
+    <string name="sim_alert">Next incident</string>
     <string name="sim_phone">%1$s %2$s</string>
     <string name="sim_on">on</string>
     <string name="sim_off">off</string>
@@ -169,4 +169,16 @@
     <!-- Phase 10: travel-time estimates (Rescue tab, English like the rest of it) -->
     <string name="eta_estimate">About %1$d min %2$s · estimate</string>
     <string name="eta_basis">Your estimate: %1$d min %2$s (straight line × %3$s at %4$d km/h).</string>
+    <!-- Map point details (Phase 10) -->
+    <string name="place_safe">%s is safe</string>
+    <string name="place_role_1">Needs help</string>
+    <string name="place_role_2">Volunteer</string>
+    <string name="place_distance">%1$s %2$s of you</string>
+    <string name="place_no_me">Your position is not known yet, so no distance.</string>
+    <string name="place_reach_you">Could reach you in about %d min (estimate)</string>
+    <string name="place_you_reach">You could reach them in about %1$d min %2$s (estimate)</string>
+    <string name="place_heard">Heard %s</string>
+    <string name="place_heard_hops">Heard %1$s · %2$d hops away</string>
+    <string name="place_accuracy">Position accurate to about %d m</string>
+    <string name="place_live">Live position, updated while the phone is on the mesh.</string>
 </resources>

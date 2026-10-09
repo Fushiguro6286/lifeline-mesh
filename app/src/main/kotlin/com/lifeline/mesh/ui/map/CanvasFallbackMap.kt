@@ -44,8 +44,10 @@ fun CanvasFallbackMap(
     places: List<Place>,
     me: GeoFix?,
     onAlertTap: (Long) -> Unit,
+    onPlaceTap: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val onPlace by rememberUpdatedState(onPlaceTap)
     val c = Lifeline.colors
     val type = Lifeline.type
     val measurer = rememberTextMeasurer()
@@ -68,15 +70,23 @@ fun CanvasFallbackMap(
 
     // Screen positions of alerts, for taps; filled while drawing.
     val hits = HashMap<Long, Offset>()
+    val placeHits = HashMap<String, Offset>()
 
     Canvas(
         modifier
             .semantics { contentDescription = "$youLabel. ${alertPlots.size} alerts within ${distanceText(step * 4)}." }
-            .pointerInput(ranked) {
+            .pointerInput(ranked, places) {
                 detectTapGestures { p ->
-                    hits.entries.minByOrNull { (_, o) -> hypot(o.x - p.x, o.y - p.y) }
-                        ?.takeIf { hypot(it.value.x - p.x, it.value.y - p.y) < 32.dp.toPx() }
-                        ?.let { onTap(it.key) }
+                    // The nearest thing under the finger: an alert opens its sheet, anything else its details.
+                    val a = hits.entries.minByOrNull { (_, o) -> hypot(o.x - p.x, o.y - p.y) }
+                    val pl = placeHits.entries.minByOrNull { (_, o) -> hypot(o.x - p.x, o.y - p.y) }
+                    val da = a?.let { hypot(it.value.x - p.x, it.value.y - p.y) } ?: Float.MAX_VALUE
+                    val dp = pl?.let { hypot(it.value.x - p.x, it.value.y - p.y) } ?: Float.MAX_VALUE
+                    val limit = 32.dp.toPx()
+                    when {
+                        da <= dp && da < limit -> onTap(a!!.key)
+                        dp < limit -> onPlace(pl!!.key)
+                    }
                 }
             },
     ) {
@@ -101,6 +111,7 @@ fun CanvasFallbackMap(
         // Help points: squares; check-ins: small green dots; live positions: teams as teal squares, people as rings.
         for ((pl, p) in placePlots) {
             val o = at(p)
+            placeHits[pl.key] = o
             when {
                 pl.kind >= 13 -> {
                     val s = 16.dp.toPx()

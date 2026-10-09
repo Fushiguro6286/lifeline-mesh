@@ -151,7 +151,7 @@ object MeshLayout {
     private val CURL = 35.0 * PI / 180
     private val SPREAD = 26.0 * PI / 180
 
-    fun compute(graph: MeshGraph, width: Float, height: Float, margin: Float, minRing: Float = 0f): Map<String, Point> {
+    fun compute(graph: MeshGraph, width: Float, height: Float, margin: Float, minRing: Float = 0f, minGap: Float = 0f): Map<String, Point> {
         val cx = width / 2f
         val cy = height / 2f
         val short = minOf(width, height)
@@ -189,7 +189,34 @@ object MeshLayout {
                 (cy + r * sin(a)).toFloat().coerceIn(margin, height - margin),
             )
         }
+        if (minGap > 0f) separate(out, graph.me.key, minGap, width, height, margin)
         return out
+    }
+
+    /**
+     * Pushes apart nodes closer than [gap] (a crowded mesh, e.g. the 11-phone drill), a few rounds, never moving me and
+     * never leaving the margin box. Deterministic: the same topology always gives the same picture.
+     */
+    private fun separate(pos: HashMap<String, Point>, me: String, gap: Float, w: Float, h: Float, m: Float) {
+        val keys = pos.keys.sorted()
+        repeat(40) {
+            var moved = false
+            for (i in keys.indices) for (j in i + 1 until keys.size) {
+                val a = pos.getValue(keys[i]); val b = pos.getValue(keys[j])
+                var dx = b.x - a.x; var dy = b.y - a.y
+                var d = kotlin.math.sqrt(dx * dx + dy * dy)
+                if (d >= gap) continue
+                if (d < 0.01f) { dx = 1f; dy = 0.5f; d = kotlin.math.sqrt(1.25f) } // same spot: pick a direction
+                val push = (gap - d) / d
+                val aFixed = keys[i] == me; val bFixed = keys[j] == me
+                val share = if (aFixed || bFixed) 1f else 0.5f
+                fun clamp(p: Point) = Point(p.x.coerceIn(m, w - m), p.y.coerceIn(m, h - m))
+                if (!aFixed) pos[keys[i]] = clamp(Point(a.x - dx * push * share, a.y - dy * push * share))
+                if (!bFixed) pos[keys[j]] = clamp(Point(b.x + dx * push * share, b.y + dy * push * share))
+                moved = true
+            }
+            if (!moved) return
+        }
     }
 
     /** Distance from the center to the margin box along angle [a]. */
