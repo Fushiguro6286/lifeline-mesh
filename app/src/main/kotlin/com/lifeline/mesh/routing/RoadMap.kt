@@ -13,8 +13,11 @@ import kotlin.math.tan
 /** A route on the road network: the points to draw, the length, the time, and how many blocked roads it goes around. */
 data class Route(val points: List<Pair<Double, Double>>, val meters: Double, val minutes: Int, val avoidedBlocks: Int)
 
-/** A place someone reported as blocked (a "road blocked" report or alert): roads within [radiusM] are not used. */
-data class Block(val lat: Double, val lon: Double, val radiusM: Double = 40.0)
+/**
+ * A place someone reported as blocked (a "road blocked" report or alert): no road segment that passes within [radiusM]
+ * is used. Segments, not just road points: points can be far apart, and a road would otherwise slip past the spot.
+ */
+data class Block(val lat: Double, val lon: Double, val radiusM: Double = 60.0)
 
 /** How a responder moves on roads. Speeds are assumptions (km/h) for a city in an emergency, shown with every estimate. */
 enum class RoadMode(val kmh: Map<String, Double>) {
@@ -69,13 +72,8 @@ class RoadMap private constructor(
     fun route(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, mode: RoadMode, blocks: List<Block> = emptyList()): Route? {
         val a = nearest(fromLat, fromLon, mode = mode); val b = nearest(toLat, toLon, mode = mode)
         if (a < 0 || b < 0) return null
-        val blockedNode = BooleanArray(nodes)
-        if (blocks.isNotEmpty()) for (i in lat.indices) for (bk in blocks) {
-            if (kotlin.math.abs(lat[i] - bk.lat) < 0.002 && kotlin.math.abs(lon[i] - bk.lon) < 0.002 &&
-                GeoMath.distanceM(lat[i], lon[i], bk.lat, bk.lon) <= bk.radiusM) { blockedNode[i] = true; break }
-        }
-        blockedNode[a] = false; blockedNode[b] = false // never block where help starts or where the person is
-        val path = astar(a, b, mode, blockedNode) ?: return null
+        val blockedEdge = blockedEdges(blocks)
+        val path = astar(a, b, mode, blockedEdge) ?: return null
         val pts = ArrayList<Pair<Double, Double>>(path.size + 2)
         pts += fromLat to fromLon
         path.forEach { pts += lat[it] to lon[it] }
@@ -88,10 +86,37 @@ class RoadMap private constructor(
         val minutes = kotlin.math.ceil((roadSeconds + endsSeconds) / 60.0).toInt().coerceAtLeast(1)
         // Blockages the plain fastest route would have gone through: what this route went around.
         val avoided = if (blocks.isEmpty()) 0 else {
-            val plain = astar(a, b, mode, BooleanArray(nodes))
-            blocks.count { bk -> plain != null && plain.any { GeoMath.distanceM(lat[it], lon[it], bk.lat, bk.lon) <= bk.radiusM } }
+            val plain = astar(a, b, mode, BooleanArray(edgeTo.size))
+            blocks.count { bk -> plain != null && plain.zipWithNext().any { (u, v) -> segmentDistanceM(bk, u, v) <= bk.radiusM } }
         }
         return Route(pts, meters, minutes, avoided)
+    }
+
+    /** Edges whose segment passes within a block's radius. A bounding-box test first keeps this to a few milliseconds. */
+    private fun blockedEdges(blocks: List<Block>): BooleanArray {
+        val out = BooleanArray(edgeTo.size)
+        if (blocks.isEmpty()) return out
+        for (u in 0 until nodes) for (e in edgeStart[u] until edgeStart[u + 1]) {
+            val v = edgeTo[e]
+            for (bk in blocks) {
+                val pad = bk.radiusM / 100_000.0
+                if (bk.lat < minOf(lat[u], lat[v]) - pad || bk.lat > maxOf(lat[u], lat[v]) + pad) continue
+                if (bk.lon < minOf(lon[u], lon[v]) - pad * 1.1 || bk.lon > maxOf(lon[u], lon[v]) + pad * 1.1) continue
+                if (segmentDistanceM(bk, u, v) <= bk.radiusM) { out[e] = true; break }
+            }
+        }
+        return out
+    }
+
+    /** Metres from a block to the road segment u–v (flat projection around the block: fine over a few hundred metres). */
+    internal fun segmentDistanceM(bk: Block, u: Int, v: Int): Double {
+        val kx = 111_320.0 * kotlin.math.cos(Math.toRadians(bk.lat)); val ky = 110_540.0
+        val ax = (lon[u] - bk.lon) * kx; val ay = (lat[u] - bk.lat) * ky
+        val bx = (lon[v] - bk.lon) * kx; val by = (lat[v] - bk.lat) * ky
+        val dx = bx - ax; val dy = by - ay
+        val len2 = dx * dx + dy * dy
+        val t = if (len2 == 0.0) 0.0 else (-(ax * dx + ay * dy) / len2).coerceIn(0.0, 1.0)
+        return kotlin.math.hypot(ax + dx * t, ay + dy * t)
     }
 
     private fun speedMs(kind: Byte, mode: RoadMode): Double? = mode.kmh[KINDS[kind.toInt()]]?.let { it / 3.6 }
@@ -105,6 +130,7 @@ class RoadMap private constructor(
         return s
     }
 
+    /** A* on road time; [blocked] = edges that may not be used. */
     private fun astar(a: Int, b: Int, mode: RoadMode, blocked: BooleanArray): List<Int>? {
         val vmax = mode.kmh.values.max() / 3.6
         val g = DoubleArray(nodes) { Double.MAX_VALUE }
@@ -120,7 +146,7 @@ class RoadMap private constructor(
             done[u] = true
             for (e in edgeStart[u] until edgeStart[u + 1]) {
                 val v = edgeTo[e]
-                if (done[v] || blocked[v]) continue
+                if (done[v] || blocked[e]) continue
                 val sp = speedMs(edgeKind[e], mode) ?: continue
                 val ng = g[u] + edgeM[e] / sp
                 if (ng < g[v]) {

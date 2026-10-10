@@ -238,6 +238,7 @@ private fun SimControls(sim: MeshSimulation, modifier: Modifier = Modifier) {
             )
         }
         SecondaryButton(stringResource(R.string.sim_alert), { sim.nextIncident() })
+        SecondaryButton(stringResource(R.string.sim_block_road), { sim.blockRoadAhead() })
     }
 }
 

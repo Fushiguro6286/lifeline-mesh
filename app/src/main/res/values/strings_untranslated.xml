@@ -87,6 +87,7 @@
     <string name="node_packets">Packets from this phone stored here: %d</string>
     <string name="node_waiting">Waiting to send: %d</string>
     <string name="sim_alert">Next incident</string>
+    <string name="sim_block_road">Block a road ahead</string>
     <string name="sim_phone">%1$s %2$s</string>
     <string name="sim_on">on</string>
     <string name="sim_off">off</string>

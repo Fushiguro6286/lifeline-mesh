@@ -322,8 +322,9 @@ early (apps cannot), it runs out by itself.
   so 99 % of the roads connect. A* finds the fastest route for a vehicle (no footpaths) or on foot; boats stay
   straight-line. Speeds are assumptions (highway 40, major 30, minor 20 km/h), shown as estimates. RoadMapTest uses the
   real map: MG Road to Cubbon Park 2,023 m / 5 min by road (1,313 m straight).
-- Blocked roads: "Road blocked" community reports and alerts that say the road is blocked (last 6 h) are avoided by
-  40 m. A blockage within 100 m of where a leg starts or ends is not avoided (help has to get there).
+- Blocked roads: "Road blocked" community reports and alerts that say the road is blocked (last 6 h) close every road
+  segment passing within 60 m of the report (segments, not just junctions: with junctions only, a route could still
+  run straight past the marker on the iQOO 15). A blockage within 100 m of where a leg starts or ends is not avoided (help has to get there).
 - Where it is used: the rescuer's card ("About 5 min by road · 1.8 km on the map's roads · estimate", "Goes around 1
   reported blocked road"), the Acknowledge sheet, the sender's live ETA ("Live estimate along the roads…", "Their route
   goes around …"), map lines (along roads; checked on the iQOO 15: vehicle lines 25 to 123 road points, the NDRF boat
@@ -336,8 +337,14 @@ early (apps cannot), it runs out by itself.
   2 people · 4 min · reached after about 4 min" (that test showed the same job twice; fixed and unit-tested since).
 - Also fixed: the situation report now rejects numbers written as words too (seen: "Two people require…"), and the
   map no longer opens blank after a rotation (the camera fit used more padding than a short landscape map has).
-- NOT checked on the phone: a simulated team visibly detouring around a blockage (unit-tested on the real map), and the
-  plan card with two different jobs after the duplicate fix.
+- Stage demo, simulated mesh: Mesh tab -> "Next incident", wait until a team is on its way (its dashed line on the Map
+  tab), then "Block a road ahead". The phone nearest to the half-way point of the longest remaining team route reports
+  "Tree fell across the road" there (a real Road blocked report through the mesh); the team plans again on its next
+  tick and the line on the Map tab goes another way. Needs a team role on the viewing phone (e.g. Other team): people
+  in need only see lines to their own alerts. Does nothing if no team has at least 400 m left to drive.
+- Checked on the iQOO 15 (10 Oct 2026, as Other team): before, team 3's line ran up the east side of Ulsoor Lake; after
+  "Block a road ahead" the block marker appeared on that road and the line went round the west side of the lake.
+- NOT checked on the phone: the plan card with two different jobs after the duplicate fix.
 
 ## Simulated weather (added 10 Oct 2026, on request)
 

@@ -300,6 +300,18 @@ class MeshSimulation(
             if (mesh.isUp(name)) router.originate(Packet.CheckIn(router.newHeader(), Geo.toE6(lat), Geo.toE6(lon), 1, name))
         }
 
+        /** The rest of this team's route to its current job (from where it is now), or null if it is not on the way. */
+        fun remainingPath(): List<Pair<Double, Double>>? {
+            val t = queue().firstOrNull() ?: return null
+            val p = t.path ?: return null
+            if (t.next >= p.size) return null
+            return listOf(lat to lon) + p.subList(t.next, p.size)
+        }
+
+        fun reportAt(kind: ReportType, note: String, atLat: Double, atLon: Double) {
+            if (mesh.isUp(name)) router.originate(Packet.Report(router.newHeader(), Geo.toE6(atLat), Geo.toE6(atLon), 2, kind, note))
+        }
+
         fun report(kind: ReportType, note: String) {
             if (mesh.isUp(name)) router.originate(Packet.Report(router.newHeader(), Geo.toE6(lat), Geo.toE6(lon), 2, kind, note))
         }
@@ -363,6 +375,29 @@ class MeshSimulation(
     }
 
     /** The next incident from the pool, reported by the nearest virtual phone that is not a team. */
+    /**
+     * Stage demo: a road on the way of the team with the longest drive left is reported blocked, half way along its
+     * route, by the nearest phone that is not a team. The team then plans again around it (its next tick), and every
+     * map and ETA follows. Returns the team's name, or null if no team is on the way far enough (try again shortly).
+     */
+    fun blockRoadAhead(): String? {
+        val (team, path) = phones.values.filter { it.spec.role.isTeam && mesh.isUp(it.name) }
+            .mapNotNull { p -> p.remainingPath()?.let { p to it } }
+            .maxByOrNull { (_, pts) -> pts.zipWithNext().sumOf { (a, b) -> com.lifeline.mesh.triage.GeoMath.distanceM(a.first, a.second, b.first, b.second) } }
+            ?: return null
+        // Half way along the remaining route, measured in metres; never next to either end (blocks there are ignored).
+        val legs = path.zipWithNext().map { (a, b) -> com.lifeline.mesh.triage.GeoMath.distanceM(a.first, a.second, b.first, b.second) }
+        val total = legs.sum()
+        if (total < 400) return null
+        var walked = 0.0
+        var at = path.last()
+        for ((i, d) in legs.withIndex()) { if (walked + d >= total / 2) { at = path[i + 1]; break }; walked += d }
+        val reporter = phones.values.filter { !it.spec.role.isTeam && mesh.isUp(it.name) }
+            .minByOrNull { com.lifeline.mesh.triage.GeoMath.distanceM(it.lat, it.lon, at.first, at.second) } ?: return null
+        reporter.reportAt(ReportType.ROAD_BLOCKED, "Tree fell across the road", at.first, at.second)
+        return team.name
+    }
+
     fun nextIncident() {
         val inc = INCIDENTS[nextIncident++ % INCIDENTS.size]
         val at = latOf(inc.northM) to lonOf(inc.eastM)

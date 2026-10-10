@@ -42,14 +42,17 @@ class RoadMapTest {
         val first = map.route(A_LAT, A_LON, B_LAT, B_LON, RoadMode.VEHICLE)!!
         // Block the road at the middle of the first route.
         val mid = first.points[first.points.size / 2]
-        val block = Block(mid.first, mid.second, 40.0)
+        val block = Block(mid.first, mid.second)
         val second = map.route(A_LAT, A_LON, B_LAT, B_LON, RoadMode.VEHICLE, listOf(block))
         assertNotNull(second); second!!
         println("around the block: ${second.meters.toInt()} m, ${second.minutes} min (was ${first.meters.toInt()} m)")
         assertEquals(1, second.avoidedBlocks)
         assertTrue(second.meters >= first.meters)
-        // No road point of the new route is inside the blocked circle (the first and last points are the endpoints).
-        assertTrue(second.points.drop(1).dropLast(1).none { GeoMath.distanceM(it.first, it.second, block.lat, block.lon) <= block.radiusM })
+        // No road segment of the new route passes within the blocked circle (segments, not just points: seen on the iQOO
+        // 15, a route slipped past a blocked junction between points 40+ m away).
+        val inner = second.points.drop(1).dropLast(1)
+        assertTrue(inner.zipWithNext().none { (p, q) -> segmentDistance(block, p, q) <= block.radiusM - 1 })
+        assertTrue("a real detour: ${second.meters} vs ${first.meters}", second.meters > first.meters + 50)
     }
 
     @Test fun offTheMapThereIsNoRoute() {
@@ -61,6 +64,15 @@ class RoadMapTest {
         val car = map.route(A_LAT, A_LON, B_LAT, B_LON, RoadMode.VEHICLE)!!
         assertTrue(foot.minutes > car.minutes)
         assertTrue(foot.meters <= car.meters + 1)
+    }
+
+    private fun segmentDistance(bk: Block, p: Pair<Double, Double>, q: Pair<Double, Double>): Double {
+        val kx = 111_320.0 * kotlin.math.cos(Math.toRadians(bk.lat)); val ky = 110_540.0
+        val ax = (p.second - bk.lon) * kx; val ay = (p.first - bk.lat) * ky
+        val bx = (q.second - bk.lon) * kx; val by = (q.first - bk.lat) * ky
+        val dx = bx - ax; val dy = by - ay; val len2 = dx * dx + dy * dy
+        val t = if (len2 == 0.0) 0.0 else (-(ax * dx + ay * dy) / len2).coerceIn(0.0, 1.0)
+        return kotlin.math.hypot(ax + dx * t, ay + dy * t)
     }
 
     @Test fun junctionsAreRebuiltSoAlmostAllRoadsConnect() {
