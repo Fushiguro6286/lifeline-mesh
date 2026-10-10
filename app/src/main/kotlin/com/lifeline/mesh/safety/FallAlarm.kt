@@ -77,12 +77,22 @@ class AlarmEffects(private val context: Context) {
                 play()
             }
         }.getOrNull()
-        vibrator()?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 700, 300), intArrayOf(0, 255, 0), 0))
+        // Marked as an alarm (Android 13+) so the countdown also buzzes on a phone left on silent (11 Oct 2026).
+        val loop = VibrationEffect.createWaveform(longArrayOf(0, 700, 300), intArrayOf(0, 255, 0), 0)
+        if (Build.VERSION.SDK_INT >= 33) vibrator()?.vibrate(loop, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_ALARM))
+        else vibrator()?.vibrate(loop)
+        vibrating = true
     }
 
+    private var vibrating = false
+
+    /**
+     * Stops the ringtone and the alarm vibration. Only cancels vibration if the alarm is still running: a second stop
+     * (when the alarm state clears after the SOS went out) cancelled the "SOS sent" buzz after 6 ms (iQOO 15).
+     */
     fun stop() {
         runCatching { ringtone?.stop() }
         ringtone = null
-        vibrator()?.cancel()
+        if (vibrating) { vibrating = false; vibrator()?.cancel() }
     }
 }
