@@ -47,6 +47,7 @@ fun CanvasFallbackMap(
     onPlaceTap: (String) -> Unit = {},
     routes: List<Route> = emptyList(),
     gapLines: List<List<Pair<Double, Double>>> = emptyList(),
+    evac: List<Pair<Double, Double>> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val onPlace by rememberUpdatedState(onPlaceTap)
@@ -125,6 +126,13 @@ fun CanvasFallbackMap(
             val path = androidx.compose.ui.graphics.Path()
             r.points.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
             drawPath(path, c.link, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), pathEffect = dash))
+        }
+
+        // My way to the open shelter: solid green.
+        if (evac.size >= 2) {
+            val path = androidx.compose.ui.graphics.Path()
+            evac.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
+            drawPath(path, c.safe.copy(alpha = 0.8f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5.dp.toPx()))
         }
 
         // Relay gaps: amber, short dashes.

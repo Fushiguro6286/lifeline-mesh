@@ -258,6 +258,7 @@ private fun SimControls(sim: MeshSimulation, modifier: Modifier = Modifier) {
         }
         SecondaryButton(stringResource(R.string.sim_alert), { sim.nextIncident() })
         SecondaryButton(stringResource(R.string.sim_block_road), { sim.blockRoadAhead() })
+        SecondaryButton("Fill the nearest shelter", { sim.fillNearestShelter() })
         val raviLow = SIM_DRAIN in low
         SecondaryButton(if (raviLow) "$SIM_DRAIN's battery back" else "$SIM_DRAIN's battery to ${MeshSimulation.LOW_BATTERY} %",
             { sim.setLowBattery(SIM_DRAIN, !raviLow) })

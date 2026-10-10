@@ -317,6 +317,12 @@ class MeshSimulation(
             if (mesh.isUp(name)) router.originate(Packet.Report(router.newHeader(), Geo.toE6(atLat), Geo.toE6(atLon), 2, kind, note))
         }
 
+        /** Reports a shelter open where this phone stands, and remembers it for "Fill the nearest shelter". */
+        fun shelter(note: String) {
+            report(ReportType.SHELTER_OPEN, note)
+            openShelters += lat to lon
+        }
+
         fun report(kind: ReportType, note: String) {
             if (mesh.isUp(name)) router.originate(Packet.Report(router.newHeader(), Geo.toE6(lat), Geo.toE6(lon), 2, kind, note))
         }
@@ -357,7 +363,9 @@ class MeshSimulation(
             delay(15_000); phone("Lakshmi").alert(W, 2, 8, "No drinking water for 8 people")
             delay(15_000); phone("Divya").alert(M or A, 3, 1, "Old man fell, head injury")
             delay(15_000); phone("Joseph").alert(T or R, 2, 2, "Tree on the road, car stuck")
-            delay(10_000); phone("Divya").report(ReportType.SHELTER_OPEN, "School hall open, 200 beds")
+            delay(10_000); phone("Divya").shelter("School hall open, 200 beds")
+            delay(5_000); phone("Lakshmi").shelter("Temple hall open, 80 places")
+            delay(5_000); phone("Ravi").report(ReportType.WATER_AVAILABLE, "Water tanker at the bus stop, bring a can")
             delay(10_000); phone("Suresh").report(ReportType.ROAD_BLOCKED, "Underpass flooded, use ring road")
             delay(10_000); phone("Ravi").checkIn()
             while (isActive) {
@@ -377,6 +385,22 @@ class MeshSimulation(
     fun setOnline(name: String, on: Boolean) {
         mesh.setOnline(name, on)
         _online.value = PHONES.associateWith { mesh.isUp(it) }
+    }
+
+    /** Shelters the script reported open (where), until "Fill the nearest shelter" reports one full. */
+    private val openShelters = java.util.concurrent.CopyOnWriteArrayList<Pair<Double, Double>>()
+
+    /**
+     * Stage demo: the open shelter nearest the venue centre fills up. The nearest phone that is not a team reports it
+     * full there, and "Where to go" on every phone switches to the next open one. Returns false if none is open.
+     */
+    fun fillNearestShelter(): Boolean {
+        val s = openShelters.minByOrNull { com.lifeline.mesh.triage.GeoMath.distanceM(centerLat, centerLon, it.first, it.second) } ?: return false
+        val reporter = phones.values.filter { !it.spec.role.isTeam && mesh.isUp(it.name) }
+            .minByOrNull { com.lifeline.mesh.triage.GeoMath.distanceM(it.lat, it.lon, s.first, s.second) } ?: return false
+        reporter.reportAt(ReportType.SHELTER_FULL, "Full, no more space: go to the next shelter", s.first, s.second)
+        openShelters.remove(s)
+        return true
     }
 
     private val _lowBattery = MutableStateFlow<Set<String>>(emptySet())

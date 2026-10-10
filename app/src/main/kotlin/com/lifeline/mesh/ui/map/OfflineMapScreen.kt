@@ -215,6 +215,9 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         }
     }
     val shown = places + standPlaces
+    // "Where do I go?": the walking route to the open shelter, for anyone who is not on a rescue team.
+    val shelter = com.lifeline.mesh.ui.send.rememberShelterChoice(repo)
+    val evac = if (settings.role.isTeam) emptyList() else shelter?.plan?.points.orEmpty()
     val archive by produceState<Result<File?>?>(null) { value = Result.success(MapAssets.prepare(context)) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
@@ -235,7 +238,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize()) {
             if (mode == MapMode.MAP && mapUsable) {
                 key(c.isNight) {
-                    LibreMap(file!!, c, ranked, shown, lines, me, gapLines, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
+                    LibreMap(file!!, c, ranked, shown, lines, me, gapLines, evac, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
                 }
                 Text(
                     stringResource(R.string.map_attribution), style = Lifeline.type.caption, color = c.ink,
@@ -244,7 +247,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
                 )
                 if (me != null && !MapAssets.contains(me!!.lat, me!!.lon)) Banner(stringResource(R.string.map_outside), Modifier.align(Alignment.TopCenter))
             } else {
-                CanvasFallbackMap(ranked, shown, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, gapLines = gapLines,
+                CanvasFallbackMap(ranked, shown, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, gapLines = gapLines, evac = evac,
                     modifier = Modifier.fillMaxSize())
                 if (mode == MapMode.MAP && note != null) Banner(note, Modifier.align(Alignment.TopCenter))
             }
@@ -330,6 +333,7 @@ private fun LibreMap(
     routes: List<Route>,
     me: GeoFix?,
     gapLines: List<List<Pair<Double, Double>>>,
+    evac: List<Pair<Double, Double>>,
     onAlertTap: (Long) -> Unit,
     onPlaceTap: (String) -> Unit,
     onFail: () -> Unit,
@@ -399,6 +403,7 @@ private fun LibreMap(
                         st.addSource(GeoJsonSource("accuracy"))
                         st.addSource(GeoJsonSource("routes"))
                         st.addSource(GeoJsonSource("gaps"))
+                        st.addSource(GeoJsonSource("evac"))
                         st.addSource(GeoJsonSource("places"))
                         st.addSource(GeoJsonSource("alerts"))
                         st.addSource(GeoJsonSource("me"))
@@ -419,6 +424,12 @@ private fun LibreMap(
                             PropertyFactory.lineWidth(3f),
                             PropertyFactory.lineOpacity(0.85f),
                             PropertyFactory.lineDasharray(arrayOf(2f, 1.5f)),
+                        ))
+                        // My way to the open shelter: solid green, wider than the dashed lines.
+                        st.addLayer(LineLayer("evac", "evac").withProperties(
+                            PropertyFactory.lineColor(c.safe.toArgb()),
+                            PropertyFactory.lineWidth(5f),
+                            PropertyFactory.lineOpacity(0.8f),
                         ))
                         // Relay gaps: amber, dashed shorter than the teal job lines.
                         st.addLayer(LineLayer("gaps", "gaps").withProperties(
@@ -480,8 +491,11 @@ private fun LibreMap(
     }
 
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.
-    LaunchedEffect(style, ranked, places, routes, me, gapLines) {
+    LaunchedEffect(style, ranked, places, routes, me, gapLines, evac) {
         val st = style ?: return@LaunchedEffect
+        st.getSourceAs<GeoJsonSource>("evac")?.setGeoJson(FeatureCollection.fromFeatures(
+            if (evac.size < 2) emptyList() else listOf(Feature.fromGeometry(LineString.fromLngLats(evac.map { (la, lo) -> Point.fromLngLat(lo, la) })))
+        ))
         st.getSourceAs<GeoJsonSource>("gaps")?.setGeoJson(FeatureCollection.fromFeatures(gapLines.map { pts ->
             Feature.fromGeometry(LineString.fromLngLats(pts.map { (la, lo) -> Point.fromLngLat(lo, la) }))
         }))
