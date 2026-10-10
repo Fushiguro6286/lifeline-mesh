@@ -339,4 +339,14 @@
     <string name="health_from_hc">Health Connect से</string>
     <string name="weather_simulated">सिम्युलेटेड मौसम: डेमो के लिए तूफ़ान की कहानी। सिम्युलेशन बंद होने पर असली मौसम दिखेगा।</string>
     <string name="weather_next">अगला मौसम</string>
+    <string name="status_reply_internet">उनका जवाब इंटरनेट से आया</string>
+    <string name="watch_real_in_sim">सिम्युलेशन चालू है: इस घड़ी का अलार्म सिर्फ़ वर्चुअल फ़ोन तक जाएगा।</string>
+    <plurals name="alert_hops">
+        <item quantity="one">%d हॉप में आप तक पहुँचा</item>
+        <item quantity="other">%d हॉप में आप तक पहुँचा</item>
+    </plurals>
+    <plurals name="status_reply_hops">
+        <item quantity="one">उनका जवाब %d हॉप में आया</item>
+        <item quantity="other">उनका जवाब %d हॉप में आया</item>
+    </plurals>
 </resources>

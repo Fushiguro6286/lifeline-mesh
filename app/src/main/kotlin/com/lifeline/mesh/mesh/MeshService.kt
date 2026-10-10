@@ -270,7 +270,6 @@ class MeshService : Service() {
                 .collect { (address, name, sim) ->
                     val simulatedWatch = address == com.lifeline.mesh.safety.SIMULATED_WATCH
                     if (simulatedWatch && !sim) { link.use(null, ""); repo.setWatch(null); return@collect } // never outside simulation
-                    if (!simulatedWatch && sim) { link.use(null, ""); return@collect } // a real watch waits until simulation ends
                     if (address == null) repo.liveVitals.value = emptyList()
                     link.use(address, name)
                 }

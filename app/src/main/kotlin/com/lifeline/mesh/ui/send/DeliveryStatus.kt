@@ -81,7 +81,13 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
                     stringResource(R.string.status_help_coming),
                     // Only a real reply makes this step active: never suggest help is coming before it is.
                     if (acked) StepState.Done else StepState.Pending,
-                    detail = eta?.let { stringResource(R.string.status_eta, it) },
+                    detail = listOfNotNull(
+                        eta?.let { stringResource(R.string.status_eta, it) },
+                        ack?.let { a ->
+                            if (a.fromEndpoint == com.lifeline.mesh.mesh.Router.INTERNET) stringResource(R.string.status_reply_internet)
+                            else pluralStringResource(R.plurals.status_reply_hops, a.hops, a.hops)
+                        },
+                    ).joinToString(" · ").ifBlank { null },
                     tone = if (acked) c.safe else null,
                 ),
             )

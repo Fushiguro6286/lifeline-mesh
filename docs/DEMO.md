@@ -291,6 +291,20 @@ early (apps cannot), it runs out by itself.
   NOT checked: a real watch reading.
 - Left on the iQOO: Health Connect permissions granted, the Watch vitals alarm switch off.
 
+## Both modes for the judges (added 10 Oct 2026, on request)
+
+- Hops are shown where judges look: each Rescue tab card says "reached you over N hops" (the fewest among its reports,
+  measured on arrival; "via internet" for server copies), and the sender's status card adds "their reply crossed N
+  hops" to the Help is coming step (measured hop count of the rescuer's reply).
+- A real Bluetooth watch now also works with simulation on (a note says its alarm reaches only the virtual phones);
+  the simulated watch stays simulation-only. Health Connect and the weather card already worked in both modes
+  (simulation: the storm story; off: real weather from the server).
+- What works where: simulation on (one phone): SOS → hops through virtual phones → a virtual team answers → "their reply
+  crossed N hops"; Rescue tab with virtual alerts and hops; storm weather and warnings; simulated or real watch.
+  Simulation off: real mesh between real phones (needs phones B and C for alerts to a rescuer), real weather and
+  warnings from the laptop server, real watch, Health Connect.
+- NOT yet checked on the phone: the two hop lines and a real watch during simulation (the phone was in use).
+
 ## Simulated weather (added 10 Oct 2026, on request)
 
 - Simulation on: the SOS weather card shows a storm story instead of the real weather, labelled "Simulated weather":

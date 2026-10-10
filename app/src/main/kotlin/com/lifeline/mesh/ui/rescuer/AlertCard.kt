@@ -79,7 +79,8 @@ fun AlertCard(r: RankedAlert, now: Long, onOpen: () -> Unit, modifier: Modifier 
             EtaLine(r)
             Text(
                 (if (a.count > 1) stringResource(R.string.alert_merged, a.count) else stringResource(R.string.alert_single)) +
-                    " · " + ago(context, now, a.lastAt) + if (a.viaInternet) " · via internet" else "",
+                    " · " + ago(context, now, a.lastAt) + (if (a.viaInternet) " · via internet"
+                    else " · " + pluralStringResource(R.plurals.alert_hops, a.reports.minOf { it.hops }, a.reports.minOf { it.hops })),
                 style = Lifeline.type.caption, color = c.inkMuted,
             )
             if (a.note.isNotBlank()) com.lifeline.mesh.ui.components.TranslatableNote(a.note, language)

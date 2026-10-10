@@ -349,4 +349,14 @@
     <string name="health_from_hc">From Health Connect</string>
     <string name="weather_simulated">Simulated weather: a storm story for the demo. Real weather returns when simulation is off.</string>
     <string name="weather_next">Next weather</string>
+    <string name="status_reply_internet">their reply came via internet</string>
+    <string name="watch_real_in_sim">Simulation is on: an alarm from this watch reaches only the virtual phones.</string>
+    <plurals name="alert_hops">
+        <item quantity="one">reached you over %d hop</item>
+        <item quantity="other">reached you over %d hops</item>
+    </plurals>
+    <plurals name="status_reply_hops">
+        <item quantity="one">their reply crossed %d hop</item>
+        <item quantity="other">their reply crossed %d hops</item>
+    </plurals>
 </resources>

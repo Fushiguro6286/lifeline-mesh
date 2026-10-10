@@ -237,6 +237,8 @@ private fun LiveWatchSection(settings: Settings) {
                 val s = ((now - r.atMs) / 1000).coerceAtLeast(0)
                 if (s <= 2) stringResource(R.string.watch_now) else stringResource(R.string.watch_seconds_ago, s.toInt())
             }
+            if (!st.simulated && settings.simulationMode)
+                Text(stringResource(R.string.watch_real_in_sim), style = Lifeline.type.caption, color = c.warn)
             if (st.simulated) {
                 Text(stringResource(R.string.watch_sim_note), style = Lifeline.type.caption, color = c.inkMuted)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {

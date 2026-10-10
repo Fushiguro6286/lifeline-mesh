@@ -339,4 +339,14 @@
     <string name="health_from_hc">Health Connect ನಿಂದ</string>
     <string name="weather_simulated">ಅನುಕರಿಸಿದ ಹವಾಮಾನ: ಡೆಮೊಗಾಗಿ ಚಂಡಮಾರುತದ ಕಥೆ. ಸಿಮ್ಯುಲೇಶನ್ ಆಫ್ ಮಾಡಿದಾಗ ನಿಜವಾದ ಹವಾಮಾನ ಬರುತ್ತದೆ.</string>
     <string name="weather_next">ಮುಂದಿನ ಹವಾಮಾನ</string>
+    <string name="status_reply_internet">ಅವರ ಉತ್ತರ ಇಂಟರ್ನೆಟ್ ಮೂಲಕ ಬಂತು</string>
+    <string name="watch_real_in_sim">ಸಿಮ್ಯುಲೇಶನ್ ಆನ್ ಆಗಿದೆ: ಈ ವಾಚ್‌ನ ಅಲಾರಂ ವರ್ಚುವಲ್ ಫೋನ್‌ಗಳಿಗೆ ಮಾತ್ರ ಹೋಗುತ್ತದೆ.</string>
+    <plurals name="alert_hops">
+        <item quantity="one">%d ಹಾಪ್‌ನಲ್ಲಿ ನಿಮ್ಮನ್ನು ತಲುಪಿತು</item>
+        <item quantity="other">%d ಹಾಪ್‌ಗಳಲ್ಲಿ ನಿಮ್ಮನ್ನು ತಲುಪಿತು</item>
+    </plurals>
+    <plurals name="status_reply_hops">
+        <item quantity="one">ಅವರ ಉತ್ತರ %d ಹಾಪ್‌ನಲ್ಲಿ ಬಂತು</item>
+        <item quantity="other">ಅವರ ಉತ್ತರ %d ಹಾಪ್‌ಗಳಲ್ಲಿ ಬಂತು</item>
+    </plurals>
 </resources>
