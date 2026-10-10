@@ -55,6 +55,8 @@ data class Settings(
     val profiles: List<ProfileInfo> = emptyList(),
     /** Fall and crash detection while the mesh runs (off until the user turns it on). */
     val fallDetection: Boolean = false,
+    /** Watch vitals alarm from Health Connect while the mesh runs (off until the user turns it on). */
+    val watchVitals: Boolean = false,
 ) {
     val travel: com.lifeline.mesh.triage.Travel get() = travelChoice ?: com.lifeline.mesh.triage.Teams.defaultTravel(role.hello)
 
@@ -84,6 +86,7 @@ class SettingsStore(private val context: Context) {
         val PROFILES = stringPreferencesKey("profiles")
         val ACTIVE_PROFILE = stringPreferencesKey("active_profile")
         val FALL_DETECTION = booleanPreferencesKey("fall_detection")
+        val WATCH_VITALS = booleanPreferencesKey("watch_vitals")
     }
 
     private val store get() = context.dataStore
@@ -122,6 +125,7 @@ class SettingsStore(private val context: Context) {
         activeProfileId = p[Keys.ACTIVE_PROFILE],
         profiles = Profiles.decode(p[Keys.PROFILES]).map { it.info },
         fallDetection = p[Keys.FALL_DETECTION] ?: false,
+        watchVitals = p[Keys.WATCH_VITALS] ?: false,
     )
 
     suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16); it.saveActiveProfile() }
@@ -134,6 +138,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
     suspend fun setFallDetection(on: Boolean) = store.edit { it[Keys.FALL_DETECTION] = on }
+    suspend fun setWatchVitals(on: Boolean) = store.edit { it[Keys.WATCH_VITALS] = on }
     suspend fun setPhone(phone: String) = store.edit { it[Keys.PHONE] = phone.filter { c -> c.isDigit() || c == '+' }.take(16); it.saveActiveProfile() }
     suspend fun setTravel(travel: com.lifeline.mesh.triage.Travel) = store.edit { it[Keys.TRAVEL] = travel.name; it.saveActiveProfile() }
 

@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.coroutines.play.services)
     implementation(libs.maplibre.android)
     implementation(libs.litertlm.android)
+    implementation(libs.health.connect)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)

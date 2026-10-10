@@ -18,6 +18,8 @@ playServicesNearby = "19.5.1"
 playServicesLocation = "21.4.0"
 maplibre = "13.6.1"
 litertlm = "0.18.0"
+# Health Connect: latest stable on 10 Oct 2026 (developer.android.com/jetpack/androidx/releases/health-connect).
+healthConnect = "1.1.0"
 junit = "4.13.2"
 
 [libraries]
@@ -45,6 +47,7 @@ play-services-nearby = { module = "com.google.android.gms:play-services-nearby",
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]

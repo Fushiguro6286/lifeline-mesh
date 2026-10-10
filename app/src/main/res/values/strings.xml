@@ -288,4 +288,10 @@
     <string name="warning_via_internet">From the rescue server</string>
     <string name="warning_source">Source: NDMA SACHET</string>
     <string name="warning_via_mesh">Passed on by nearby phones, cannot be verified</string>
+    <!-- Watch vitals alarm (10 Oct 2026) -->
+    <string name="vitals_title">Are you OK?</string>
+    <string name="vitals_detected">Your watch read: %1$s</string>
+    <string name="vitals_countdown">Calling an ambulance with your location in %d s</string>
+    <string name="vitals_send_now">Call an ambulance now</string>
+    <string name="vitals_test">Test of the watch alarm</string>
 </resources>

@@ -278,4 +278,10 @@
     <string name="warning_via_internet">बचाव सर्वर से</string>
     <string name="warning_source">स्रोत: NDMA SACHET</string>
     <string name="warning_via_mesh">पास के फ़ोन से मिली, पुष्टि नहीं हो सकती</string>
+    <!-- Watch vitals alarm (10 Oct 2026) -->
+    <string name="vitals_title">क्या आप ठीक हैं?</string>
+    <string name="vitals_detected">आपकी घड़ी ने पढ़ा: %1$s</string>
+    <string name="vitals_countdown">%d सेकंड में आपकी जगह के साथ एम्बुलेंस बुलाई जाएगी</string>
+    <string name="vitals_send_now">अभी एम्बुलेंस बुलाएँ</string>
+    <string name="vitals_test">घड़ी अलार्म का परीक्षण</string>
 </resources>

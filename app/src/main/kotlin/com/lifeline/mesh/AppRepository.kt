@@ -61,6 +61,9 @@ class AppRepository(
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
     fun setFallDetection(on: Boolean) = scope.launch { settingsStore.setFallDetection(on) }
+    fun setWatchVitals(on: Boolean) = scope.launch { settingsStore.setWatchVitals(on) }
+    /** Watch vitals: when Health Connect was last read and how many readings came back (Settings shows it). */
+    val lastVitalsCheck = MutableStateFlow<Pair<Long, Int>?>(null)
     fun setServerUrl(url: String) = scope.launch { settingsStore.setServerUrl(url) }
     fun setPhone(phone: String) = scope.launch { settingsStore.setPhone(phone) }
     fun setTravel(travel: com.lifeline.mesh.triage.Travel) = scope.launch { settingsStore.setTravel(travel) }
@@ -112,8 +115,9 @@ class AppRepository(
      */
     val fallAlarm = MutableStateFlow<com.lifeline.mesh.safety.FallAlarm?>(null)
 
-    fun startFallAlarm(test: Boolean) {
-        fallAlarm.compareAndSet(null, com.lifeline.mesh.safety.FallAlarm(System.currentTimeMillis(), test))
+    /** [vitals] = the watch reading that started it (watch vitals alarm); null = a fall. */
+    fun startFallAlarm(test: Boolean, vitals: String? = null) {
+        fallAlarm.compareAndSet(null, com.lifeline.mesh.safety.FallAlarm(System.currentTimeMillis(), test, vitals))
     }
 
     fun cancelFallAlarm() { fallAlarm.value = null }

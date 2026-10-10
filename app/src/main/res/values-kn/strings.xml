@@ -278,4 +278,10 @@
     <string name="warning_via_internet">ರಕ್ಷಣಾ ಸರ್ವರ್‌ನಿಂದ</string>
     <string name="warning_source">ಮೂಲ: NDMA SACHET</string>
     <string name="warning_via_mesh">ಹತ್ತಿರದ ಫೋನ್‌ಗಳಿಂದ ಬಂದಿದೆ, ಖಚಿತಪಡಿಸಲು ಆಗುವುದಿಲ್ಲ</string>
+    <!-- Watch vitals alarm (10 Oct 2026) -->
+    <string name="vitals_title">ನೀವು ಚೆನ್ನಾಗಿದ್ದೀರಾ?</string>
+    <string name="vitals_detected">ನಿಮ್ಮ ವಾಚ್ ಓದಿದ್ದು: %1$s</string>
+    <string name="vitals_countdown">%d ಸೆಕೆಂಡ್‌ಗಳಲ್ಲಿ ನಿಮ್ಮ ಸ್ಥಳದೊಂದಿಗೆ ಆಂಬ್ಯುಲೆನ್ಸ್ ಕರೆಯಲಾಗುತ್ತದೆ</string>
+    <string name="vitals_send_now">ಈಗಲೇ ಆಂಬ್ಯುಲೆನ್ಸ್ ಕರೆಯಿರಿ</string>
+    <string name="vitals_test">ವಾಚ್ ಅಲಾರಂ ಪರೀಕ್ಷೆ</string>
 </resources>

@@ -23,12 +23,14 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -121,6 +123,7 @@ fun SettingsScreen(
             if (meshRunning) "Starts the 15-second countdown now, as if a fall was detected. Tap I'm OK to stop it; otherwise a real SOS is sent."
             else "Start the mesh first: the countdown and the SOS run in the mesh service.",
             onClick = { if (meshRunning) repository.startFallAlarm(test = true) })
+        WatchVitalsRows(settings.watchVitals, meshRunning)
 
         Section(stringResource(R.string.settings_appearance))
         listOf(
@@ -356,4 +359,48 @@ private fun LinkRow(@DrawableRes icon: Int, title: String, body: String, onClick
         }
         Icon(painterResource(R.drawable.ic_chevron_right), null, tint = c.inkMuted)
     }
+}
+
+/**
+ * Settings → Safety: the watch vitals alarm (10 Oct 2026). Switch, Health Connect status and permission, when it last
+ * read the watch, and a test. The limits are not yet reviewed by a medical professional, and the row says so.
+ */
+@Composable
+private fun WatchVitalsRows(on: Boolean, meshRunning: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val repository = (context.applicationContext as com.lifeline.mesh.LifelineApp).repository
+    val vitals = remember { com.lifeline.mesh.safety.WatchVitals(context) }
+    var status by remember { mutableStateOf<com.lifeline.mesh.safety.WatchVitals.Status?>(null) }
+    var refresh by remember { mutableStateOf(0) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    LaunchedEffect(refresh) { status = vitals.status() }
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.health.connect.client.PermissionController.createRequestPermissionResultContract(),
+    ) { refresh++ }
+    val last by repository.lastVitalsCheck.collectAsStateWithLifecycle()
+
+    SwitchRow(R.drawable.ic_health_and_safety, "Watch vitals alarm",
+        "Reads blood oxygen, blood pressure and heart rate your watch saves in Health Connect, every minute while the mesh " +
+            "runs. A reading far outside normal rings the phone for 15 seconds; if nobody taps I'm OK, it sends an urgent " +
+            "ambulance request with your location. Watch data can arrive minutes late. Limits (oxygen below 90%, blood " +
+            "pressure 180/120 or more or below 90, heart rate under 40 or over 150 twice) are not yet reviewed by a doctor.",
+        on, repository::setWatchVitals)
+    val statusText = when (status) {
+        null -> "Checking Health Connect…"
+        com.lifeline.mesh.safety.WatchVitals.Status.UNAVAILABLE -> "Health Connect is not available on this phone."
+        com.lifeline.mesh.safety.WatchVitals.Status.UPDATE_NEEDED -> "Health Connect needs an update (Play Store)."
+        com.lifeline.mesh.safety.WatchVitals.Status.NEEDS_PERMISSION -> "Not connected: tap to allow reading your watch data."
+        com.lifeline.mesh.safety.WatchVitals.Status.READY -> last?.let { (at, n) ->
+            "Connected. Last read ${java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(at))}: " +
+                "$n readings from the last 30 minutes."
+        } ?: if (on && meshRunning) "Connected. First read within a minute." else "Connected."
+    }
+    LinkRow(R.drawable.ic_health_and_safety, "Health Connect", statusText, onClick = {
+        if (status == com.lifeline.mesh.safety.WatchVitals.Status.NEEDS_PERMISSION) scope.launch { ask.launch(vitals.permissionsToRequest()) }
+        else refresh++
+    })
+    LinkRow(R.drawable.ic_health_and_safety, "Try the watch alarm",
+        if (meshRunning) "Starts the 15-second countdown as if your watch read blood oxygen 85%. Tap I'm OK to stop it; otherwise a real ambulance request is sent."
+        else "Start the mesh first: the countdown and the request run in the mesh service.",
+        onClick = { if (meshRunning) repository.startFallAlarm(test = true, vitals = "Blood oxygen 85% (test)") })
 }

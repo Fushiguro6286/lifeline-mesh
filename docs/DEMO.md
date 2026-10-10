@@ -270,6 +270,27 @@ about 90 s in. The card now puts the SOS name back every 3 s while the phone is 
 Nearby's classic-Bluetooth discovery may be weaker (BLE and Wi-Fi are not affected). Stop cannot end the visible window
 early (apps cannot), it runs out by itself.
 
+## Watch vitals alarm (added 10 Oct 2026, on request)
+
+- Settings → Safety → Watch vitals alarm (off by default) and Health Connect (tap to allow). While the mesh runs, the
+  service reads blood oxygen, blood pressure and heart rate that a watch saved in Health Connect, every minute, for the
+  last 30 minutes. A reading outside the limits starts the same 15 s alarm as a fall ("Are you OK? Your watch read:
+  Blood oxygen 86%"); no answer sends an urgent ambulance request (medical + ambulance, severity 3, position, note
+  "Watch: ..."), which rings Ambulance phones. Each reading alarms once.
+- Limits (VitalsCheck, unit-tested): oxygen below 90 %; blood pressure 180/120 or more, or systolic below 90; heart rate
+  under 40 or over 150 on two readings within 5 minutes. **Commonly published thresholds, not yet reviewed by a
+  doctor: have a medical professional check them before the demo**, as with the first-aid guides. The Settings text
+  says they are not reviewed.
+- Not real time: the watch's own app (Samsung Health, Fitbit, Pixel Watch, ...) must write to Health Connect, and data
+  often arrives minutes late. Most watches do not measure blood pressure at all. vivo/iQOO watches may not write to
+  Health Connect: check with the watch you will use.
+- Checked on the iQOO 15: Health Connect available (first use opened its own setup), the permission screen listed the
+  three readings plus background access, all granted; the service then read Health Connect ("Last read 1:02 PM: 0
+  readings", no watch paired). In simulation, "Try the watch alarm" ran out and sent the request: "Medical · Ambulance
+  needed", answered by Kiran (Ambulance), ETA 4 min, "They are here". "I'm OK" cancels it.
+  NOT checked: a real watch reading.
+- Left on the iQOO: Health Connect permissions granted, the Watch vitals alarm switch off.
+
 ## Round trip on the scoreboard (fixed 10 Oct 2026)
 
 - Before: only the Mesh debug panel's "Send ping" measured a round trip, so the Mesh tab tile stayed "Not measured".

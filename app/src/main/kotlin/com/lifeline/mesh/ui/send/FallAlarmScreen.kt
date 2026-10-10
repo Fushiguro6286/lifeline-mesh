@@ -57,20 +57,24 @@ fun FallAlarmScreen(alarm: FallAlarm, onOk: () -> Unit, onSendNow: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Space.l),
     ) {
         Spacer(Modifier.height(Space.xl))
-        if (alarm.test) Text(stringResource(R.string.fall_test), style = Lifeline.type.label, color = c.warn)
-        Text(stringResource(R.string.fall_title), style = Lifeline.type.display, color = c.ink, textAlign = TextAlign.Center,
-            modifier = Modifier.semantics { heading() })
-        Text(stringResource(R.string.fall_detected), style = Lifeline.type.body, color = c.inkMuted, textAlign = TextAlign.Center)
+        if (alarm.test) Text(stringResource(if (alarm.vitals != null) R.string.vitals_test else R.string.fall_test), style = Lifeline.type.label, color = c.warn)
+        val vitals = alarm.vitals
+        Text(stringResource(if (vitals != null) R.string.vitals_title else R.string.fall_title), style = Lifeline.type.display,
+            color = c.ink, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
+        Text(if (vitals != null) stringResource(R.string.vitals_detected, vitals) else stringResource(R.string.fall_detected),
+            style = Lifeline.type.body, color = c.inkMuted, textAlign = TextAlign.Center)
         Box(Modifier.size(140.dp).background(c.sos, Shapes.circle), contentAlignment = Alignment.Center) {
             Text("$left", style = Lifeline.type.display, color = c.onFill, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         }
-        Text(stringResource(R.string.fall_countdown, left), style = Lifeline.type.bodyStrong, color = c.ink, textAlign = TextAlign.Center)
+        Text(if (vitals != null) stringResource(R.string.vitals_countdown, left) else stringResource(R.string.fall_countdown, left),
+            style = Lifeline.type.bodyStrong, color = c.ink, textAlign = TextAlign.Center)
         Spacer(Modifier.weight(1f))
         // The whole lower half is "I'm OK".
         Box(
             Modifier.fillMaxWidth().height(160.dp).background(c.safe, Shapes.card).clickable(role = Role.Button, onClick = onOk),
             contentAlignment = Alignment.Center,
         ) { Text(stringResource(R.string.fall_ok), style = Lifeline.type.display, color = c.onFill) }
-        PrimaryButton(stringResource(R.string.fall_send_now), onSendNow, Modifier.fillMaxWidth(), color = c.sos)
+        PrimaryButton(stringResource(if (vitals != null) R.string.vitals_send_now else R.string.fall_send_now), onSendNow,
+            Modifier.fillMaxWidth(), color = c.sos)
     }
 }

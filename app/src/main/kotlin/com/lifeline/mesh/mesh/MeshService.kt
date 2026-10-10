@@ -141,6 +141,7 @@ class MeshService : Service() {
             }
         }
         watchForFalls()
+        watchVitals()
     }
 
     // ------------------------------------------------------------------ fall and crash detection
@@ -179,10 +180,50 @@ class MeshService : Service() {
                     effects.stop()
                     nm.cancel(NOTIF_FALL)
                 }
-                sendFallSos()
+                if (a.vitals != null) sendVitalsRequest(a.vitals) else sendFallSos()
                 repo.fallAlarm.compareAndSet(a, null)
             }
         }
+    }
+
+    /**
+     * Watch vitals alarm (10 Oct 2026): while the setting is on and Health Connect allows it, read the watch's synced
+     * readings every minute; one far outside normal ([com.lifeline.mesh.safety.VitalsCheck]) starts the same 15 s alarm
+     * as a fall. Each reading raises the alarm at most once.
+     */
+    private fun watchVitals() {
+        val vitals = com.lifeline.mesh.safety.WatchVitals(this)
+        scope.launch {
+            repo.settings.filterNotNull().map { it.watchVitals }.distinctUntilChanged().collectLatest { on ->
+                if (!on) return@collectLatest
+                var handledUpTo = System.currentTimeMillis() - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS
+                while (true) {
+                    if (vitals.status() == com.lifeline.mesh.safety.WatchVitals.Status.READY) {
+                        val now = System.currentTimeMillis()
+                        val readings = vitals.read(now - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS)
+                        repo.lastVitalsCheck.value = now to readings.size
+                        com.lifeline.mesh.safety.VitalsCheck.check(readings, now, handledUpTo)?.let { a ->
+                            handledUpTo = a.readingAtMs
+                            Log.i(TAG, "watch vitals alarm: ${a.reason}")
+                            repo.startFallAlarm(test = false, vitals = a.reason)
+                        }
+                    }
+                    delay(60_000)
+                }
+            }
+        }
+    }
+
+    /** Nobody answered the watch alarm: an urgent ambulance request (ambulance phones ring) with my position. */
+    private suspend fun sendVitalsRequest(reason: String) {
+        val fix = repo.myFix.value ?: com.lifeline.mesh.location.LocationProvider(this).lastKnown()
+        val note = com.lifeline.mesh.packet.PacketCodec.trimToBytes("Watch: $reason, no answer", com.lifeline.mesh.packet.PacketCodec.MAX_ALERT_NOTE)
+        val draft = com.lifeline.mesh.ai.AlertDraft(setOf(com.lifeline.mesh.packet.Need.MEDICAL, com.lifeline.mesh.packet.Need.AMBULANCE), 1, 3, note)
+        repo.originate { h ->
+            com.lifeline.mesh.ui.send.SendViewModel.alertPacket(h, draft, com.lifeline.mesh.ai.LocationChoice(fix, approximate = true))
+        }
+        Haptics.strong(this)
+        Log.i(TAG, "watch vitals ambulance request sent")
     }
 
     private suspend fun sendFallSos() {
@@ -199,10 +240,12 @@ class MeshService : Service() {
         val ok = PendingIntent.getService(
             this, 2, Intent(this, MeshService::class.java).setAction(ACTION_FALL_OK), PendingIntent.FLAG_IMMUTABLE,
         )
-        val text = getString(R.string.fall_countdown, secondsLeft)
+        val vitals = repo.fallAlarm.value?.vitals
+        val text = if (vitals != null) getString(R.string.vitals_countdown, secondsLeft) else getString(R.string.fall_countdown, secondsLeft)
         val b = NotificationCompat.Builder(this, CHANNEL_FALL)
             .setSmallIcon(R.drawable.ic_sos)
-            .setContentTitle(getString(R.string.fall_title) + if (test) " · ${getString(R.string.fall_test)}" else "")
+            .setContentTitle((if (vitals != null) getString(R.string.vitals_title) else getString(R.string.fall_title)) +
+                if (test) " · ${getString(if (vitals != null) R.string.vitals_test else R.string.fall_test)}" else "")
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)

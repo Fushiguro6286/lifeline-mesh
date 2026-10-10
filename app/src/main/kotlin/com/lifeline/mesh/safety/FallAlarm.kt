@@ -14,8 +14,11 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import kotlin.math.sqrt
 
-/** A running fall alarm: started at [startedAt] (wall ms); [test] = started from "Try the fall alarm". */
-data class FallAlarm(val startedAt: Long, val test: Boolean) {
+/**
+ * A running alarm: started at [startedAt] (wall ms); [test] = started from a "Try the ... alarm" row. [vitals] = the watch
+ * reading that started it (watch vitals alarm, which ends in an ambulance request); null = a fall (ends in a panic SOS).
+ */
+data class FallAlarm(val startedAt: Long, val test: Boolean, val vitals: String? = null) {
     /** Whole seconds left before the SOS goes out (0 = send now). */
     fun secondsLeft(now: Long): Int = ((COUNTDOWN_MS - (now - startedAt) + 999) / 1000).toInt().coerceAtLeast(0)
 
