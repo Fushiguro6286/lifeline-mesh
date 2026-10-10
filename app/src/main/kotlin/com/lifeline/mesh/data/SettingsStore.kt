@@ -55,6 +55,8 @@ data class Settings(
     val profiles: List<ProfileInfo> = emptyList(),
     /** Fall and crash detection while the mesh runs (off until the user turns it on). */
     val fallDetection: Boolean = false,
+    /** Low-battery survival mode (10 Oct 2026): below 20 % this phone passes on only what saves lives. On by default. */
+    val survivalMode: Boolean = true,
     /** Watch vitals alarm from Health Connect while the mesh runs (off until the user turns it on). */
     val watchVitals: Boolean = false,
     /** The Bluetooth watch to keep connected (address, or SIMULATED_WATCH in simulation mode); null = none. */
@@ -89,6 +91,7 @@ class SettingsStore(private val context: Context) {
         val PROFILES = stringPreferencesKey("profiles")
         val ACTIVE_PROFILE = stringPreferencesKey("active_profile")
         val FALL_DETECTION = booleanPreferencesKey("fall_detection")
+        val SURVIVAL = booleanPreferencesKey("survival_mode")
         val WATCH_VITALS = booleanPreferencesKey("watch_vitals")
         val WATCH_ADDRESS = stringPreferencesKey("watch_address")
         val WATCH_NAME = stringPreferencesKey("watch_name")
@@ -130,6 +133,7 @@ class SettingsStore(private val context: Context) {
         activeProfileId = p[Keys.ACTIVE_PROFILE],
         profiles = Profiles.decode(p[Keys.PROFILES]).map { it.info },
         fallDetection = p[Keys.FALL_DETECTION] ?: false,
+        survivalMode = p[Keys.SURVIVAL] ?: true,
         watchVitals = p[Keys.WATCH_VITALS] ?: false,
         watchAddress = p[Keys.WATCH_ADDRESS],
         watchName = p[Keys.WATCH_NAME] ?: "",
@@ -145,6 +149,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
     suspend fun setFallDetection(on: Boolean) = store.edit { it[Keys.FALL_DETECTION] = on }
+    suspend fun setSurvivalMode(on: Boolean) = store.edit { it[Keys.SURVIVAL] = on }
     suspend fun setWatchVitals(on: Boolean) = store.edit { it[Keys.WATCH_VITALS] = on }
     suspend fun setWatch(address: String?, name: String) = store.edit {
         if (address == null) { it.remove(Keys.WATCH_ADDRESS); it.remove(Keys.WATCH_NAME) }

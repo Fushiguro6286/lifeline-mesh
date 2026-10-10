@@ -196,6 +196,9 @@ Type handling:
 - On every new connection both sides send a Summary of recent IDs; each sends only what the other lacks.
 - The sender's Delivery Status shows honest states: "Waiting for a nearby phone", "Passed to N nearby phones", "Reached a rescue team's phone" (10 Oct 2026, my request: a team phone pinged the alert back and its own beacon says it is a team), "Help is coming".
 
+- **Low-battery survival mode (10 Oct 2026, my request):** below 20 % (not charging) a phone says Hello every 20 s and passes on alerts, replies, check-ins, warnings and positions only; below 10 % every 30 s and only urgent alerts, replies, check-ins, serious warnings and team positions. Held packets go out when it charges. Settings switch, on by default (`PowerPolicy`).
+- **Relay gap finder (10 Oct 2026, my request):** `RelayGaps` finds lost phones (position heard 3 to 30 min ago, not in the Hello graph) with where people should stand to link them again (spaced at 80 % of the longest measured link), and phones that are this phone's only link to others. Shown on the Mesh tab and the map; lost phones only on team phones.
+
 ### 7.4 Hello beacons (for the live mesh view)
 Every 10 s each phone broadcasts a Hello (TTL 2) with its direct neighbors. Every phone builds a topology graph from its own neighbors plus received Hellos, so the Live Mesh screen shows the whole local network, not just direct links.
 

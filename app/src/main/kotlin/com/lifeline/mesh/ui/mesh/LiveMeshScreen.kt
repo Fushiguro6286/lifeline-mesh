@@ -86,6 +86,10 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
     val packets by repository.packets.collectAsStateWithLifecycle()
     val serviceHealth by repository.meshHealth.collectAsStateWithLifecycle()
     val simulation by repository.simulation.collectAsStateWithLifecycle()
+    val power by repository.powerMode.collectAsStateWithLifecycle()
+    val gaps = rememberGaps(settings, repository)
+    var showGaps by rememberSaveable { mutableStateOf(false) }
+    val myBattery by repository.myBattery.collectAsStateWithLifecycle()
 
     // Lost links stay visible for 10 s: re-evaluate once a second while any are on screen.
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -178,6 +182,8 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
             )
 
             Column(Modifier.fillMaxWidth().padding(Space.screen), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                if (power != com.lifeline.mesh.mesh.PowerMode.NORMAL) SavingBanner(power, myBattery)
+                GapsBanner(gaps) { showGaps = true }
                 firstProblem(health, settings.simulationMode)?.let { text ->
                     Row(
                         Modifier.fillMaxWidth().background(c.surface, Shapes.card).border(1.dp, c.warn, Shapes.card).padding(Space.m),
@@ -205,6 +211,15 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
         }
     }
 
+    if (showGaps) {
+        ModalBottomSheet(
+            onDismissRequest = { showGaps = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = c.surface,
+            shape = Shapes.sheet,
+        ) { GapsList(gaps, settings.simulationMode) }
+    }
+
     selected?.let { key ->
         val node = graph.node(key)
         if (node == null) {
@@ -223,9 +238,13 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
 }
 
 /** One scrollable row under the canvas, so it never covers the nodes. */
+/** The virtual phone the demo runs down: Ravi links this phone to five others, so his battery matters. */
+private const val SIM_DRAIN = "Ravi"
+
 @Composable
 private fun SimControls(sim: MeshSimulation, modifier: Modifier = Modifier) {
     val online by sim.online.collectAsStateWithLifecycle()
+    val low by sim.lowBattery.collectAsStateWithLifecycle()
     Row(
         modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Space.screen),
         horizontalArrangement = Arrangement.spacedBy(Space.s),
@@ -239,7 +258,34 @@ private fun SimControls(sim: MeshSimulation, modifier: Modifier = Modifier) {
         }
         SecondaryButton(stringResource(R.string.sim_alert), { sim.nextIncident() })
         SecondaryButton(stringResource(R.string.sim_block_road), { sim.blockRoadAhead() })
+        val raviLow = SIM_DRAIN in low
+        SecondaryButton(if (raviLow) "$SIM_DRAIN's battery back" else "$SIM_DRAIN's battery to ${MeshSimulation.LOW_BATTERY} %",
+            { sim.setLowBattery(SIM_DRAIN, !raviLow) })
     }
+}
+
+/** This phone is in low-battery survival mode: what it still does for others, in one line. */
+@Composable
+private fun SavingBanner(mode: com.lifeline.mesh.mesh.PowerMode, battery: Int?) {
+    val c = Lifeline.colors
+    Row(
+        Modifier.fillMaxWidth().background(c.surface, Shapes.card).border(1.dp, c.warn, Shapes.card).padding(Space.m),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Icon(painterResource(R.drawable.ic_battery_alert), null, tint = c.warn, modifier = Modifier.size(20.dp))
+        Text(
+            (battery?.let { "Battery $it %: " } ?: "") + savingText(mode) + " The rest waits until this phone charges.",
+            style = Lifeline.type.caption, color = c.ink, modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** What a phone in survival mode still passes on for others (PowerPolicy.relays). */
+fun savingText(mode: com.lifeline.mesh.mesh.PowerMode): String = when (mode) {
+    com.lifeline.mesh.mesh.PowerMode.NORMAL -> "Passing on everything."
+    com.lifeline.mesh.mesh.PowerMode.SAVER -> "Saving battery: passing on alerts, replies, \"I'm safe\", warnings and positions only."
+    com.lifeline.mesh.mesh.PowerMode.CRITICAL -> "Critical battery: passing on urgent alerts, replies and \"I'm safe\" only."
 }
 
 @Composable
@@ -269,6 +315,9 @@ private fun NodeDetails(node: GraphNode, graph: MeshGraph, packetsFrom: Int, wai
             )
             Text(node.battery?.let { stringResource(R.string.node_battery, it) } ?: stringResource(R.string.node_battery_unknown),
                 style = Lifeline.type.body, color = c.ink)
+            // Its Hello carries its battery, so its survival mode is known here too.
+            val mode = com.lifeline.mesh.mesh.PowerPolicy.modeOf(node.battery)
+            if (mode != com.lifeline.mesh.mesh.PowerMode.NORMAL) Text(savingText(mode), style = Lifeline.type.body, color = c.warn)
             node.lastHeard?.let {
                 val s = ((System.currentTimeMillis() - it) / 1000).coerceAtLeast(0)
                 Text(stringResource(R.string.node_heard, if (s < 60) "${s}s ago" else "${s / 60}m ago"), style = Lifeline.type.body, color = c.ink)

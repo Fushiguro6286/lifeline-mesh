@@ -29,6 +29,13 @@ class AiGovernor(private val context: Context) {
         }
     }
 
+    /**
+     * Low-battery survival mode (Settings, on by default): under 20 % and not charging, non-essential AI pauses even
+     * without the system battery saver.
+     */
+    @Volatile var survival: Boolean = true
+        set(v) { if (field != v) { field = v; if (started) refreshBattery() } }
+
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state
     private var started = false
@@ -66,7 +73,10 @@ class AiGovernor(private val context: Context) {
         val l = b?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val s = b?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
         val pct = if (l >= 0 && s > 0) l * 100 / s else 100
-        _state.update { it.copy(lowBatteryPowerSave = pm.isPowerSaveMode && pct < 20) }
+        val charging = (b?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1).let {
+            it == BatteryManager.BATTERY_STATUS_CHARGING || it == BatteryManager.BATTERY_STATUS_FULL
+        }
+        _state.update { it.copy(lowBatteryPowerSave = pct < 20 && !charging && (pm.isPowerSaveMode || survival)) }
     }
 
     /** From Application.onTrimMemory. Returns true when the model should be unloaded now. */

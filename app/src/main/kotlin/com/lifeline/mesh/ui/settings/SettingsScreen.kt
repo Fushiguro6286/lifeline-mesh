@@ -137,6 +137,10 @@ fun SettingsScreen(
         Section(stringResource(R.string.settings_mesh))
         LinkRow(R.drawable.ic_verified_user, stringResource(R.string.settings_permissions), stringResource(R.string.settings_permissions_body), onPermissions)
         BatteryRow()
+        SwitchRow(R.drawable.ic_battery_alert, "Low-battery survival mode",
+            "Below 20 % battery (not charging) this phone passes on only alerts, replies, \"I'm safe\", warnings and positions, " +
+                "and says hello less often; below 10 % only urgent ones. Its own alerts always go. The rest waits until it charges.",
+            settings.survivalMode, repository::setSurvivalMode)
         SwitchRow(R.drawable.ic_widgets, stringResource(R.string.settings_simulation), stringResource(R.string.settings_simulation_body),
             settings.simulationMode, repository::setSimulationMode)
         SwitchRow(R.drawable.ic_speed, stringResource(R.string.settings_demo), stringResource(R.string.settings_demo_body),

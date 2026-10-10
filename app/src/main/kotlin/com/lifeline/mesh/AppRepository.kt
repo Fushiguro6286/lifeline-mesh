@@ -76,6 +76,7 @@ class AppRepository(
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
     fun setFallDetection(on: Boolean) = scope.launch { settingsStore.setFallDetection(on) }
+    fun setSurvivalMode(on: Boolean) = scope.launch { settingsStore.setSurvivalMode(on) }
     fun setWatchVitals(on: Boolean) = scope.launch { settingsStore.setWatchVitals(on) }
     /** Keep this Bluetooth watch connected (null = disconnect and forget). The mesh service does the connecting. */
     fun setWatch(address: String?, name: String = "") = scope.launch { settingsStore.setWatch(address, name) }
@@ -138,6 +139,9 @@ class AppRepository(
     val myFix = MutableStateFlow<com.lifeline.mesh.ai.GeoFix?>(null)
     /** Other phones' latest positions by origin, current session only (cleared when the mesh stops or the mode changes). */
     val positions = MutableStateFlow<Map<Int, com.lifeline.mesh.mesh.PeerPosition>>(emptyMap())
+    /** This phone's low-battery survival mode and battery (%), checked by the mesh service every minute. */
+    val powerMode = MutableStateFlow(com.lifeline.mesh.mesh.PowerMode.NORMAL)
+    val myBattery = MutableStateFlow<Int?>(null)
     /** My latest Position packet as sent to the mesh, and when (wall ms): the uploader relays it while my alert is open. */
     val myPosition = MutableStateFlow<Pair<ByteArray, Long>?>(null)
     /**

@@ -46,6 +46,7 @@ fun CanvasFallbackMap(
     onAlertTap: (Long) -> Unit,
     onPlaceTap: (String) -> Unit = {},
     routes: List<Route> = emptyList(),
+    gapLines: List<List<Pair<Double, Double>>> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val onPlace by rememberUpdatedState(onPlaceTap)
@@ -126,11 +127,24 @@ fun CanvasFallbackMap(
             drawPath(path, c.link, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), pathEffect = dash))
         }
 
+        // Relay gaps: amber, short dashes.
+        val gapDash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 6.dp.toPx()))
+        for (g in gapLines) {
+            val path = androidx.compose.ui.graphics.Path()
+            g.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
+            drawPath(path, c.signal, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), pathEffect = gapDash))
+        }
+
         // Help points: squares; check-ins: small green dots; live positions: teams as teal squares, people as rings.
         for ((pl, p) in placePlots) {
             val o = at(p)
             placeHits[pl.key] = o
             when {
+                pl.kind == STAND_KIND -> {
+                    drawCircle(c.bg, 11.dp.toPx(), o)
+                    drawCircle(c.signal, 9.dp.toPx(), o, style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
+                    drawCircle(c.signal, 3.dp.toPx(), o)
+                }
                 pl.kind >= 13 -> {
                     val s = 16.dp.toPx()
                     drawRoundRect(c.bg, Offset(o.x - s / 2 - 2.dp.toPx(), o.y - s / 2 - 2.dp.toPx()), Size(s + 4.dp.toPx(), s + 4.dp.toPx()), CornerRadius(4.dp.toPx()))

@@ -111,6 +111,10 @@ class Router(
      */
     @Volatile var autoPing: Boolean = false
 
+    /** Low-battery survival mode: what this phone passes on for others ([PowerPolicy]). Set with [setPower]. */
+    @Volatile var power: PowerMode = PowerMode.NORMAL
+        private set
+
     private val lock = Any()
     private val peers = LinkedHashSet<String>()
     private val peerOrigin = HashMap<String, Int>()
@@ -134,6 +138,8 @@ class Router(
     private val receiptWaiting = HashMap<Int, MutableList<Pair<Long, Int>>>()
     private val rttDone = HashSet<String>()
     private val handedTo = HashMap<Long, MutableSet<String>>()
+    /** Others' packets kept but not passed on while saving battery; they go out when [setPower] relaxes. */
+    private val held = LinkedHashSet<Long>()
     /** Packets at least one neighbor has received, for the waiting count. */
     private val delivered = HashSet<Long>()
     private var lastWaiting = -1
@@ -171,6 +177,31 @@ class Router(
         val raw = synchronized(lock) { originateLocked(packet, fx) }
         fx.run()
         return raw
+    }
+
+    /**
+     * Low-battery survival mode changed (the service checks the battery every minute). When it relaxes, the packets
+     * held meanwhile that the new mode passes on go out to every neighbour now, most urgent first.
+     */
+    fun setPower(mode: PowerMode) {
+        val fx = Effects()
+        synchronized(lock) {
+            if (mode == power) return
+            power = mode
+            if (held.isEmpty()) return@synchronized
+            val now = clock()
+            val release = outbox.live(now).filter { it.id in held }
+                .filter { e -> (PacketCodec.decode(e.bytes) as? DecodeResult.Ok)?.packet?.let { PowerPolicy.relays(mode, it) } == true }
+            release.forEach { e ->
+                held.remove(e.id)
+                peers.forEach { enqueue(it, e.bytes, e.priority, e.id, mine = false, now, fx) }
+            }
+            if (release.isNotEmpty()) {
+                val n = release.size
+                fx.add { listener.onEvent(MeshEvent(MeshEvent.Kind.FORWARDED, "Battery saver off: passing on ${phones(n, "held packet")}.")) }
+            }
+        }
+        fx.run()
     }
 
     /** Ping for a packet; any rescuer, the packet's first receiver, or its sender echoes it back. */
@@ -401,6 +432,14 @@ class Router(
         val fwd = PacketCodec.forwardBytes(bytes)
         val prio = priority(p)
         if (storable(p)) outbox.add(id, fwd, prio, now)
+        if (!PowerPolicy.relays(power, p)) {
+            if (storable(p)) { held.add(id); if (held.size > 2_000) held.remove(held.first()) }
+            if (!beacon(p)) {
+                val what = ownerLabel(p)
+                fx.add { listener.onEvent(MeshEvent(MeshEvent.Kind.QUEUED, "Saving battery: holding $what; passing on urgent alerts and replies only.", id)) }
+            }
+            return
+        }
         val targets = peers.filter { it != peer }
         targets.forEach { enqueue(it, fwd, prio, id, mine = false, now, fx) }
         checkWaitingLocked(now, fx)

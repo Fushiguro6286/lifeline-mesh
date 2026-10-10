@@ -57,6 +57,7 @@ fun PlaceDetailSheet(
     val role = if (place.kind >= 11) HelloRole.fromCode(place.kind - 10) else null
     val (icon, tone) = placeIcon(place.kind, c)
     val title = when {
+        place.kind == STAND_KIND -> place.label
         role != null -> place.label.ifBlank { "Phone" }
         place.kind == 0 -> stringResource(R.string.place_safe, place.label.ifBlank { "Someone" })
         else -> stringResource(reportLabel(place.kind))
@@ -87,7 +88,9 @@ fun PlaceDetailSheet(
                 }
             }
             if (settings.simulationMode) Text(stringResource(R.string.simulated_tag), style = Lifeline.type.label, color = c.warn)
-            if (place.note.isNotBlank()) Text("“${place.note}”", style = Lifeline.type.body, color = c.ink)
+            if (place.kind == STAND_KIND) Text(place.note + " A person with the app standing here keeps the mesh connected (relay gap finder).",
+                style = Lifeline.type.body, color = c.ink)
+            else if (place.note.isNotBlank()) Text("“${place.note}”", style = Lifeline.type.body, color = c.ink)
 
             distance?.let { d ->
                 val dir = GeoMath.compass(GeoMath.bearingDeg(me!!.lat, me.lon, place.lat, place.lon))
@@ -182,6 +185,7 @@ fun placeIcon(kind: Int, c: com.lifeline.mesh.ui.theme.LifelineColors): Pair<Int
     14 -> R.drawable.ic_local_fire_department to c.link
     15 -> R.drawable.ic_emergency to c.link
     16 -> R.drawable.ic_local_police to c.link
+    STAND_KIND -> R.drawable.ic_hub to c.signal
     17 -> R.drawable.ic_boat to c.link
     else -> R.drawable.ic_health_and_safety to c.link
 }

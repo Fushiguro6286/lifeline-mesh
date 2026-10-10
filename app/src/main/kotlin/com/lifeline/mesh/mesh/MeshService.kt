@@ -425,6 +425,7 @@ class MeshService : Service() {
         router.autoPing = true
         applySettings(router, settings)
         router.battery = batteryPercent()
+        applyPower(router)
 
         val now = System.currentTimeMillis()
         if (simulated) {
@@ -463,7 +464,7 @@ class MeshService : Service() {
             }
         }
         s.launch {
-            repo.settings.filterNotNull().map { it.displayName to it.role }.distinctUntilChanged().collect {
+            repo.settings.filterNotNull().map { Triple(it.displayName, it.role, it.survivalMode) }.distinctUntilChanged().collect {
                 repo.settings.value?.let { st -> applySettings(router, st) }
             }
         }
@@ -499,12 +500,14 @@ class MeshService : Service() {
                 delay(60_000)
                 val pct = batteryPercent()
                 router.battery = pct
+                applyPower(router)
                 val now = System.currentTimeMillis()
                 val d = battery?.onSample(BatteryMonitor.Sample(now, pct, isCharging())) ?: continue
                 if (now - lastStored < 5 * 60_000L) continue
                 lastStored = now
                 val linked = repo.neighbors.value.count { it.state == LinkState.CONNECTED }
-                val note = "${d.fromPct}% to ${d.toPct}% over ${d.minutes} min while relaying, $linked phones connected now"
+                val mode = when (router.power) { PowerMode.NORMAL -> "normal relaying"; PowerMode.SAVER -> "battery saver"; PowerMode.CRITICAL -> "critical battery" }
+                val note = "${d.fromPct}% to ${d.toPct}% over ${d.minutes} min while relaying ($mode), $linked phones connected now"
                 launch(dbWrites) {
                     repo.database.metrics().insert(MetricEntity(name = "battery_drain", value = d.pctPerHour, unit = "%/h",
                         backend = null, simulated = false, timestamp = now, notes = note))
@@ -534,6 +537,18 @@ class MeshService : Service() {
     private fun applySettings(r: Router, s: Settings) {
         r.displayName = s.displayName
         r.role = s.role.hello
+        applyPower(r)
+    }
+
+    /** Low-battery survival mode from this phone's battery and the Settings switch (PowerPolicy). */
+    private fun applyPower(r: Router) {
+        val pct = batteryPercent()
+        val enabled = repo.settings.value?.survivalMode != false
+        val mode = PowerPolicy.mode(pct, isCharging(), enabled)
+        r.setPower(mode)
+        repo.powerMode.value = mode
+        repo.myBattery.value = pct
+        (application as LifelineApp).ai.governor.survival = enabled
     }
 
     /** "Asha-3fa1"; a phone without a name is "Phone-3fa1". */

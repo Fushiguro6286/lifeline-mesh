@@ -139,6 +139,9 @@ fun positionPlaces(all: Collection<com.lifeline.mesh.mesh.PeerPosition>, viewer:
             accuracyM = p.accuracyM, viaInternet = p.viaInternet)
     }
 
+/** Map place kind for the relay gap finder's "stand here" markers. */
+const val STAND_KIND = 20
+
 /** Fire service, ambulance and police drive: within [SNAP_MAX_M] (and their GPS accuracy) they are drawn on the road. */
 const val SNAP_MAX_M = 25.0
 
@@ -198,6 +201,20 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
             }
         }
     }
+    // Relay gaps (team phones): where to stand, and the gap itself as an amber dashed line.
+    val gaps = com.lifeline.mesh.ui.mesh.rememberGaps(settings, repo)
+    val gapLines = remember(gaps) {
+        gaps.bridges.filter { !it.tooFar && it.relays > 0 }.map { b -> listOf(b.from.lat!! to b.from.lon!!, b.phone.lat!! to b.phone.lon!!) }
+    }
+    val standPlaces = remember(gaps) {
+        gaps.bridges.filter { !it.tooFar }.flatMap { b ->
+            b.standAt.mapIndexed { i, (la, lo) ->
+                Place(b.phone.origin.toLong() * 8 + i, la, lo, STAND_KIND, label = "Stand here",
+                    note = "Links ${b.phone.name.ifBlank { "a lost phone" }} back to the mesh" + if (b.relays > 1) " (${i + 1} of ${b.relays})." else ".")
+            }
+        }
+    }
+    val shown = places + standPlaces
     val archive by produceState<Result<File?>?>(null) { value = Result.success(MapAssets.prepare(context)) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
@@ -218,7 +235,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize()) {
             if (mode == MapMode.MAP && mapUsable) {
                 key(c.isNight) {
-                    LibreMap(file!!, c, ranked, places, lines, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
+                    LibreMap(file!!, c, ranked, shown, lines, me, gapLines, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
                 }
                 Text(
                     stringResource(R.string.map_attribution), style = Lifeline.type.caption, color = c.ink,
@@ -227,7 +244,8 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
                 )
                 if (me != null && !MapAssets.contains(me!!.lat, me!!.lon)) Banner(stringResource(R.string.map_outside), Modifier.align(Alignment.TopCenter))
             } else {
-                CanvasFallbackMap(ranked, places, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, modifier = Modifier.fillMaxSize())
+                CanvasFallbackMap(ranked, shown, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, gapLines = gapLines,
+                    modifier = Modifier.fillMaxSize())
                 if (mode == MapMode.MAP && note != null) Banner(note, Modifier.align(Alignment.TopCenter))
             }
             val unplaced = ranked.count { it.alert.position == null }
@@ -238,7 +256,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     }
 
     openPlace?.let { key ->
-        val p = places.firstOrNull { it.key == key }
+        val p = shown.firstOrNull { it.key == key }
         if (p == null) openPlace = null
         else {
             val h = if (p.kind >= 11) headings[p.id.toInt()] else null
@@ -311,6 +329,7 @@ private fun LibreMap(
     places: List<Place>,
     routes: List<Route>,
     me: GeoFix?,
+    gapLines: List<List<Pair<Double, Double>>>,
     onAlertTap: (Long) -> Unit,
     onPlaceTap: (String) -> Unit,
     onFail: () -> Unit,
@@ -372,11 +391,14 @@ private fun LibreMap(
                             11 to (R.drawable.ic_person to c.sos), 12 to (R.drawable.ic_volunteer_activism to c.warn),
                             13 to (R.drawable.ic_health_and_safety to c.link), 14 to (R.drawable.ic_local_fire_department to c.link),
                             15 to (R.drawable.ic_emergency to c.link), 16 to (R.drawable.ic_local_police to c.link), 17 to (R.drawable.ic_boat to c.link),
+                            // Relay gap finder: where a person with the app should stand.
+                            STAND_KIND to (R.drawable.ic_hub to c.signal),
                         ).forEach { (kind, v) ->
                             st.addImage("place-$kind", MarkerBitmaps.square(context, v.first, c.surface.toArgb(), v.second.toArgb(), v.second.toArgb(), density))
                         }
                         st.addSource(GeoJsonSource("accuracy"))
                         st.addSource(GeoJsonSource("routes"))
+                        st.addSource(GeoJsonSource("gaps"))
                         st.addSource(GeoJsonSource("places"))
                         st.addSource(GeoJsonSource("alerts"))
                         st.addSource(GeoJsonSource("me"))
@@ -397,6 +419,13 @@ private fun LibreMap(
                             PropertyFactory.lineWidth(3f),
                             PropertyFactory.lineOpacity(0.85f),
                             PropertyFactory.lineDasharray(arrayOf(2f, 1.5f)),
+                        ))
+                        // Relay gaps: amber, dashed shorter than the teal job lines.
+                        st.addLayer(LineLayer("gaps", "gaps").withProperties(
+                            PropertyFactory.lineColor(c.signal.toArgb()),
+                            PropertyFactory.lineWidth(3f),
+                            PropertyFactory.lineOpacity(0.9f),
+                            PropertyFactory.lineDasharray(arrayOf(1f, 1.5f)),
                         ))
                         st.addLayer(SymbolLayer("places", "places").withProperties(*icon.toTypedArray()))
                         st.addLayer(SymbolLayer("alerts", "alerts").withProperties(*(icon + PropertyFactory.symbolSortKey(Expression.get("order"))).toTypedArray()))
@@ -451,8 +480,11 @@ private fun LibreMap(
     }
 
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.
-    LaunchedEffect(style, ranked, places, routes, me) {
+    LaunchedEffect(style, ranked, places, routes, me, gapLines) {
         val st = style ?: return@LaunchedEffect
+        st.getSourceAs<GeoJsonSource>("gaps")?.setGeoJson(FeatureCollection.fromFeatures(gapLines.map { pts ->
+            Feature.fromGeometry(LineString.fromLngLats(pts.map { (la, lo) -> Point.fromLngLat(lo, la) }))
+        }))
         st.getSourceAs<GeoJsonSource>("accuracy")?.setGeoJson(FeatureCollection.fromFeatures(
             accuracyCircles(ranked, places, me, c).map { (pts, color) ->
                 Feature.fromGeometry(Polygon.fromLngLats(listOf(pts.map { (la, lo) -> Point.fromLngLat(lo, la) }))).apply {

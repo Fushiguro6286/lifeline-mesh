@@ -148,6 +148,8 @@ class MeshSimulation(
         const val LON = 77.5946
         /** Teams move this many times faster than their real speed, so a rescue fits in about a minute. */
         const val TIME_LAPSE = 12.0
+        /** Battery of a virtual phone the demo has run down: critical (PowerPolicy). */
+        const val LOW_BATTERY = 8
         private const val TICK_MS = 4_000L
 
         val SPECS = listOf(
@@ -214,6 +216,7 @@ class MeshSimulation(
             it.displayName = spec.name
             it.role = spec.role
             it.battery = spec.battery
+            it.setPower(PowerPolicy.modeOf(spec.battery))
             // Like a real team phone: ping each new alert back, so its sender sees "reached a rescue team".
             it.autoPing = spec.role.isTeam
         }
@@ -374,6 +377,23 @@ class MeshSimulation(
     fun setOnline(name: String, on: Boolean) {
         mesh.setOnline(name, on)
         _online.value = PHONES.associateWith { mesh.isUp(it) }
+    }
+
+    private val _lowBattery = MutableStateFlow<Set<String>>(emptySet())
+    /** Virtual phones whose battery the demo has run down (low-battery survival mode). */
+    val lowBattery: StateFlow<Set<String>> = _lowBattery
+
+    /**
+     * Stage demo: run a virtual phone's battery down to [LOW_BATTERY] % (critical: urgent alerts and replies only) or
+     * back to where it started. Its next Hello tells the others.
+     */
+    fun setLowBattery(name: String, low: Boolean) {
+        val p = phones[name] ?: return
+        val pct = if (low) LOW_BATTERY else p.spec.battery
+        p.router.battery = pct
+        p.router.setPower(PowerPolicy.modeOf(pct))
+        p.router.sendHello()
+        _lowBattery.value = if (low) _lowBattery.value + name else _lowBattery.value - name
     }
 
     /** The next incident from the pool, reported by the nearest virtual phone that is not a team. */

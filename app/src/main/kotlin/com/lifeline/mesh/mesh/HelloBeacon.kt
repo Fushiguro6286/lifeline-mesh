@@ -51,12 +51,12 @@ class Topology(private val expiryMs: Long = 60_000L) {
 }
 
 /**
- * Every [intervalMs] (10 s) asks the router to broadcast a Hello with this phone's direct neighbors, and to
- * expire stale state. The first Hello goes out immediately.
+ * Every [intervalMs] (10 s; 20 or 30 s while the router saves battery, PowerPolicy) asks the router to broadcast a
+ * Hello with this phone's direct neighbors, and to expire stale state. The first Hello goes out immediately.
  */
 class HelloBeacon(
     private val router: Router,
-    private val intervalMs: Long = 10_000L,
+    private val intervalMs: Long? = null,
 ) {
     private var job: Job? = null
 
@@ -66,7 +66,7 @@ class HelloBeacon(
             while (isActive) {
                 router.tick()
                 router.sendHello()
-                delay(intervalMs)
+                delay(intervalMs ?: PowerPolicy.helloIntervalMs(router.power))
             }
         }
     }

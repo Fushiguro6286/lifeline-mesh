@@ -605,3 +605,33 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
     GPS fix carries satellite time, which can differ from the phone's clock and make a fresh fix look old.
 - NOT checked yet: a team phone showing a position "via internet" on its map (needs a second phone).
 
+## Low-battery survival mode and the relay gap finder (added 10 Oct 2026, on request)
+
+Low-battery survival mode (mesh/PowerPolicy.kt, Settings switch, on by default):
+- Below 20 % and not charging (saver): Hello every 20 s instead of 10 s; passes on alerts, replies, "I'm safe",
+  warnings and positions; holds community reports; drops measurement pings. Non-essential AI pauses.
+- Below 10 % (critical): Hello every 30 s; passes on only urgent alerts (severity 3), replies, "I'm safe", serious
+  warnings and rescue teams' positions. Its own packets always go.
+- Held packets stay in store-and-forward memory and go out to every neighbour when the phone charges (or to a phone
+  that connects and asks). Hellos still go twice a minute, so neighbours never drop it (60 s expiry).
+- Every Hello carries the battery, so other phones show "Saving battery: …" in that phone's details, and this phone
+  shows a banner on the Mesh tab. Battery-drain measurements now say which mode they were taken in.
+- Simulation: Meena starts at 18 % (saver). Mesh tab button "Ravi's battery to 8 %" runs Ravi down (critical) and back.
+- PowerPolicyTest: modes, what each passes on, a critical relay holding a moderate alert and passing it on when charging,
+  own packets always out.
+
+Relay gap finder (mesh/RelayGaps.kt; Mesh tab banner "N relay gaps in the mesh" → list; Map tab "Stand here" markers):
+- Lost phones (rescue-team phones only, as they show others' positions): a phone whose Position was heard in the last
+  30 minutes but not in the last 3 (1 in simulation) and which is not in the live Hello graph. From the nearest phone
+  still heard, the straight gap is split by people with the app standing every 80 % of the longest link this phone has
+  measured (60 m assumed until one is measured, and it says so). Open alerts first. Within range: "may be switched off,
+  out of battery or behind walls". More than 5 people needed: "too far for a chain of phones".
+- Weak points (every phone, names only): a phone that is this phone's only link to others (articulation point of the
+  Hello graph, about 3 hops around). Low battery first, then the most rescue teams cut off.
+- Demo (simulation, team role on this phone): tap "Ravi's battery to 8 %" → banner, "Ravi's phone is your only link to
+  5 phones · battery 8 %"; switch Ravi off → after a minute his side of the mesh is lost, the list says how many people
+  should stand where, and the Map tab shows amber "Stand here" markers on an amber dashed line.
+- RelayGapsTest: bridge spacing and stand points, who counts as lost, too far / within range, assumed range,
+  weak points on the simulated layout, articulation points with negative origins.
+- The on-device model does not phrase these yet: the sentences are fixed text from the computed numbers.
+
