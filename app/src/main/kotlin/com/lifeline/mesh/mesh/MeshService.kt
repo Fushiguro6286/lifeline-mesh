@@ -652,7 +652,7 @@ class MeshService : Service() {
     }
 
     private fun showReply(ack: Packet.Ack, simulated: Boolean) {
-        val text = getString(R.string.notif_reply, ack.etaMinutes) + if (ack.note.isNotBlank()) " · ${ack.note}" else ""
+        val text = getString(R.string.notif_reply, ack.etaMinutes)
         val n = NotificationCompat.Builder(this, CHANNEL_REPLIES)
             .setSmallIcon(R.drawable.ic_health_and_safety)
             .setContentTitle(if (simulated) "${getString(R.string.status_help_coming)} · ${getString(R.string.simulated_tag)}" else getString(R.string.status_help_coming))
