@@ -42,3 +42,26 @@ object PositionBeacon {
     fun visible(all: Collection<PeerPosition>, viewer: HelloRole, now: Long): List<PeerPosition> =
         all.filter { now - it.heardAt < SHOW_MS && com.lifeline.mesh.triage.Teams.canSeePosition(viewer, it.role, mine = false) }
 }
+
+/** A measured distance to a phone this phone heard directly (one link), from both GPS fixes. */
+data class LinkRange(val metres: Double, val uncertaintyM: Double, val peerName: String)
+
+/**
+ * How far apart two directly linked phones were (CLAUDE.md rule 3: measured, never assumed). A Position packet that
+ * travelled one link came straight from that phone, so at that moment the link worked over the GPS distance between
+ * us. Only fixes that are fresh and accurate enough count; the uncertainty is both fixes' accuracy added.
+ */
+object LinkRanges {
+    /** My fix must be at most this old when their Position arrives. */
+    const val MAX_FIX_AGE_MS = 60_000L
+    /** Both accuracies added must be at most this, or the distance says little. */
+    const val MAX_UNCERTAINTY_M = 50.0
+
+    fun measure(peer: PeerPosition, linkHops: Int, myLat: Double, myLon: Double, myAccuracyM: Float?, myFixAt: Long, now: Long): LinkRange? {
+        if (linkHops != 1) return null
+        val mine = myAccuracyM?.toDouble() ?: return null
+        val theirs = peer.accuracyM?.toDouble() ?: return null
+        if (now - myFixAt > MAX_FIX_AGE_MS || mine + theirs > MAX_UNCERTAINTY_M) return null
+        return LinkRange(GeoMath.distanceM(myLat, myLon, peer.lat, peer.lon), mine + theirs, peer.name)
+    }
+}

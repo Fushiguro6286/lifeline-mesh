@@ -27,4 +27,20 @@ class PositionBeaconTest {
         assertEquals(listOf(2), PositionBeacon.visible(all, HelloRole.NEEDS_HELP, 0).map { it.origin })
         assertEquals(listOf(1, 2), PositionBeacon.visible(all, HelloRole.NDRF, 0).map { it.origin })
     }
+
+    @Test fun linkRangeIsMeasuredOnlyForDirectFreshAccurateFixes() {
+        val now = 1_000_000L
+        val peer = PeerPosition(1, "Ravi", HelloRole.VOLUNTEER, lat + 80 * m, lon, accuracyM = 10, hops = 1, heardAt = now)
+        val r = LinkRanges.measure(peer, 1, lat, lon, 8f, now - 5_000, now)!!
+        assertEquals(80.0, r.metres, 1.0)
+        assertEquals(18.0, r.uncertaintyM, 0.0)
+        assertEquals("Ravi", r.peerName)
+        // Relayed (2 links): says nothing about one link's range.
+        assertEquals(null, LinkRanges.measure(peer, 2, lat, lon, 8f, now, now))
+        // My fix too old, or either accuracy unknown or too poor.
+        assertEquals(null, LinkRanges.measure(peer, 1, lat, lon, 8f, now - 61_000, now))
+        assertEquals(null, LinkRanges.measure(peer, 1, lat, lon, null, now, now))
+        assertEquals(null, LinkRanges.measure(peer.copy(accuracyM = null), 1, lat, lon, 8f, now, now))
+        assertEquals(null, LinkRanges.measure(peer.copy(accuracyM = 45), 1, lat, lon, 8f, now, now))
+    }
 }

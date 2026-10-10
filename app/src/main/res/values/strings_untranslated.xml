@@ -54,6 +54,8 @@
     <string name="mesh_problem_battery">Battery optimization is on: relaying stops soon after the screen turns off.</string>
     <string name="mesh_problem_play">Google Play services is missing or out of date.</string>
     <string name="score_hops">Hops, last alert</string>
+    <string name="score_range">Farthest direct link: %1$d m %2$s</string>
+    <string name="score_range_none">Farthest direct link: Not measured (needs GPS on both phones)</string>
     <string name="score_rtt">Round trip</string>
     <string name="score_bytes">Bytes, last alert</string>
     <string name="unit_hops">hops</string>

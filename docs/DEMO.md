@@ -212,6 +212,21 @@ Open the Mesh tab on each.
 - Checked on the iQOO 15 in simulation: alerts appear, are acknowledged, and leave the list after the team arrives and
   the person checks in; the Check-ins section stays empty. Real 3-phone check still open.
 
+## Range test: farthest direct link (added 10 Oct 2026, on request)
+
+Google publishes no range for Nearby Connections (Bluetooth, BLE and Wi-Fi together), so the app measures it: when a
+Position packet arrives over one link, the GPS distance between the two phones is a working link distance. The Mesh tab
+shows the farthest one under the scoreboard ("Farthest direct link: N m to Ravi ±U m (GPS)"), recorded as
+`link_range_m` (in Export measurements). Only fresh fixes (≤ 60 s) with both accuracies adding up to ≤ 50 m count.
+Checked on the iQOO 15 in simulation: "544 m to Divya ±34 m (GPS) · Simulated" (Divya is placed 550 m away).
+
+Walk-apart test (2 phones, simulation off, location on, outdoors, Mesh tab open on both):
+1. Start side by side until each lists the other as a connected direct neighbor.
+2. One person stays. The other walks away in a straight line, stopping for 30 s every ~25 m (a phone on the move sends
+   its position every 30 s).
+3. When the stationary phone shows the other as lost, walk back. The Mesh tab keeps the farthest distance measured.
+4. Repeat indoors, and with Wi-Fi off (Bluetooth only), and write the numbers in docs/MEASUREMENTS.md.
+
 ## Round trip on the scoreboard (fixed 10 Oct 2026)
 
 - Before: only the Mesh debug panel's "Send ping" measured a round trip, so the Mesh tab tile stayed "Not measured".

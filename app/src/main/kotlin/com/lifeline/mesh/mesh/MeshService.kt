@@ -448,6 +448,18 @@ class MeshService : Service() {
             }
         }
 
+        private var bestRangeM = 0.0
+
+        /** A new farthest direct link (GPS distance to a phone heard over one link) becomes a measurement. */
+        private fun recordLinkRange(p: PeerPosition, linkHops: Int) {
+            val f = repo.myFix.value ?: return
+            val r = LinkRanges.measure(p, linkHops, f.lat, f.lon, f.accuracyM, f.timeMs, p.heardAt) ?: return
+            val best = maxOf(bestRangeM, repo.metrics.value.filter { it.name == "link_range_m" }.maxOfOrNull { it.value } ?: 0.0)
+            if (r.metres <= best + 1) return
+            bestRangeM = r.metres
+            write { db.metrics().insert(metric("link_range_m", r.metres, "m", "to ${r.peerName} ±${r.uncertaintyM.toInt()} m (GPS)", p.heardAt)) }
+        }
+
         private fun metric(name: String, value: Double, unit: String, notes: String, at: Long) =
             MetricEntity(name = name, value = value, unit = unit, backend = null, simulated = simulated, timestamp = at, notes = notes)
 
@@ -461,6 +473,7 @@ class MeshService : Service() {
                         hops = linkHops, heardAt = System.currentTimeMillis(),
                     )
                     repo.positions.value = repo.positions.value + (p.origin to p)
+                    recordLinkRange(p, linkHops)
                 }
                 return
             }
