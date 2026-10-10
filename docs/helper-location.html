@@ -1,0 +1,312 @@
+<title>Locating the Helper Offline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a three-lane flow (helper's phone → mesh → person's phone); the packet drawn byte by byte. */
+:root {
+  --bg: #F4F7F8; --surface: #FFFFFF; --raised: #EAF0F2; --outline: #C9D6DA;
+  --ink: #0E1E28; --muted: #4E626D;
+  --link: #0B6E75; --signal: #9A6A00; --sos: #C8251D; --safe: #2E7D32;
+  --link-soft: rgba(11,110,117,.10); --signal-soft: rgba(154,106,0,.10); --sos-soft: rgba(200,37,29,.08);
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B1620; --surface: #132330; --raised: #1A2E3D; --outline: #27404F;
+  --ink: #E8EEF2; --muted: #8FA3B0;
+  --link: #2BB3A8; --signal: #F2A900; --sos: #E5483B; --safe: #5BC27A;
+  --link-soft: rgba(43,179,168,.13); --signal-soft: rgba(242,169,0,.12); --sos-soft: rgba(229,72,59,.12);
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0B1620; --surface: #132330; --raised: #1A2E3D; --outline: #27404F;
+  --ink: #E8EEF2; --muted: #8FA3B0;
+  --link: #2BB3A8; --signal: #F2A900; --sos: #E5483B; --safe: #5BC27A;
+  --link-soft: rgba(43,179,168,.13); --signal-soft: rgba(242,169,0,.12); --sos-soft: rgba(229,72,59,.12);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.55 var(--body); padding: 0 16px; }
+.page { max-width: 1040px; margin: 0 auto; padding-block: 40px 64px; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 78%; margin: 0; text-wrap: balance; line-height: 1.08; }
+h1 { font-size: clamp(36px, 6vw, 58px); font-weight: 800; letter-spacing: -.01em; }
+h2 { font-size: clamp(26px, 3.6vw, 34px); font-weight: 750; }
+h3 { font-size: 21px; font-weight: 700; font-stretch: 85%; }
+p { margin: 0; max-width: 66ch; }
+code, .mono { font-family: var(--mono); font-size: .82em; }
+.eyebrow { font: 600 13px/1 var(--display); font-stretch: 100%; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 19px; color: var(--muted); }
+section { display: grid; gap: 20px; }
+.muted { color: var(--muted); }
+
+/* Hero */
+header { display: grid; gap: 18px; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+.fact { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; }
+.fact b { font: 800 40px/1 var(--display); font-stretch: 72%; font-variant-numeric: tabular-nums; color: var(--ink); }
+.fact b small { font-size: 18px; font-weight: 700; margin-left: 2px; color: var(--muted); }
+.fact span { font-size: 14px; color: var(--muted); line-height: 1.35; }
+@media (max-width: 720px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Hop animation: one packet crossing three phones */
+.hops { position: relative; display: grid; grid-template-columns: auto 1fr auto 1fr auto; align-items: center; gap: 0; padding: 22px 8px 8px; }
+.phone { display: grid; justify-items: center; gap: 6px; min-width: 0; text-align: center; }
+.phone .body { width: 46px; height: 78px; border-radius: 10px; border: 2px solid var(--ink); background: var(--surface); display: grid; place-items: center; }
+.phone .body i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.phone.helper .body i { background: var(--link); }
+.phone.relay .body i { background: var(--muted); }
+.phone.person .body i { background: var(--sos); }
+.phone small { font-size: 13px; color: var(--muted); line-height: 1.25; max-width: 12ch; }
+.wire { height: 2px; background: repeating-linear-gradient(90deg, var(--outline) 0 8px, transparent 8px 14px); position: relative; margin-inline: 8px; }
+.wire em { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font: 600 12px/1 var(--display); font-stretch: 100%; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-style: normal; white-space: nowrap; }
+.wire .packet { position: absolute; top: -7px; left: 0; width: 16px; height: 16px; border-radius: 4px; background: var(--signal); box-shadow: 0 0 0 4px var(--signal-soft); opacity: 0; animation: hop1 6s ease-in-out infinite; }
+.wire.second .packet { animation-name: hop2; }
+@keyframes hop1 { 0% { left: 0; opacity: 1; } 40% { left: calc(100% - 16px); opacity: 1; } 41%, 100% { left: calc(100% - 16px); opacity: 0; } }
+@keyframes hop2 { 0%, 44% { left: 0; opacity: 0; } 45% { left: 0; opacity: 1; } 85% { left: calc(100% - 16px); opacity: 1; } 86%, 100% { left: calc(100% - 16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wire .packet { animation: none; opacity: 0; } .wire.second .packet { opacity: 1; left: calc(50% - 8px); } }
+
+/* Lanes of steps */
+.lanes { display: grid; grid-template-columns: 5fr 2fr 5fr; gap: 14px; align-items: start; }
+.lane { display: grid; gap: 10px; min-width: 0; }
+.lane > h3 { display: flex; align-items: center; gap: 10px; padding: 0 2px 4px; }
+.lane > h3::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--dot); flex: none; }
+.lane.helper { --dot: var(--link); }
+.lane.mesh { --dot: var(--signal); }
+.lane.person { --dot: var(--sos); }
+.step { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.step .head { display: flex; align-items: baseline; gap: 10px; }
+.step .n { font: 800 26px/1 var(--display); font-stretch: 70%; color: var(--dot); font-variant-numeric: tabular-nums; min-width: 1.4ch; }
+.step h4 { margin: 0; font: 700 18px/1.2 var(--display); font-stretch: 88%; }
+.step p { font-size: 15.5px; line-height: 1.5; }
+.step .rule { font-size: 14.5px; background: var(--raised); border-radius: 8px; padding: 7px 10px; line-height: 1.4; }
+.step .rule b { font-family: var(--display); font-stretch: 85%; font-weight: 750; }
+.step .where { font-family: var(--mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.lane.mesh .step { border-color: color-mix(in srgb, var(--signal) 45%, var(--outline)); }
+@media (max-width: 860px) { .lanes { grid-template-columns: minmax(0, 1fr); } }
+
+/* Packet anatomy */
+.packet-wrap { overflow-x: auto; padding-bottom: 6px; }
+.bytes { display: flex; min-width: 760px; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg { flex: var(--b) 1 0; border-right: 1px solid var(--outline); padding: 10px 6px 9px; display: grid; gap: 3px; align-content: start; min-width: 0; }
+.seg:last-child { border-right: 0; }
+.seg b { font: 700 13.5px/1.15 var(--display); font-stretch: 85%; }
+.seg span { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.seg.hdr { background: var(--raised); }
+.seg.key { background: var(--link-soft); }
+.seg.key b { color: var(--link); }
+.scale { display: flex; min-width: 760px; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.scale div { flex: var(--b) 1 0; border-top: 2px solid var(--outline); padding-top: 4px; }
+.scale .body-part { border-top-color: var(--link); color: var(--link); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--outline); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 15.5px; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--outline); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 12.5px/1.2 var(--display); font-stretch: 100%; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--raised); }
+td.num { font-family: var(--display); font-stretch: 80%; font-weight: 750; font-size: 18px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; font: 600 11.5px/1 var(--display); font-stretch: 100%; letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; white-space: nowrap; }
+.tag.measured { background: var(--link-soft); color: var(--link); }
+.tag.typical { background: var(--raised); color: var(--muted); }
+.tag.rule { background: var(--signal-soft); color: var(--signal); }
+
+/* Two columns of notes */
+.split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.note { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.note ul { margin: 0; padding-left: 1.1em; display: grid; gap: 7px; font-size: 15.5px; }
+.note.limits { border-color: color-mix(in srgb, var(--sos) 35%, var(--outline)); background: linear-gradient(var(--sos-soft), var(--sos-soft)), var(--surface); }
+@media (max-width: 760px) { .split { grid-template-columns: minmax(0, 1fr); } }
+
+footer { font-size: 14px; color: var(--muted); border-top: 1px solid var(--outline); padding-top: 18px; display: grid; gap: 6px; }
+</style>
+
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Lifeline Mesh · how the person waiting sees help coming</div>
+    <h1>Locating the helper with no internet</h1>
+    <p class="lede">The rescuer's phone works out where it is from satellites, cleans the reading up, and passes it phone to phone to the person who asked for help. Ten steps, all on the phones, none of them online.</p>
+    <div class="facts" aria-label="Key numbers">
+      <div class="fact"><b>35<small>bytes</small></b><span>one Position packet, name included</span></div>
+      <div class="fact"><b>5<small>hops</small></b><span>furthest a position travels phone to phone</span></div>
+      <div class="fact"><b>±10<small>m steps</small></b><span>accuracy is rounded up, never down</span></div>
+      <div class="fact"><b>75<small>m</small></b><span>"They are here" shows within this distance</span></div>
+    </div>
+  </header>
+
+  <section aria-labelledby="flow">
+    <div class="eyebrow">The path</div>
+    <h2 id="flow">From the rescuer's GPS to the map of the person in need</h2>
+    <div class="hops" aria-hidden="true">
+      <div class="phone helper"><div class="body"><i></i></div><small>Rescuer's phone</small></div>
+      <div class="wire"><em>Bluetooth · Wi-Fi Direct</em><span class="packet"></span></div>
+      <div class="phone relay"><div class="body"><i></i></div><small>Any phone with the app</small></div>
+      <div class="wire second"><em>up to 5 hops</em><span class="packet"></span></div>
+      <div class="phone person"><div class="body"><i></i></div><small>Person waiting for help</small></div>
+    </div>
+
+    <div class="lanes">
+      <div class="lane helper">
+        <h3>On the rescuer's phone</h3>
+        <article class="step">
+          <div class="head"><span class="n">1</span><h4>Satellite fix</h4></div>
+          <p>Android's location service listens to GPS, NavIC, Galileo and other satellites every 15 seconds. It only receives, so it needs no SIM, data or Wi-Fi.</p>
+          <div class="rule">Each reading comes with its own <b>accuracy radius</b>, for example ±12 m.</div>
+          <div class="where">LocationProvider.updates()</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">2</span><h4>Timestamping</h4></div>
+          <p>A reading is timed by the phone's own clock: now, minus how old the reading is. Satellite time can differ from the phone's clock, which could make a fresh reading look old.</p>
+          <div class="where">LocationProvider.toFix()</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">3</span><h4>Filtering</h4></div>
+          <p>While the phone stands still, readings that agree are averaged, which removes the jitter. A worse reading never replaces a better one.</p>
+          <div class="rule">A jump faster than <b>250 km/h</b> is ignored unless <b>3 in a row</b> agree. The accuracy shown is never better than the best single reading.</div>
+          <div class="where">FixFilter.add()</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">4</span><h4>Send decision</h4></div>
+          <p>The phone decides when the position is worth sending, so the mesh is not flooded.</p>
+          <div class="rule">First reading at once · every <b>30 s</b> after moving <b>25 m</b> · after <b>15 s</b> if accuracy improved by <b>10 m</b> · every <b>2 min</b> anyway.</div>
+          <div class="where">PositionBeacon.due()</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">5</span><h4>Packing</h4></div>
+          <p>Position, accuracy, role and name go into one small Position packet, drawn byte by byte below.</p>
+          <div class="where">Router.sendPosition() · Geo.accuracyStep()</div>
+        </article>
+      </div>
+
+      <div class="lane mesh">
+        <h3>Between phones</h3>
+        <article class="step">
+          <div class="head"><span class="n">6</span><h4>Mesh relay</h4></div>
+          <p>Google Nearby Connections carries the packet over Bluetooth and Wi-Fi Direct, phone to phone.</p>
+          <div class="rule">Up to <b>5 hops</b>. Copies are dropped as duplicates. Positions never use up the 10-a-minute budget alerts need.</div>
+          <div class="where">Router · NearbyTransport</div>
+        </article>
+      </div>
+
+      <div class="lane person">
+        <h3>On the phone of the person in need</h3>
+        <article class="step">
+          <div class="head"><span class="n">7</span><h4>Receiving</h4></div>
+          <p>The position is stored with the time it was heard and how many hops it crossed.</p>
+          <div class="rule">Hidden after <b>10 minutes</b> of silence: an old position is wrong, not late. People in need only ever see rescue teams.</div>
+          <div class="where">MeshService.onPacket() → PeerPosition</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">8</span><h4>Road snapping</h4></div>
+          <p>An ambulance, fire engine or police car is drawn on the road it is on, not in the building beside it.</p>
+          <div class="rule">Only if a drivable road is within <b>25 m</b> and within the reading's accuracy. Boats and people on foot are never moved.</div>
+          <div class="where">snapToRoads() · RoadMap.snap()</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">9</span><h4>Showing the accuracy</h4></div>
+          <p>The map draws a circle of the accuracy radius around the helper. The detail sheet says "Position accurate to about N m".</p>
+          <div class="where">accuracySpots() · PlaceDetailSheet</div>
+        </article>
+        <article class="step">
+          <div class="head"><span class="n">10</span><h4>Using it</h4></div>
+          <p>The arrival time is worked out along the offline map's roads from where the helper really is, around any reported blocked roads.</p>
+          <div class="rule">"They are here" when the helper is within <b>75 m</b> of the alert's position.</div>
+          <div class="where">RoutePlanner.plan() · Responders.ARRIVED_M</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="anatomy">
+    <div class="eyebrow">Step 5, to scale</div>
+    <h2 id="anatomy">The 35-byte Position packet</h2>
+    <p class="muted">Each box is as wide as the bytes it uses. A 19-byte header, the same on every packet type, then the position itself. This example is a rescuer named "Piyush" (6 bytes).</p>
+    <div class="packet-wrap" role="img" aria-label="Packet layout: header 19 bytes, latitude 4, longitude 4, accuracy 1, role 1, name 6, total 35 bytes">
+      <div class="bytes">
+        <div class="seg hdr" style="--b:1"><b>Ver·type</b><span>1</span></div>
+        <div class="seg hdr" style="--b:8"><b>Message ID</b><span>8 · random, for duplicates</span></div>
+        <div class="seg hdr" style="--b:4"><b>Origin</b><span>4 · install ID</span></div>
+        <div class="seg hdr" style="--b:1"><b>TTL</b><span>1</span></div>
+        <div class="seg hdr" style="--b:1"><b>Hops</b><span>1</span></div>
+        <div class="seg hdr" style="--b:4"><b>Time</b><span>4 · unix s</span></div>
+        <div class="seg key" style="--b:4"><b>Latitude</b><span>4 · µdegree</span></div>
+        <div class="seg key" style="--b:4"><b>Longitude</b><span>4 · µdegree</span></div>
+        <div class="seg key" style="--b:1"><b>Acc.</b><span>1</span></div>
+        <div class="seg key" style="--b:1"><b>Role</b><span>1</span></div>
+        <div class="seg key" style="--b:6"><b>Name</b><span>6 · "Piyush"</span></div>
+      </div>
+      <div class="scale">
+        <div style="--b:19">Header · 19 bytes</div>
+        <div class="body-part" style="--b:16">Position · 16 bytes</div>
+      </div>
+    </div>
+    <p class="muted">Latitude and longitude in millionths of a degree are about 0.1 m apart, far finer than GPS. Accuracy is stored in 10 m steps, rounded up: a 12 m reading travels as "about 20 m". Role says Ambulance, Fire service, Police, NDRF or volunteer, so the right icon is drawn.</p>
+  </section>
+
+  <section aria-labelledby="accuracy">
+    <div class="eyebrow">What to expect</div>
+    <h2 id="accuracy">How accurate the helper's position is</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Situation</th><th>Accuracy</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Outdoors, open sky, after filtering</td><td class="num">±3–10 m</td><td><span class="tag typical">Typical GPS</span></td></tr>
+          <tr><td>Between tall buildings</td><td class="num">±10–30 m</td><td><span class="tag typical">Typical GPS</span></td></tr>
+          <tr><td>Indoors, no internet</td><td class="num">no new fix</td><td><span class="tag measured">Measured</span> iQOO 15 indoors: 0 satellites, last satellite fix 14 h old</td></tr>
+          <tr><td>Indoors, online (Wi-Fi and cell help)</td><td class="num">±16–41 m</td><td><span class="tag measured">Measured</span> iQOO 15, 10 Oct 2026</td></tr>
+          <tr><td>An SOS sent indoors from that phone</td><td class="num">±11–12 m</td><td><span class="tag measured">Measured</span> the review sheet's "Exact location"</td></tr>
+          <tr><td>First reading after a long time off, offline</td><td class="num">30 s – few min</td><td><span class="tag typical">Typical</span> outdoors; online it takes seconds</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="honest">
+    <div class="eyebrow">Rules we hold to</div>
+    <h2 id="honest">Never claiming more than was measured</h2>
+    <div class="split">
+      <div class="note">
+        <h3>What the app guarantees</h3>
+        <ul>
+          <li>The accuracy shown is never better than the best single GPS reading. Averaging removes jitter, but the app does not claim the textbook gain.</li>
+          <li>Accuracy is rounded up to the next 10 m before it is sent.</li>
+          <li>A snapped vehicle's circle is never smaller than the distance it was moved.</li>
+          <li>Positions older than 10 minutes disappear instead of misleading.</li>
+          <li>Every time and distance is labelled an estimate. Anything simulated is labelled Simulated.</li>
+        </ul>
+      </div>
+      <div class="note limits">
+        <h3>Where it falls short</h3>
+        <ul>
+          <li>Indoors with no internet, GPS often gets no reading. The last position stays shown until it is 10 minutes old.</li>
+          <li>A position is a snapshot: up to 30 s old for a moving team, up to 2 minutes for a still one.</li>
+          <li>More than 5 hops away, or with no chain of phones running the app, the position does not arrive. The card then counts down from the time the team gave.</li>
+          <li>Not yet checked on three real phones: snapping of a real vehicle, and a team phone showing a position that came through the server.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="online">
+    <div class="eyebrow">When a phone finds internet</div>
+    <h2 id="online">The same steps, with two extras</h2>
+    <div class="split">
+      <div class="note">
+        <h3>A better reading</h3>
+        <p>In step 1, Android also uses Wi-Fi networks and phone towers it can see. Indoors that usually gives a reading where satellites alone give none.</p>
+      </div>
+      <div class="note">
+        <h3>A second route to the teams</h3>
+        <p>While the person's own alert is open, each new Position packet also goes to the sync server. Only rescue-team phones within 25 km receive it, marked "via internet". People in need never receive anyone's position from the server. Checked on the iQOO 15: the server held the phone's exact 35-byte packet and offered it to a team request only.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Lifeline Mesh · iQOO Hackathon Grand Finale, Bengaluru · numbers marked Measured come from the iQOO 15 on 10 October 2026; others are typical values or the app's own rules.</span>
+    <span class="mono">Code: app/src/main/kotlin/com/lifeline/mesh/ · location/ · mesh/ · routing/ · ui/map/</span>
+  </footer>
+</div>
