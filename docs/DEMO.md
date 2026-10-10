@@ -2,6 +2,54 @@
 
 Living document. Updated at the end of every phase.
 
+## 3-minute stage script (10 Oct 2026)
+
+One story: **panic in → across the mesh → a rescuer acts → things go wrong → the person gets to safety → the numbers.**
+Steps marked *(rehearse on 3 phones)* have only been checked in simulation so far; run the three-phone test before
+relying on them. Every step has a simulation fallback.
+
+### Before going on stage (10 minutes before)
+| Phone | Role (Settings → Role) | Simulation | Screen |
+|---|---|---|---|
+| **A: iQOO 15** (has the on-device model) | I need help | off | SOS tab |
+| **B** (middle) | I'm a volunteer | off | Mesh tab, screen may go off |
+| **C** (rescuer) | I'm on a rescue team → Ambulance, By road | off | Rescue tab |
+
+- All three: Bluetooth and location on, mobile data and Wi-Fi internet off, battery restrictions off
+  (Settings → Battery and background), Demo mode on (Settings → Demo mode: bigger mesh view, screen stays on).
+- Near a window for 5 minutes so each phone has a GPS fix (offline, the first fix is slow; after that it is quick).
+- A and C far enough apart that they do not link directly (different ends of the stage, or a wall); B in between.
+  On C's Mesh tab you should see B, and A beyond it.
+- On A, Settings → On-device AI shows the chosen model ("AI ready (… · GPU)"). If it says Rules only, the demo still
+  works; just do not claim the AI label in step 2.
+
+### The 3 minutes
+| Time | Who | Do | Say / point at |
+|---|---|---|---|
+| 0:00 | – | Hold up A: no SIM signal, no internet. | "Panic in, clear alert out, even with no network." |
+| 0:15 | A | SOS tab → **Speak** (or **Type**): "Water rising, four people trapped on the roof, one elderly man is sick" → **Continue**. | Review sheet: needs, people, urgency filled in, "Understood by: On-device AI", and the packet: about 70 bytes. |
+| 0:40 | A | **Send alert**. | Status card: "Passed to 1 nearby phone", then **"Reached a rescue team's phone · Ambulance · it confirmed over 2 hops"** *(rehearse on 3 phones)*. |
+| 0:55 | C | Mesh tab for 5 seconds (packet crossing A → B → C), then Rescue tab. | Alert #1 "reached you over 2 hops"; the situation report written on the phone. |
+| 1:10 | C | Rescue tab → **Who goes where** → **Take it** on A's alert. | "Every team phone runs the same rules, so two ambulances never go to the same person." |
+| 1:20 | A | Phone vibrates. | **"Help is coming"**, live time along the roads, "their reply crossed 2 hops" *(rehearse on 3 phones)*. |
+| 1:35 | B | Switch B's Bluetooth off. On A: **Type** "Fire in the kitchen, 2 people" → **Send alert**. | A: "Waiting for a nearby phone". |
+| 1:50 | B | Bluetooth back on. | A: "Passed to…" again: store and forward, nothing lost *(rehearse on 3 phones)*. |
+| 2:00 | A | Settings → **Simulation mode** on → Mesh tab. | "Now a whole neighbourhood, simulated, labelled Simulated." |
+| 2:10 | A | Mesh tab → **Ravi's battery to 8 %** → banner **Show**. | "Ravi's phone is your only link to 5 phones · battery 8 %": survival mode passes on only urgent alerts; the gap finder says where to put a second phone. |
+| 2:25 | A | Mesh tab → **Fill the nearest shelter** → SOS tab, **Where to go**. | "Temple hall open, 80 places · About 24 min on foot along the roads · skipped 1 reported full". Map tab: the green route. |
+| 2:45 | A | Speed icon in the top bar (How it works) → **Benchmarks**, or Settings → On-device AI → **Benchmarks**. | Measured hops, bytes, round trip; GPU vs CPU timings (and NPU only if it really ran). |
+| 3:00 | – | – | "Everything you saw ran on these phones, with no internet." |
+
+### If something misbehaves on stage
+- **A's alert does not reach C within 20 s:** on A, Settings → Simulation mode on, send the same sentence again: the
+  status card and C's part play out with virtual phones (Kiran answers as the ambulance). Say it is the simulation.
+- **Speech fails** (noise): tap **Type**; the same review sheet appears.
+- **Model not loaded:** the review says "Understood by: Rules"; carry on, the fields are the same.
+- **"Reached a rescue team's phone" does not appear:** check C's role is a team; otherwise skip to "Help is coming".
+- **Simulation step 2:10 shows no banner:** wait 5 seconds (Ravi's next hello) or open the banner via the quiet row
+  "N phones are your only link to others · Show".
+- **After the demo:** Simulation mode off on A, roles back as needed.
+
 ## Current state (Phase 10 built; checked on the iQOO 15 alone and in simulation; 3-phone tests still open)
 
 - Phases 0 to 6: app, codec, mesh, Live Mesh, simulation/demo modes, SOS send flow, Rescue tab, offline map.
@@ -676,4 +724,16 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
   about 8 min", "#3 trapped → Priya (NDRF / SDRF) · about 21 min", "#4 ambulance requested → You · about 6 min [Take
   it]", "#5 road blocked → Suresh (Police) · about 8 min". "Take it" → "You said help is coming". Note: teams switched
   off in the simulation are still suggested while their last position is under 10 minutes old.
+
+## Failure checks (CLAUDE.md 13), 10 Oct 2026
+- Crash log on the iQOO 15 (logcat crash buffer): two crashes today, both on the Mesh tab in landscape
+  ("Cannot coerce value to an empty range" in MeshLayout): with banners and the simulation buttons the mesh area was
+  shorter than its two margins. Fixed (nodes are squeezed onto the margin line instead) and covered by
+  MeshGraphTest.aTooShortAreaDoesNotCrash.
+- Mesh tab banner: only something to act on now gets the amber banner ("1 phone lost", "1 only link low on battery");
+  single links on their own get a quiet row "N phones are your only link to others · Show".
+- Simulation script: shelters and the water point are reported in the first 7 seconds (was after about 95 s), so the
+  stage script can switch simulation on and use "Fill the nearest shelter" at once.
+- NOT run yet (needs the phone free for about 10 minutes): Bluetooth off, a permission revoked, model file renamed
+  ("Rules only"), force-stop and reopen. Airplane mode belongs to the three-phone test (it cuts Wi-Fi to the laptop).
 

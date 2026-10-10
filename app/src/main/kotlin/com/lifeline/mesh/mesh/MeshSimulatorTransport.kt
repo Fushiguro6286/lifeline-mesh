@@ -357,15 +357,16 @@ class MeshSimulation(
             }
         }
         job = scope.launch {
-            // The opening script: one of each kind of trouble, spread over the first two minutes.
-            delay(8_000); phone("Meena").alert(T or M, 3, 4, "Water rising, 4 on the roof, one elderly")
+            // The opening script: one of each kind of trouble, spread over the first two minutes. Shelters and water
+            // first, so "Where to go" and "Fill the nearest shelter" work within seconds of switching simulation on.
+            delay(3_000); phone("Divya").shelter("School hall open, 200 beds")
+            delay(2_000); phone("Lakshmi").shelter("Temple hall open, 80 places")
+            delay(2_000); phone("Ravi").report(ReportType.WATER_AVAILABLE, "Water tanker at the bus stop, bring a can")
+            delay(3_000); phone("Meena").alert(T or M, 3, 4, "Water rising, 4 on the roof, one elderly")
             delay(15_000); phone("Farhan").alert(F, 3, 3, "Kitchen fire, smoke, 3 inside")
             delay(15_000); phone("Lakshmi").alert(W, 2, 8, "No drinking water for 8 people")
             delay(15_000); phone("Divya").alert(M or A, 3, 1, "Old man fell, head injury")
             delay(15_000); phone("Joseph").alert(T or R, 2, 2, "Tree on the road, car stuck")
-            delay(10_000); phone("Divya").shelter("School hall open, 200 beds")
-            delay(5_000); phone("Lakshmi").shelter("Temple hall open, 80 places")
-            delay(5_000); phone("Ravi").report(ReportType.WATER_AVAILABLE, "Water tanker at the bus stop, bring a can")
             delay(10_000); phone("Suresh").report(ReportType.ROAD_BLOCKED, "Underpass flooded, use ring road")
             delay(10_000); phone("Ravi").checkIn()
             while (isActive) {

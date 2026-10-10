@@ -79,23 +79,45 @@ fun rememberGaps(settings: Settings, repo: AppRepository): Gaps {
     }
 }
 
-/** The one-line banner on the Mesh tab when anything needs fixing. */
+/**
+ * The Mesh tab line for relay gaps. Something to act on now (a lost phone, or a phone that is your only link and is
+ * saving battery) gets the amber banner. Single links on their own are normal in a line-shaped mesh, so they get a
+ * quiet one-line row instead, still one tap from the full list.
+ */
 @Composable
 fun GapsBanner(gaps: Gaps, onShow: () -> Unit) {
     if (gaps.isEmpty) return
     val c = Lifeline.colors
-    val n = gaps.bridges.size + gaps.weak.size
-    Row(
-        Modifier.fillMaxWidth().background(c.surface, Shapes.card).border(1.dp, c.signal, Shapes.card).padding(Space.m),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Space.m),
-    ) {
-        Icon(painterResource(R.drawable.ic_hub), null, tint = c.signal, modifier = Modifier.size(20.dp))
-        Text(if (n == 1) "1 relay gap in the mesh" else "$n relay gaps in the mesh", style = Lifeline.type.bodyStrong, color = c.ink,
-            modifier = Modifier.weight(1f))
-        SecondaryButton("Show", onShow)
+    val urgent = gaps.bridges.size + gaps.weak.count { it.mode != PowerMode.NORMAL }
+    if (urgent > 0) {
+        Row(
+            Modifier.fillMaxWidth().background(c.surface, Shapes.card).border(1.dp, c.signal, Shapes.card).padding(Space.m),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            Icon(painterResource(R.drawable.ic_hub), null, tint = c.signal, modifier = Modifier.size(20.dp))
+            Text(urgentText(gaps), style = Lifeline.type.bodyStrong, color = c.ink, modifier = Modifier.weight(1f))
+            SecondaryButton("Show", onShow)
+        }
+    } else {
+        val n = gaps.weak.size
+        Row(
+            Modifier.fillMaxWidth().background(c.surface.copy(alpha = 0.85f), Shapes.card).padding(horizontal = Space.m, vertical = Space.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            Text(if (n == 1) "1 phone is your only link to others" else "$n phones are your only link to others",
+                style = Lifeline.type.caption, color = c.inkMuted, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onShow) { Text("Show", style = Lifeline.type.label, color = c.link) }
+        }
     }
 }
+
+/** "2 phones lost · 1 link low on battery". */
+fun urgentText(g: Gaps): String = listOfNotNull(
+    g.bridges.size.takeIf { it > 0 }?.let { if (it == 1) "1 phone lost" else "$it phones lost" },
+    g.weak.count { it.mode != PowerMode.NORMAL }.takeIf { it > 0 }?.let { if (it == 1) "1 only link low on battery" else "$it only links low on battery" },
+).joinToString(" · ")
 
 /** Every gap as plain sentences, most urgent first. */
 @Composable

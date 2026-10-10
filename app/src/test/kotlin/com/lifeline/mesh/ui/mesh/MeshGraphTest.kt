@@ -99,6 +99,22 @@ class MeshGraphTest {
         assertTrue((x.y - c.y) < 0) // A is at the top, so X is above me too
     }
 
+    // Crashed on the iQOO 15 (10 Oct 2026): in landscape, with banners and the simulation buttons, the mesh area was
+    // shorter than its two margins, and clamping into that empty range threw.
+    @Test fun aTooShortAreaDoesNotCrash() {
+        val g = MeshGraph.build(
+            me, "Asha",
+            neighbors = listOf("A", "B").map { Neighbor("ep$it", "$it-0000", LinkState.CONNECTED, now) },
+            neighborOrigins = mapOf("epA" to 10, "epB" to 11),
+            topology = listOf(hello(10, "A", 1, me, 20), hello(20, "X", 2, 10)),
+            now = now,
+        )
+        for ((w, h) in listOf(2376f to 80f, 2376f to -40f, 50f to 900f, 0f to 0f)) {
+            val pos = MeshLayout.compute(g, w, h, margin = 60f, minRing = 230f, minGap = 120f)
+            assertEquals(g.nodes.size, pos.size)
+        }
+    }
+
     @Test fun aLongChainFitsWithoutOverlap() {
         // Simulation: me — Ravi — Meena — Kiran in a phone-sized canvas.
         val g = line()

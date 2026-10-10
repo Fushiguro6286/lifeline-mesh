@@ -184,9 +184,11 @@ object MeshLayout {
             val avail = reach(a, cx, cy, width, height, margin)
             val step = if (levels > 1) minOf(0.20f * short, (avail - r1) / (levels - 1)) else 0f
             val r = r1 + step * (n.hops - 1)
+            // A very short area (landscape, with banners and the simulation buttons) can leave less than two margins:
+            // squeeze onto the margin line instead of an empty range (crashed on the iQOO 15, 10 Oct 2026).
             out[n.key] = Point(
-                (cx + r * cos(a)).toFloat().coerceIn(margin, width - margin),
-                (cy + r * sin(a)).toFloat().coerceIn(margin, height - margin),
+                (cx + r * cos(a)).toFloat().coerceIn(margin, maxOf(margin, width - margin)),
+                (cy + r * sin(a)).toFloat().coerceIn(margin, maxOf(margin, height - margin)),
             )
         }
         if (minGap > 0f) separate(out, graph.me.key, minGap, width, height, margin)
@@ -210,7 +212,7 @@ object MeshLayout {
                 val push = (gap - d) / d
                 val aFixed = keys[i] == me; val bFixed = keys[j] == me
                 val share = if (aFixed || bFixed) 1f else 0.5f
-                fun clamp(p: Point) = Point(p.x.coerceIn(m, w - m), p.y.coerceIn(m, h - m))
+                fun clamp(p: Point) = Point(p.x.coerceIn(m, maxOf(m, w - m)), p.y.coerceIn(m, maxOf(m, h - m)))
                 if (!aFixed) pos[keys[i]] = clamp(Point(a.x - dx * push * share, a.y - dy * push * share))
                 if (!bFixed) pos[keys[j]] = clamp(Point(b.x + dx * push * share, b.y + dy * push * share))
                 moved = true
