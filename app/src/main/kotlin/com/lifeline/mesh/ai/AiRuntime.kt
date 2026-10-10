@@ -174,6 +174,15 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
         (if (r.ok) SituationReport.validate(r.text, f) else null) to r
     }
 
+    /** One phrased weather sentence, validated against the facts; null = show the computed text. English only. */
+    suspend fun weather(f: WeatherFacts): String? {
+        if (!canUse("en")) return null
+        return nonEssential { e ->
+            val r = e.generate(WeatherLine.request(f))
+            (if (r.ok) WeatherLine.validate(r.text, f) else null) to r
+        }
+    }
+
     /** A model answer that cites existing alerts; null = use the rule-based answer. */
     suspend fun ask(question: String, ranked: List<com.lifeline.mesh.triage.RankedAlert>): MeshAnswer? = nonEssential { e ->
         val r = e.generate(AskMesh.request(question, ranked))

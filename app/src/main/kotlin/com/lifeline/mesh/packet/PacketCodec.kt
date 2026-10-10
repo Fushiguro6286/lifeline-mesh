@@ -88,7 +88,7 @@ object PacketCodec {
                 val event = utf8Trimmed(p.event, MAX_WARNING_EVENT)
                 val text = utf8Trimmed(p.headline, MAX_WARNING_TEXT)
                 ByteBuffer.allocate(7 + event.size + text.size).apply {
-                    put(p.level.toByte()); put(if (p.drill) 1 else 0); putInt(p.expires.toInt())
+                    put(p.level.toByte()); put(((if (p.drill) 1 else 0) or (if (p.forecast) 2 else 0)).toByte()); putInt(p.expires.toInt())
                     put(event.size.toByte()); put(event); put(text)
                 }.array()
             }
@@ -204,13 +204,14 @@ object PacketCodec {
                 buf.need(7)
                 val level = buf.u8()
                 if (level > 3) bad("level out of range")
-                val drill = when (buf.u8()) { 0 -> false; 1 -> true; else -> bad("bad warning flags") }
+                val flags = buf.u8()
+                if (flags and 0x03.inv() != 0) bad("bad warning flags") // bit 0 drill, bit 1 forecast check
                 val expires = buf.int.toLong() and 0xFFFF_FFFFL
                 val eventLen = buf.u8()
                 if (eventLen > MAX_WARNING_EVENT) bad("event too long")
                 buf.need(eventLen)
                 val event = utf8Decode(ByteArray(eventLen).also { buf.get(it) })
-                Packet.Warning(header, level, drill, expires, event, buf.text(MAX_WARNING_TEXT, "headline"))
+                Packet.Warning(header, level, flags and 1 != 0, expires, event, buf.text(MAX_WARNING_TEXT, "headline"), forecast = flags and 2 != 0)
             }
             PacketType.SUMMARY -> {
                 buf.need(1)

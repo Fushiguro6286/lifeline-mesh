@@ -284,4 +284,27 @@
     <string name="vitals_countdown">%d सेकंड में आपकी जगह के साथ एम्बुलेंस बुलाई जाएगी</string>
     <string name="vitals_send_now">अभी एम्बुलेंस बुलाएँ</string>
     <string name="vitals_test">घड़ी अलार्म का परीक्षण</string>
+    <string name="warning_title_forecast">मौसम चेतावनी: %1$s</string>
+    <string name="warning_source_forecast">पूर्वानुमान जाँच (Open-Meteo), आधिकारिक चेतावनी नहीं</string>
+    <!-- SOS tab: weather and watch cards (10 Oct 2026) -->
+    <string name="weather_title">यहाँ का मौसम</string>
+    <string name="weather_off_simulation">सिम्युलेशन मोड में लाइव मौसम बंद है।</string>
+    <string name="weather_no_server">ऑनलाइन होने पर लाइव मौसम देखने के लिए सेटिंग्स → Sync में बचाव सर्वर डालें।</string>
+    <string name="weather_waiting">लाइव मौसम का इंतज़ार। इसके लिए इंटरनेट चाहिए।</string>
+    <string name="weather_summary">महसूस होता है %1$d °C। अगले 24 घंटे: %2$d mm बारिश, %3$d km/h तक तेज़ हवा।</string>
+    <string name="weather_source">Open-Meteo, बचाव सर्वर से · %1$s</string>
+    <string name="weather_source_old">%1$s के बाद अपडेट नहीं हुआ (कनेक्शन नहीं)</string>
+    <string name="health_title">आपकी सेहत (घड़ी)</string>
+    <string name="health_checking">Health Connect जाँच रहे हैं…</string>
+    <string name="health_unavailable">इस फ़ोन पर Health Connect उपलब्ध नहीं है।</string>
+    <string name="health_update">Health Connect को Play Store से अपडेट करना होगा।</string>
+    <string name="health_connect_body">अपनी घड़ी की रीडिंग यहाँ देखें, और कोई रीडिंग बहुत असामान्य हो तो अलार्म पाएँ।</string>
+    <string name="health_connect">अपनी घड़ी जोड़ें</string>
+    <string name="health_none">पिछले 24 घंटों में घड़ी से कोई रीडिंग नहीं। घड़ी का ऐप Health Connect में सेव करे।</string>
+    <string name="health_oxygen">खून में ऑक्सीजन</string>
+    <string name="health_heart">धड़कन</string>
+    <string name="health_pressure">ब्लड प्रेशर</string>
+    <string name="health_ago">%1$d मिनट पहले</string>
+    <string name="health_alarm">अलार्म</string>
+    <string name="health_alarm_body">बहुत असामान्य रीडिंग पर 15 सेकंड अलार्म बजेगा, फिर तुरंत एम्बुलेंस का अनुरोध जाएगा। सीमाएँ अभी डॉक्टर ने नहीं जाँचीं।</string>
 </resources>

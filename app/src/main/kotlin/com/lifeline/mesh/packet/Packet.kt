@@ -159,7 +159,8 @@ sealed interface Packet {
 
     /**
      * An official disaster warning (NDMA SACHET via the sync server). [level] is the issuer's CAP severity (0 Minor,
-     * 1 Moderate, 2 Severe, 3 Extreme); [expires] unix seconds; [drill] = a rehearsal from the server laptop. The header's
+     * 1 Moderate, 2 Severe, 3 Extreme); [expires] unix seconds; [drill] = a rehearsal from the server laptop; [forecast] =
+     * the server's own check of the weather forecast (Open-Meteo), not an official warning. The header's
      * message ID is derived from the CAP identifier ([Warnings.messageId]), so every phone that brings in the same
      * warning makes the same packet and the mesh drops the copies. Links are not authenticated: a phone cannot prove
      * a warning came from the server, so the app says how it arrived.
@@ -171,6 +172,7 @@ sealed interface Packet {
         val expires: Long,
         val event: String,
         val headline: String,
+        val forecast: Boolean = false,
     ) : Packet {
         override val type get() = PacketType.WARNING
         init {

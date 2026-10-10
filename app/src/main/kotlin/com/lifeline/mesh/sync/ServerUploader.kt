@@ -168,7 +168,7 @@ class ServerUploader(
         val fix = repo.myFix.value
         val url = try {
             URL("$base/api/feed?" + SyncFormat.feedQuery(s.originId, s.role.code, s.displayName,
-                fix?.lat.takeIf { s.role.isTeam }, fix?.lon.takeIf { s.role.isTeam }, since))
+                fix?.lat.takeIf { s.role.isTeam }, fix?.lon.takeIf { s.role.isTeam }, since, fix?.let { it.lat to it.lon }))
         } catch (e: MalformedURLException) { return@withContext null }
         val net = if (SyncFormat.isLocalHost(url.host)) wifi else null
         val conn = (net?.openConnection(url) ?: url.openConnection()) as HttpURLConnection
@@ -180,6 +180,7 @@ class ServerUploader(
                 return@withContext null
             }
             val feed = SyncFormat.json.decodeFromString<FeedResponse>(conn.inputStream.bufferedReader().use { it.readText() })
+            feed.weather?.let { repo.weather.value = it to System.currentTimeMillis() }
             var injected = 0
             for (p in feed.packets) {
                 val bytes = runCatching { java.util.Base64.getDecoder().decode(p.raw) }.getOrNull() ?: continue
@@ -277,21 +278,43 @@ data class FeedPacket(val id: String, val raw: String, val assigned: Boolean = f
 data class FeedWarning(
     val id: String, val event: String = "", val severity: String = "", val headline: String = "", val area: String = "",
     val sent: Long = 0, val expires: Long = 0, val drill: Boolean = false,
+    /** The server's own forecast check (Open-Meteo), not an official warning. */
+    val forecast: Boolean = false,
+)
+
+/** Live weather for the ~11 km cell around this phone (Open-Meteo via the server). Null fields = not reported. */
+@Serializable
+data class FeedWeather(
+    val temperatureC: Double? = null, val feelsLikeC: Double? = null, val humidity: Double? = null, val rainNowMm: Double? = null,
+    val windKmh: Double? = null, val gustKmh: Double? = null, val code: Int = 0, val condition: String = "",
+    val rain24hMm: Double? = null, val rainChanceMax: Double? = null, val gustMax24hKmh: Double? = null, val tempMax24hC: Double? = null,
+    val observedAt: String? = null, val fetchedAt: Long = 0, val source: String = "Open-Meteo",
 )
 
 @Serializable
-data class FeedResponse(val now: Long, val packets: List<FeedPacket> = emptyList(), val warnings: List<FeedWarning> = emptyList())
+data class FeedResponse(
+    val now: Long, val packets: List<FeedPacket> = emptyList(), val warnings: List<FeedWarning> = emptyList(),
+    val weather: FeedWeather? = null,
+)
 
 /** Pure mapping and URL rules (unit-tested). */
 object SyncFormat {
     val json = Json { encodeDefaults = false; explicitNulls = false; ignoreUnknownKeys = true }
 
     /** Query for GET /api/feed: who I am, my team role and where I am (teams), and what I already have. */
-    fun feedQuery(origin: Int, role: Int, name: String, lat: Double?, lon: Double?, since: Long): String = buildList {
+    fun feedQuery(
+        origin: Int, role: Int, name: String, lat: Double?, lon: Double?, since: Long,
+        /** My position for the weather, sent only rounded to 0.1 degree (about 11 km). */
+        weatherAt: Pair<Double, Double>? = null,
+    ): String = buildList {
         add("origin=" + hex32(origin)); add("role=$role"); add("since=$since")
         if (name.isNotBlank()) add("name=" + java.net.URLEncoder.encode(name, "UTF-8"))
         if (lat != null && lon != null) { add("lat=$lat"); add("lon=$lon") }
+        weatherAt?.let { (wlat, wlon) -> add("wlat=" + coarse(wlat)); add("wlon=" + coarse(wlon)) }
     }.joinToString("&")
+
+    /** 0.1 degree, as text: enough for the weather, not a location. */
+    fun coarse(v: Double): String = "%.1f".format(java.util.Locale.ROOT, Math.round(v * 10) / 10.0)
 
     /**
      * The mesh packet for an official warning. Same CAP identifier → same message ID on every phone, so copies brought
@@ -302,7 +325,7 @@ object SyncFormat {
         val header = com.lifeline.mesh.packet.Header(com.lifeline.mesh.packet.Warnings.messageId(w.id),
             com.lifeline.mesh.packet.Warnings.ORIGIN, com.lifeline.mesh.packet.PacketCodec.TTL_DEFAULT, 0, clamp(w.sent))
         return com.lifeline.mesh.packet.Packet.Warning(header, com.lifeline.mesh.packet.Warnings.level(w.severity), w.drill,
-            clamp(w.expires), w.event, w.headline)
+            clamp(w.expires), w.event, w.headline, forecast = w.forecast)
     }
 
     fun hex64(v: Long) = "%016x".format(v)

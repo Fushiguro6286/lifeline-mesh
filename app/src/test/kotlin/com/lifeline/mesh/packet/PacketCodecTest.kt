@@ -386,6 +386,7 @@ class PacketCodecTest {
         println("warning: ${bytes.size} bytes")
         assertEquals(PacketCodec.HEADER_SIZE + 7 + "Tsunami".length + w.headline.length, bytes.size)
         assertTrue(roundTrip(w.copy(drill = true)).let { it is Packet.Warning && it.drill })
+        assertTrue(roundTrip(w.copy(forecast = true)).let { it is Packet.Warning && it.forecast && !it.drill })
     }
 
     @Test fun warningTextIsTrimmedOnWholeCharacters() {
@@ -405,7 +406,8 @@ class PacketCodecTest {
         val first = (PacketCodec.VERSION shl 4) or PacketType.WARNING.code
         assertTrue(PacketCodec.decode(raw(first, body())) is DecodeResult.Ok)
         assertEquals("level out of range", malformed(raw(first, body(level = 4))))
-        assertEquals("bad warning flags", malformed(raw(first, body(flags = 2))))
+        assertEquals("bad warning flags", malformed(raw(first, body(flags = 4))))
+        assertTrue((PacketCodec.decode(raw(first, body(flags = 3))) as DecodeResult.Ok).packet.let { it is Packet.Warning && it.drill && it.forecast })
         assertEquals("event too long", malformed(raw(first, body(eventLen = 25))))
         assertEquals("too short", malformed(raw(first, body(eventLen = 20, text = ByteArray(0)))))
         assertEquals("too short", malformed(raw(first, byteArrayOf(2, 0, 0))))

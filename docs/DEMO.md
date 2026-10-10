@@ -291,6 +291,30 @@ early (apps cannot), it runs out by itself.
   NOT checked: a real watch reading.
 - Left on the iQOO: Health Connect permissions granted, the Watch vitals alarm switch off.
 
+## SOS tab: live weather and watch readings (added 10 Oct 2026, on request)
+
+- Weather here (SOS tab, under Speak/Type): when the phone is online and the rescue server is set, each feed poll
+  sends a coarse position (rounded to 0.1 degree, about 11 km) and the server returns Open-Meteo's current conditions
+  and 24-hour numbers for that cell (cached 10 min per cell). The card shows temperature, condition, one sentence, the
+  source and the time; "Not updated since …" in amber after 30 min without a connection. Off in simulation mode.
+- The sentence: in English the on-device model phrases the numbers ("Written on device"); it is used only if it is one
+  line and every number in it is one of the facts. Numbers written as words are rejected too (on the iQOO the model
+  first wrote "thirty degrees"; the prompt now asks for digits). Otherwise, and in Hindi/Kannada, the computed sentence.
+- Dangerous weather is decided by fixed rules on the server (weather.py, tested), never by the model: 24 h rain >= 115.6
+  mm (IMD very heavy), gusts >= 89 km/h (IMD severe cyclonic storm winds), thunderstorm with hail, temperature >= 45 C
+  (IMD heat wave). Each becomes a warning with the forecast flag (packet type 8, flags bit 1): same alarm, banner and
+  mesh relay as official warnings, titled "Weather warning: …" and labelled "Forecast check (Open-Meteo), not an
+  official warning". Weather never sends an SOS by itself; only a person (or the watch alarm) does.
+- Your health (watch): latest blood oxygen, heart rate and blood pressure from Health Connect (last 24 h, read every
+  minute while the SOS tab is open), red when outside the limits, "Connect your watch" if not allowed, and the alarm
+  switch (the 15 s alarm then an urgent ambulance request, see "Watch vitals alarm"). The model is not used for health.
+- Checked on the iQOO 15 (simulation off, laptop server): real Bengaluru weather "30 °C Partly cloudy", model sentence
+  "It is partly cloudy with a temperature of 30 °C and wind gusts up to 42 km/h." (Written on device); the server log
+  showed the phone sent only wlat=13.0&wlon=77.6. With a test server faking 150 mm of rain: alarm notification
+  "Weather warning: Very heavy rain", red banner with the forecast label, card "24 °C Heavy rain". The test warnings
+  were then deleted from the phone. Health card: connected, "No readings from your watch in the last 24 hours".
+  NOT checked: real watch readings; a forecast warning relayed to a phone without internet.
+
 ## Round trip on the scoreboard (fixed 10 Oct 2026)
 
 - Before: only the Mesh debug panel's "Send ping" measured a round trip, so the Mesh tab tile stayed "Not measured".

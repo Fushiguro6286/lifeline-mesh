@@ -28,6 +28,13 @@ object VitalsCheck {
     /** Two heart-rate readings this close together count as "in a row". */
     const val HEART_PAIR_MS = 5 * 60_000L
 
+    /** One reading outside the limits, for colouring it on screen (the alarm itself needs [check], e.g. two heart rates). */
+    fun outOfRange(r: VitalReading): Boolean = when (r.kind) {
+        VitalReading.Kind.OXYGEN -> r.value < OXYGEN_LOW
+        VitalReading.Kind.HEART_RATE -> r.value < HEART_LOW || r.value > HEART_HIGH
+        VitalReading.Kind.BLOOD_PRESSURE -> r.value >= SYSTOLIC_HIGH || (r.value2 ?: 0.0) >= DIASTOLIC_HIGH || r.value < SYSTOLIC_LOW
+    }
+
     /** The newest reason to raise the alarm among [readings] newer than [afterMs] (the last reading already alarmed on). */
     fun check(readings: List<VitalReading>, now: Long, afterMs: Long = 0): VitalsAlarm? {
         val fresh = readings.filter { now - it.atMs <= MAX_AGE_MS && it.atMs <= now }.sortedBy { it.atMs }

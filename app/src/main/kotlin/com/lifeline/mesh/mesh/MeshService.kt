@@ -629,9 +629,11 @@ class MeshService : Service() {
     private fun warningAlarm(w: Packet.Warning, viaInternet: Boolean) {
         if (w.level < 2 || w.expires * 1000 <= System.currentTimeMillis()) return
         Haptics.strong(this)
-        val title = getString(if (w.drill) R.string.warning_title_drill else R.string.warning_title, w.event.ifBlank { "—" })
+        val title = getString(when { w.drill -> R.string.warning_title_drill; w.forecast -> R.string.warning_title_forecast
+            else -> R.string.warning_title }, w.event.ifBlank { "—" })
         val until = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(w.expires * 1000))
-        val how = (if (w.drill) "" else getString(R.string.warning_source) + " · ") +
+        val how = (when { w.drill -> ""; w.forecast -> getString(R.string.warning_source_forecast) + " · "
+            else -> getString(R.string.warning_source) + " · " }) +
             getString(if (viaInternet) R.string.warning_via_internet else R.string.warning_via_mesh)
         val n = NotificationCompat.Builder(this, CHANNEL_WARNINGS)
             .setSmallIcon(R.drawable.ic_warning)

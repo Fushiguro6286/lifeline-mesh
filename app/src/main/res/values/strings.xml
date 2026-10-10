@@ -294,4 +294,27 @@
     <string name="vitals_countdown">Calling an ambulance with your location in %d s</string>
     <string name="vitals_send_now">Call an ambulance now</string>
     <string name="vitals_test">Test of the watch alarm</string>
+    <string name="warning_title_forecast">Weather warning: %1$s</string>
+    <string name="warning_source_forecast">Forecast check (Open-Meteo), not an official warning</string>
+    <!-- SOS tab: weather and watch cards (10 Oct 2026) -->
+    <string name="weather_title">Weather here</string>
+    <string name="weather_off_simulation">Live weather is off in simulation mode.</string>
+    <string name="weather_no_server">Set the rescue server in Settings → Sync to see live weather when you are online.</string>
+    <string name="weather_waiting">Waiting for live weather. It needs internet.</string>
+    <string name="weather_summary">Feels like %1$d °C. Next 24 hours: %2$d mm of rain, gusts up to %3$d km/h.</string>
+    <string name="weather_source">Open-Meteo via the rescue server · %1$s</string>
+    <string name="weather_source_old">Not updated since %1$s (no connection)</string>
+    <string name="health_title">Your health (watch)</string>
+    <string name="health_checking">Checking Health Connect…</string>
+    <string name="health_unavailable">Health Connect is not available on this phone.</string>
+    <string name="health_update">Health Connect needs an update from the Play Store.</string>
+    <string name="health_connect_body">See your watch readings here and get an alarm if one is far outside normal.</string>
+    <string name="health_connect">Connect your watch</string>
+    <string name="health_none">No readings from your watch in the last 24 hours. Its app must save to Health Connect.</string>
+    <string name="health_oxygen">Blood oxygen</string>
+    <string name="health_heart">Heart rate</string>
+    <string name="health_pressure">Blood pressure</string>
+    <string name="health_ago">%1$d min ago</string>
+    <string name="health_alarm">Alarm</string>
+    <string name="health_alarm_body">A reading far outside normal rings for 15 s, then sends an urgent ambulance request. Limits not yet reviewed by a doctor.</string>
 </resources>

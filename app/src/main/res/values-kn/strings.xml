@@ -284,4 +284,27 @@
     <string name="vitals_countdown">%d ಸೆಕೆಂಡ್‌ಗಳಲ್ಲಿ ನಿಮ್ಮ ಸ್ಥಳದೊಂದಿಗೆ ಆಂಬ್ಯುಲೆನ್ಸ್ ಕರೆಯಲಾಗುತ್ತದೆ</string>
     <string name="vitals_send_now">ಈಗಲೇ ಆಂಬ್ಯುಲೆನ್ಸ್ ಕರೆಯಿರಿ</string>
     <string name="vitals_test">ವಾಚ್ ಅಲಾರಂ ಪರೀಕ್ಷೆ</string>
+    <string name="warning_title_forecast">ಹವಾಮಾನ ಎಚ್ಚರಿಕೆ: %1$s</string>
+    <string name="warning_source_forecast">ಮುನ್ಸೂಚನೆ ಪರಿಶೀಲನೆ (Open-Meteo), ಅಧಿಕೃತ ಎಚ್ಚರಿಕೆ ಅಲ್ಲ</string>
+    <!-- SOS tab: weather and watch cards (10 Oct 2026) -->
+    <string name="weather_title">ಇಲ್ಲಿನ ಹವಾಮಾನ</string>
+    <string name="weather_off_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಮೋಡ್‌ನಲ್ಲಿ ಲೈವ್ ಹವಾಮಾನ ಆಫ್ ಆಗಿದೆ.</string>
+    <string name="weather_no_server">ಆನ್‌ಲೈನ್ ಇದ್ದಾಗ ಲೈವ್ ಹವಾಮಾನ ನೋಡಲು ಸೆಟ್ಟಿಂಗ್ಸ್ → Sync ನಲ್ಲಿ ರಕ್ಷಣಾ ಸರ್ವರ್ ಹಾಕಿ.</string>
+    <string name="weather_waiting">ಲೈವ್ ಹವಾಮಾನಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ. ಇಂಟರ್ನೆಟ್ ಬೇಕು.</string>
+    <string name="weather_summary">ಅನುಭವ %1$d °C. ಮುಂದಿನ 24 ಗಂಟೆ: %2$d mm ಮಳೆ, %3$d km/h ವರೆಗೆ ಗಾಳಿ.</string>
+    <string name="weather_source">Open-Meteo, ರಕ್ಷಣಾ ಸರ್ವರ್ ಮೂಲಕ · %1$s</string>
+    <string name="weather_source_old">%1$s ನಂತರ ಅಪ್‌ಡೇಟ್ ಆಗಿಲ್ಲ (ಸಂಪರ್ಕ ಇಲ್ಲ)</string>
+    <string name="health_title">ನಿಮ್ಮ ಆರೋಗ್ಯ (ವಾಚ್)</string>
+    <string name="health_checking">Health Connect ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…</string>
+    <string name="health_unavailable">ಈ ಫೋನ್‌ನಲ್ಲಿ Health Connect ಲಭ್ಯವಿಲ್ಲ.</string>
+    <string name="health_update">Health Connect ಅನ್ನು Play Store ನಿಂದ ಅಪ್‌ಡೇಟ್ ಮಾಡಬೇಕು.</string>
+    <string name="health_connect_body">ನಿಮ್ಮ ವಾಚ್ ರೀಡಿಂಗ್‌ಗಳನ್ನು ಇಲ್ಲಿ ನೋಡಿ, ತುಂಬಾ ಅಸಹಜವಾದರೆ ಅಲಾರಂ ಪಡೆಯಿರಿ.</string>
+    <string name="health_connect">ನಿಮ್ಮ ವಾಚ್ ಸಂಪರ್ಕಿಸಿ</string>
+    <string name="health_none">ಕಳೆದ 24 ಗಂಟೆಗಳಲ್ಲಿ ವಾಚ್‌ನಿಂದ ರೀಡಿಂಗ್ ಇಲ್ಲ. ಅದರ ಆ್ಯಪ್ Health Connect ಗೆ ಉಳಿಸಬೇಕು.</string>
+    <string name="health_oxygen">ರಕ್ತದ ಆಮ್ಲಜನಕ</string>
+    <string name="health_heart">ಹೃದಯ ಬಡಿತ</string>
+    <string name="health_pressure">ರಕ್ತದೊತ್ತಡ</string>
+    <string name="health_ago">%1$d ನಿಮಿಷ ಹಿಂದೆ</string>
+    <string name="health_alarm">ಅಲಾರಂ</string>
+    <string name="health_alarm_body">ತುಂಬಾ ಅಸಹಜ ರೀಡಿಂಗ್‌ಗೆ 15 ಸೆಕೆಂಡ್ ಅಲಾರಂ, ನಂತರ ತುರ್ತು ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿ. ಮಿತಿಗಳನ್ನು ಇನ್ನೂ ವೈದ್ಯರು ಪರಿಶೀಲಿಸಿಲ್ಲ.</string>
 </resources>

@@ -9,6 +9,10 @@ fire → fire service, trapped → NDRF, road blocked → police; otherwise any 
 near them with the raw packet bytes, which they inject into their own mesh. Every phone receives replies to its own
 alerts. Distances are straight-line (haversine), like on the phones.
 
+Live weather (weather.py): phones send a coarse position (0.1 degree) with each poll and get current conditions and a
+24-hour forecast check from Open-Meteo; very heavy rain, strong winds, hail or a heat wave come back as warnings flagged
+"forecast" (phones say they are a forecast check, not official).
+
 Official warnings (official_warnings.py): the server polls NDMA SACHET's public CAP feeds; Severe and Extreme warnings
 in force go to every phone in GET /api/feed, and phones pass them into the mesh. A drill warning (clearly labelled) can
 be sent from the dashboard on this laptop for rehearsals.
@@ -30,6 +34,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 import official_warnings as ow
+import weather
 
 DB_PATH = os.environ.get("LIFELINE_DB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "lifeline.db"))
 
@@ -187,7 +192,7 @@ def post_packets(packets: list[PacketIn]) -> dict:
 
 @app.get("/api/feed")
 def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[float] = None, name: str = "",
-         since: int = 0) -> dict:
+         since: int = 0, wlat: Optional[float] = None, wlon: Optional[float] = None) -> dict:
     """What an online phone should inject into its mesh: replies to its own alerts; for teams, nearby alerts."""
     now = int(time.time() * 1000)
     out = []
@@ -215,7 +220,16 @@ def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[
         ):
             out.append({"id": r["id"], "raw": r["raw"], "assigned": False})
         warnings = [warning_json(w) for w in ow.active(conn, now // 1000)]
-    return {"now": now, "packets": out, "warnings": warnings}
+    # Live weather for the coarse position the phone sent (0.1 degree), and forecast dangers for that cell.
+    result = {"now": now, "packets": out, "warnings": warnings}
+    if wlat is not None and wlon is not None and -90 <= wlat <= 90 and -180 <= wlon <= 180:
+        try:
+            summary, forecast = weather.for_position(wlat, wlon)
+            result["weather"] = summary
+            result["warnings"] = warnings + forecast
+        except Exception as e:  # no internet on the laptop, Open-Meteo down: the rest of the feed still works
+            result["weatherError"] = type(e).__name__
+    return result
 
 
 @app.post("/api/warnings/drill")

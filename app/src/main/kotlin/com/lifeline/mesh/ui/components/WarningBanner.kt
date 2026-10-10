@@ -60,15 +60,17 @@ fun WarningBanner(packets: List<PacketEntity>, modifier: Modifier = Modifier) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                     Icon(painterResource(R.drawable.ic_warning), null, tint = c.sos, modifier = Modifier.size(24.dp))
-                    Text(stringResource(if (w.drill) R.string.warning_title_drill else R.string.warning_title, w.event.ifBlank { "—" }),
+                    Text(stringResource(when { w.drill -> R.string.warning_title_drill; w.forecast -> R.string.warning_title_forecast
+                        else -> R.string.warning_title }, w.event.ifBlank { "—" }),
                         style = Lifeline.type.title, color = c.sos)
                 }
                 Text(w.headline, style = Lifeline.type.body, color = c.ink)
                 val until = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(w.expires * 1000))
                 val how = if (e.fromEndpoint == Router.INTERNET) stringResource(R.string.warning_via_internet)
                 else stringResource(R.string.warning_via_mesh)
-                // A drill is not from NDMA: only real warnings name the source.
-                val source = if (w.drill) "" else stringResource(R.string.warning_source) + " · "
+                // A drill is not from NDMA: only real warnings name the source; a forecast check says it is not official.
+                val source = when { w.drill -> ""; w.forecast -> stringResource(R.string.warning_source_forecast) + " · "
+                    else -> stringResource(R.string.warning_source) + " · " }
                 Text("$source${stringResource(R.string.warning_until, until)} · $how", style = Lifeline.type.caption, color = c.inkMuted)
             }
         }

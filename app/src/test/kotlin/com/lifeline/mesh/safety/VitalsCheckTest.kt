@@ -49,4 +49,11 @@ class VitalsCheckTest {
         val a = VitalsCheck.check(listOf(r, VitalReading(BLOOD_PRESSURE, 190.0, now, 100.0)), now)
         assertEquals("Blood pressure 190/100", a?.reason)
     }
+
+    @Test fun oneReadingOutOfRangeForDisplay() {
+        assertEquals(true, VitalsCheck.outOfRange(VitalReading(HEART_RATE, 160.0, now)))
+        assertEquals(false, VitalsCheck.outOfRange(VitalReading(HEART_RATE, 75.0, now)))
+        assertEquals(true, VitalsCheck.outOfRange(VitalReading(BLOOD_PRESSURE, 120.0, now, 125.0)))
+        assertEquals(false, VitalsCheck.outOfRange(VitalReading(OXYGEN, 95.0, now)))
+    }
 }

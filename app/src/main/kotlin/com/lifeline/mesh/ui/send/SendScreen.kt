@@ -279,6 +279,8 @@ fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewMode
             BigIconButton(R.drawable.ic_keyboard, stringResource(R.string.type), { typedStart = ""; typing = true }, Modifier.weight(1f))
         }
 
+        WeatherCard(settings)
+        HealthCard(settings)
         AmbulanceCard({ ambulance = true })
         val context = androidx.compose.ui.platform.LocalContext.current
         CheckInCard(sentAt = checkInAt, onSafe = {

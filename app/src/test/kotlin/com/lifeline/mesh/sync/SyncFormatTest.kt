@@ -105,4 +105,21 @@ class SyncFormatTest {
         // An older server without warnings still parses.
         assertTrue(SyncFormat.json.decodeFromString<FeedResponse>("""{"now":1,"packets":[]}""").warnings.isEmpty())
     }
+
+    @Test fun weatherPositionIsSentOnlyCoarse() {
+        val q = SyncFormat.feedQuery(1, 1, "", null, null, 0, weatherAt = 12.971599 to 77.594566)
+        assertTrue("wlat=13.0" in q && "wlon=77.6" in q)
+        assertFalse("12.97" in q || "77.59" in q)
+        assertFalse("wlat" in SyncFormat.feedQuery(1, 1, "", null, null, 0))
+    }
+
+    @Test fun feedWeatherAndForecastWarningsParse() {
+        val feed = SyncFormat.json.decodeFromString<FeedResponse>(
+            """{"now":1,"weather":{"temperatureC":30.0,"condition":"Partly cloudy","rain24hMm":0.0,"gustMax24hKmh":42.1,"hail24h":false,"fetchedAt":5},
+               "warnings":[{"id":"FORECAST-13.0_77.6-rain-20261010","event":"Very heavy rain","severity":"Severe","headline":"h","sent":5,"expires":9,"forecast":true}]}""")
+        assertEquals("Partly cloudy", feed.weather?.condition)
+        assertEquals(42.1, feed.weather?.gustMax24hKmh!!, 0.0)
+        val p = SyncFormat.warningPacket(feed.warnings.single())
+        assertTrue(p.forecast); assertFalse(p.drill); assertEquals(2, p.level)
+    }
 }

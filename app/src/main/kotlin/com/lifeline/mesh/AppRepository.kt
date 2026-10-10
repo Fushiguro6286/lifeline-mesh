@@ -64,6 +64,8 @@ class AppRepository(
     fun setWatchVitals(on: Boolean) = scope.launch { settingsStore.setWatchVitals(on) }
     /** Watch vitals: when Health Connect was last read and how many readings came back (Settings shows it). */
     val lastVitalsCheck = MutableStateFlow<Pair<Long, Int>?>(null)
+    /** Live weather from the server's last answer, and when it arrived here (wall ms). Memory only. */
+    val weather = MutableStateFlow<Pair<com.lifeline.mesh.sync.FeedWeather, Long>?>(null)
     fun setServerUrl(url: String) = scope.launch { settingsStore.setServerUrl(url) }
     fun setPhone(phone: String) = scope.launch { settingsStore.setPhone(phone) }
     fun setTravel(travel: com.lifeline.mesh.triage.Travel) = scope.launch { settingsStore.setTravel(travel) }
