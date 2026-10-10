@@ -344,7 +344,15 @@ early (apps cannot), it runs out by itself.
   in need only see lines to their own alerts. Does nothing if no team has at least 400 m left to drive.
 - Checked on the iQOO 15 (10 Oct 2026, as Other team): before, team 3's line ran up the east side of Ulsoor Lake; after
   "Block a road ahead" the block marker appeared on that road and the line went round the west side of the lake.
-- NOT checked on the phone: the plan card with two different jobs after the duplicate fix.
+- Checked on the iQOO 15 (10 Oct 2026, Ambulance, by road, simulated mesh): two different jobs in the plan card, "1 Urgent
+  · trapped, medical, 2 people · 4 min · reached after about 4 min", "2 Urgent · fire, 1 person · 4 min · reached after
+  about 8 min", and "Written on device: Perform job 1 first because it is urgent and involves trapped medical patients.
+  Then, proceed to job 2, which is also urgent but involves a fire." Both urgent, so the one accepted first goes first.
+- To show the plan card in simulation, switch the four team phones off first (Kiran, Arjun, Priya, Suresh on the Mesh
+  tab): otherwise, at 12x speed, a simulated team reaches each person in about 20 s, the person checks in safe and the
+  job leaves the plan before you can show it. Switch them back on afterwards.
+- Known: the situation report's "Top priority" follows the Rescue list ranking (fire was #1 there), while the plan
+  orders this team's own jobs (severity, then accepted first), so they can name different jobs first.
 
 ## Simulated weather (added 10 Oct 2026, on request)
 
