@@ -57,7 +57,6 @@ class AppRepository(
     fun setRole(role: Role) = scope.launch { settingsStore.setRole(role) }
     fun setLanguage(language: Language) = scope.launch { settingsStore.setLanguage(language) }
     fun setTheme(mode: ThemeMode) = scope.launch { settingsStore.setTheme(mode) }
-    fun setOnboardingDone() = scope.launch { settingsStore.setOnboardingDone(true) }
     fun setSimulationMode(on: Boolean) = scope.launch { settingsStore.setSimulationMode(on) }
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
@@ -65,6 +64,12 @@ class AppRepository(
     fun setPhone(phone: String) = scope.launch { settingsStore.setPhone(phone) }
     fun setTravel(travel: com.lifeline.mesh.triage.Travel) = scope.launch { settingsStore.setTravel(travel) }
     val lastUpload: StateFlow<Pair<Long, Int>?> = settingsStore.lastUpload.stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** Profiles on this phone. Password hashing runs off the main thread. */
+    fun createProfile(password: String) = scope.launch { settingsStore.createProfile(password) }
+    suspend fun signIn(profileId: String, password: String): Boolean =
+        kotlinx.coroutines.withContext(Dispatchers.Default) { settingsStore.signIn(profileId, password) }
+    fun signOut() = scope.launch { settingsStore.signOut() }
 
     // ------------------------------------------------------------------ Room
 

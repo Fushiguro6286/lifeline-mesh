@@ -2,6 +2,7 @@ package com.lifeline.mesh.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -48,6 +49,10 @@ data class Settings(
     val phone: String = "",
     /** How I travel to help, for travel-time estimates; null = the default for my role. */
     val travelChoice: com.lifeline.mesh.triage.Travel? = null,
+    /** The signed-in profile; null when signed out, or on an install from before profiles that has no password yet. */
+    val activeProfileId: String? = null,
+    /** Every profile on this phone, for the sign-in screen. */
+    val profiles: List<ProfileInfo> = emptyList(),
 ) {
     val travel: com.lifeline.mesh.triage.Travel get() = travelChoice ?: com.lifeline.mesh.triage.Teams.defaultTravel(role.hello)
 
@@ -74,6 +79,8 @@ class SettingsStore(private val context: Context) {
         val TRAVEL = stringPreferencesKey("travel")
         val LAST_UPLOAD_AT = longPreferencesKey("last_upload_at")
         val LAST_UPLOAD_COUNT = intPreferencesKey("last_upload_count")
+        val PROFILES = stringPreferencesKey("profiles")
+        val ACTIVE_PROFILE = stringPreferencesKey("active_profile")
     }
 
     private val store get() = context.dataStore
@@ -109,20 +116,76 @@ class SettingsStore(private val context: Context) {
         readAloud = p[Keys.READ_ALOUD] ?: true,
         phone = p[Keys.PHONE] ?: "",
         travelChoice = p[Keys.TRAVEL]?.let { runCatching { com.lifeline.mesh.triage.Travel.valueOf(it) }.getOrNull() },
+        activeProfileId = p[Keys.ACTIVE_PROFILE],
+        profiles = Profiles.decode(p[Keys.PROFILES]).map { it.info },
     )
 
-    suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16) }
-    suspend fun setRole(role: Role) = store.edit { it[Keys.ROLE] = role.name }
+    suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16); it.saveActiveProfile() }
+    suspend fun setRole(role: Role) = store.edit { it[Keys.ROLE] = role.name; it.saveActiveProfile() }
     suspend fun setLanguage(language: Language) = store.edit { it[Keys.LANGUAGE] = language.tag }
     suspend fun setServerUrl(url: String) = store.edit { it[Keys.SERVER] = url.trim() }
     suspend fun setLlmBackend(backend: String) = store.edit { it[Keys.LLM_BACKEND] = backend }
     suspend fun setSimulationMode(on: Boolean) = store.edit { it[Keys.SIMULATION] = on }
     suspend fun setDemoMode(on: Boolean) = store.edit { it[Keys.DEMO] = on }
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
-    suspend fun setOnboardingDone(done: Boolean) = store.edit { it[Keys.ONBOARDED] = done }
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
-    suspend fun setPhone(phone: String) = store.edit { it[Keys.PHONE] = phone.filter { c -> c.isDigit() || c == '+' }.take(16) }
-    suspend fun setTravel(travel: com.lifeline.mesh.triage.Travel) = store.edit { it[Keys.TRAVEL] = travel.name }
+    suspend fun setPhone(phone: String) = store.edit { it[Keys.PHONE] = phone.filter { c -> c.isDigit() || c == '+' }.take(16); it.saveActiveProfile() }
+    suspend fun setTravel(travel: com.lifeline.mesh.triage.Travel) = store.edit { it[Keys.TRAVEL] = travel.name; it.saveActiveProfile() }
+
+    // ------------------------------------------------------------------ profiles (on this phone only)
+    // The current profile's name, phone, role and travel live in the usual keys; the profile list keeps a copy of each.
+
+    /** Copies the current name, phone, role and travel into the signed-in profile's record. */
+    private fun MutablePreferences.saveActiveProfile() {
+        val id = this[Keys.ACTIVE_PROFILE] ?: return
+        val list = Profiles.decode(this[Keys.PROFILES])
+        this[Keys.PROFILES] = Profiles.encode(list.map { p ->
+            if (p.id != id) p
+            else p.copy(name = this[Keys.NAME] ?: "", phone = this[Keys.PHONE] ?: "", role = this[Keys.ROLE] ?: Role.NEEDS_HELP.name, travel = this[Keys.TRAVEL])
+        })
+    }
+
+    /**
+     * Saves the current details as a new password-protected profile and signs it in (end of onboarding, or
+     * Set password on an install from before profiles). Does nothing if a profile is already signed in.
+     */
+    suspend fun createProfile(password: String) {
+        val (salt, hash) = Passwords.protect(password)
+        store.edit { prefs ->
+            if (prefs[Keys.ACTIVE_PROFILE] != null) return@edit
+            val profile = Profile(
+                id = java.util.UUID.randomUUID().toString(),
+                name = prefs[Keys.NAME] ?: "", phone = prefs[Keys.PHONE] ?: "",
+                role = prefs[Keys.ROLE] ?: Role.NEEDS_HELP.name, travel = prefs[Keys.TRAVEL],
+                salt = salt, hash = hash,
+            )
+            prefs[Keys.PROFILES] = Profiles.encode(Profiles.decode(prefs[Keys.PROFILES]) + profile)
+            prefs[Keys.ACTIVE_PROFILE] = profile.id
+            prefs[Keys.ONBOARDED] = true
+        }
+    }
+
+    /** Signs in to profile [id] if [password] matches. False for a wrong password or an unknown profile. */
+    suspend fun signIn(id: String, password: String): Boolean {
+        val profile = Profiles.decode(store.data.first()[Keys.PROFILES]).firstOrNull { it.id == id } ?: return false
+        if (!Passwords.matches(password, profile)) return false
+        store.edit { prefs ->
+            prefs[Keys.NAME] = profile.name
+            prefs[Keys.PHONE] = profile.phone
+            prefs[Keys.ROLE] = profile.role
+            if (profile.travel != null) prefs[Keys.TRAVEL] = profile.travel else prefs.remove(Keys.TRAVEL)
+            prefs[Keys.ACTIVE_PROFILE] = profile.id
+            prefs[Keys.ONBOARDED] = true
+        }
+        return true
+    }
+
+    /** Signs out: the profile stays in the list; the app returns to the sign-in screen. Language and theme stay. */
+    suspend fun signOut() = store.edit { prefs ->
+        prefs.saveActiveProfile()
+        listOf(Keys.NAME, Keys.PHONE, Keys.ROLE, Keys.TRAVEL, Keys.ACTIVE_PROFILE).forEach { prefs.remove(it) }
+        prefs[Keys.ONBOARDED] = false
+    }
 
     /** Last successful upload (time ms, packets sent). Kept out of [Settings] so an upload doesn't recompose the app. */
     val lastUpload: Flow<Pair<Long, Int>?> = store.data.map { p -> p[Keys.LAST_UPLOAD_AT]?.let { it to (p[Keys.LAST_UPLOAD_COUNT] ?: 0) } }

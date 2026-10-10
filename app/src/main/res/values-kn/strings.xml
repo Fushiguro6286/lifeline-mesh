@@ -218,4 +218,18 @@
         <item quantity="one">%d ರೋಗಿ</item>
         <item quantity="other">%d ರೋಗಿಗಳು</item>
     </plurals>
+    <!-- Profiles and sign-in (on this phone only) -->
+    <string name="onb_password">ಪಾಸ್‌ವರ್ಡ್</string>
+    <string name="onb_password_confirm">ಪಾಸ್‌ವರ್ಡ್ ಮತ್ತೆ ಬರೆಯಿರಿ</string>
+    <string name="onb_password_hint">ಕನಿಷ್ಠ 4 ಅಕ್ಷರಗಳು. ಸೈನ್ ಔಟ್ ಮಾಡಿ ಮತ್ತೆ ಸೈನ್ ಇನ್ ಮಾಡಲು ಬೇಕು. ಇದು ಈ ಫೋನ್‌ನಲ್ಲೇ ಇರುತ್ತದೆ.</string>
+    <string name="password_too_short">ಕನಿಷ್ಠ 4 ಅಕ್ಷರಗಳನ್ನು ಬಳಸಿ.</string>
+    <string name="password_mismatch">ಎರಡೂ ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಬೇರೆ ಬೇರೆ ಇವೆ.</string>
+    <string name="signin_title">ಈ ಫೋನ್ ಯಾರು ಬಳಸುತ್ತಿದ್ದಾರೆ?</string>
+    <string name="signin_body">ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಆರಿಸಿ ಮತ್ತು ಅದರ ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.</string>
+    <string name="signin_button">ಸೈನ್ ಇನ್ ಮಾಡಿ</string>
+    <string name="signin_checking">ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…</string>
+    <string name="signin_wrong">ತಪ್ಪು ಪಾಸ್‌ವರ್ಡ್. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="signin_new">ಹೊಸ ಪ್ರೊಫೈಲ್ ರಚಿಸಿ</string>
+    <string name="signin_existing">ನನಗೆ ಈಗಾಗಲೇ ಪ್ರೊಫೈಲ್ ಇದೆ</string>
+    <string name="profile_no_name">ಹೆಸರಿಲ್ಲದ ಪ್ರೊಫೈಲ್</string>
 </resources>

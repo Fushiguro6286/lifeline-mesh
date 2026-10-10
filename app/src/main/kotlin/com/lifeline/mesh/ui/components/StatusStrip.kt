@@ -44,13 +44,12 @@ fun SimulatedBanner(modifier: Modifier = Modifier) {
 data class StatusItem(val text: String, val tone: Color, val searching: Boolean = false)
 
 /**
- * Thin strip at the top of every screen: mesh state on the left, AI state on the right,
+ * Thin strip at the top of every screen: how many phones are nearby (mesh state) on the left, [trailing] on the right,
  * and the Simulated banner under it when simulation mode is on.
  */
 @Composable
 fun StatusStrip(
     mesh: StatusItem,
-    ai: StatusItem,
     simulated: Boolean,
     modifier: Modifier = Modifier,
     trailing: (@Composable () -> Unit)? = null,
@@ -61,9 +60,7 @@ fun StatusStrip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            // The mesh state is the one people act on: it always shows in full; the AI label shortens instead.
-            StatusDot(mesh)
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) { StatusDot(ai) }
+            StatusDot(mesh, Modifier.weight(1f))
             trailing?.invoke()
         }
         if (simulated) SimulatedBanner()
@@ -86,7 +83,7 @@ private fun StatusDot(item: StatusItem, modifier: Modifier = Modifier) {
 private fun StatusStripPreview() = PreviewBox {
     val c = Lifeline.colors
     Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        StatusStrip(StatusItem("3 phones nearby", c.link), StatusItem("AI ready", c.safe), simulated = false)
-        StatusStrip(StatusItem("Searching…", c.warn, searching = true), StatusItem("Rules only", c.inkMuted), simulated = true)
+        StatusStrip(StatusItem("3 phones nearby", c.link), simulated = false)
+        StatusStrip(StatusItem("Searching…", c.warn, searching = true), simulated = true)
     }
 }

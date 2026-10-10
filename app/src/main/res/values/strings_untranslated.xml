@@ -181,4 +181,10 @@
     <string name="place_heard_hops">Heard %1$s · %2$d hops away</string>
     <string name="place_accuracy">Position accurate to about %d m</string>
     <string name="place_live">Live position, updated while the phone is on the mesh.</string>
+    <!-- Profile card in Settings -->
+    <string name="settings_profile_signed_in">Signed in on this phone</string>
+    <string name="settings_profile_no_password">No password yet. Set one to sign out and switch between profiles on this phone.</string>
+    <string name="settings_profile_set_password">Set password</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_body">Opens the sign-in screen, where you can pick another profile or create one. Alerts and replies stay on this phone.</string>
 </resources>

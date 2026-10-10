@@ -68,8 +68,9 @@ import com.lifeline.mesh.ui.theme.Touch
 private const val PAGES = 3
 
 /**
- * Three short pages (DESIGN.md 8.1): what the app does, about you (name, language, role), permissions.
- * Step and typed name survive rotation and the activity recreation that a language change causes.
+ * Three short pages (DESIGN.md 8.1): what the app does, about you (name, language, role, password), permissions.
+ * Step and typed fields survive rotation and the activity recreation that a language change causes.
+ * Finishing creates a password-protected profile on this phone ([onDone] gets the password).
  */
 @Composable
 fun OnboardingScreen(
@@ -78,12 +79,18 @@ fun OnboardingScreen(
     onLanguage: (Language) -> Unit,
     onRole: (UserRole) -> Unit,
     onPhone: (String) -> Unit,
-    onDone: () -> Unit,
+    onDone: (password: String) -> Unit,
+    /** Back to the sign-in screen; null when this phone has no profiles yet. */
+    onSignIn: (() -> Unit)? = null,
 ) {
     val c = Lifeline.colors
     var page by rememberSaveable { mutableIntStateOf(0) }
     var name by rememberSaveable { mutableStateOf(settings.displayName) }
     var phone by rememberSaveable { mutableStateOf(settings.phone) }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirm by rememberSaveable { mutableStateOf("") }
+    var passwordError by rememberSaveable { mutableStateOf<Int?>(null) }
+    var finishing by rememberSaveable { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding()) {
         Column(
@@ -92,7 +99,10 @@ fun OnboardingScreen(
         ) {
             when (page) {
                 0 -> WelcomePage()
-                1 -> AboutYouPage(name, { name = it }, settings.language, onLanguage, settings.role, onRole, phone, { phone = it })
+                1 -> {
+                    AboutYouPage(name, { name = it }, settings.language, onLanguage, settings.role, onRole, phone, { phone = it })
+                    PasswordFields(password, { password = it; passwordError = null }, confirm, { confirm = it; passwordError = null }, passwordError)
+                }
                 else -> {
                     Title(stringResource(R.string.onb3_title))
                     Text(stringResource(R.string.onb3_body), style = Lifeline.type.body, color = c.inkMuted)
@@ -108,11 +118,18 @@ fun OnboardingScreen(
                 PrimaryButton(
                     text = stringResource(if (page == PAGES - 1) R.string.finish else R.string.next),
                     onClick = {
-                        if (page == 1) { onName(name); onPhone(phone) }
-                        if (page < PAGES - 1) page++ else onDone()
+                        if (page == 1) {
+                            passwordError = passwordProblem(password, confirm)
+                            if (passwordError != null) return@PrimaryButton
+                            onName(name); onPhone(phone)
+                        }
+                        if (page < PAGES - 1) page++ else if (!finishing) { finishing = true; onDone(password) }
                     },
                     modifier = Modifier.weight(if (page > 0) 2f else 1f),
                 )
+            }
+            if (page == 0 && onSignIn != null) {
+                SecondaryButton(stringResource(R.string.signin_existing), onSignIn, Modifier.fillMaxWidth())
             }
         }
     }
@@ -227,6 +244,43 @@ fun RolePicker(role: UserRole, onRole: (UserRole) -> Unit) {
 fun teamLabel(code: Int): Int = when (code) {
     4 -> R.string.team_fire; 5 -> R.string.team_ambulance; 6 -> R.string.team_police; 7 -> R.string.team_ndrf
     else -> R.string.team_other
+}
+
+/** Password and repeat, for a new profile. [error] is a string resource, shown under the second field. */
+@Composable
+fun PasswordFields(password: String, onPassword: (String) -> Unit, confirm: String, onConfirm: (String) -> Unit, error: Int?) {
+    val keyboard = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password, imeAction = ImeAction.Next)
+    OutlinedTextField(
+        value = password,
+        onValueChange = { onPassword(it.take(64)) },
+        label = { Text(stringResource(R.string.onb_password)) },
+        supportingText = { Text(stringResource(R.string.onb_password_hint), style = Lifeline.type.caption) },
+        singleLine = true,
+        textStyle = Lifeline.type.body,
+        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+        keyboardOptions = keyboard,
+        isError = error == R.string.password_too_short,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    OutlinedTextField(
+        value = confirm,
+        onValueChange = { onConfirm(it.take(64)) },
+        label = { Text(stringResource(R.string.onb_password_confirm)) },
+        supportingText = error?.let { { Text(stringResource(it), style = Lifeline.type.caption, color = Lifeline.colors.warn) } },
+        singleLine = true,
+        textStyle = Lifeline.type.body,
+        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+        keyboardOptions = keyboard.copy(imeAction = ImeAction.Done),
+        isError = error != null,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/** Null if the password can be used, else the string resource saying why not. */
+fun passwordProblem(password: String, confirm: String): Int? = when {
+    password.length < com.lifeline.mesh.data.Passwords.MIN_LENGTH -> R.string.password_too_short
+    password != confirm -> R.string.password_mismatch
+    else -> null
 }
 
 /** Optional phone number; says exactly where it goes. */

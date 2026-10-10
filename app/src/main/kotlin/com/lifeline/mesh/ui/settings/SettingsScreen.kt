@@ -25,7 +25,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -55,7 +54,7 @@ import com.lifeline.mesh.ui.theme.Space
 import com.lifeline.mesh.ui.theme.Touch
 
 /**
- * Settings (DESIGN.md 8.6): You, Appearance, Mesh, On-device AI, Sync, Privacy, Developer.
+ * Settings (DESIGN.md 8.6): You (profile, sign out), Appearance, Mesh, Sync, Privacy, Developer.
  */
 @Composable
 fun SettingsScreen(
@@ -64,7 +63,6 @@ fun SettingsScreen(
     onPermissions: () -> Unit,
     onGallery: () -> Unit,
     onDebug: () -> Unit,
-    onBenchmarks: () -> Unit,
 ) {
     val c = Lifeline.colors
     val focus = LocalFocusManager.current
@@ -76,6 +74,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         Section(stringResource(R.string.settings_you))
+        ProfileCard(settings, repository)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it.take(16) },
@@ -130,14 +129,8 @@ fun SettingsScreen(
         SwitchRow(R.drawable.ic_volume_up, "Read aloud", "Reads the question on the review sheet and \"Help is coming\" replies out loud.",
             settings.readAloud, repository::setReadAloud)
 
-        Section("On-device AI")
-        AiSettingsCard(onBenchmarks)
-
         Section("Sync")
         SyncCard(settings, repository)
-
-        Section("Measurements")
-        ExportRow()
 
         Section(stringResource(R.string.settings_privacy))
         Text(stringResource(R.string.privacy_body), style = Lifeline.type.body, color = c.ink)
@@ -150,6 +143,54 @@ fun SettingsScreen(
             stringResource(R.string.settings_version, BuildConfig.VERSION_NAME, "%08x".format(settings.originId)),
             style = Lifeline.type.caption, color = c.inkMuted, modifier = Modifier.padding(vertical = Space.l),
         )
+    }
+}
+
+/**
+ * Who is signed in, and Sign out to switch profiles. An install from before profiles has no password yet:
+ * it sets one here first, otherwise it could not sign back in.
+ */
+@Composable
+private fun ProfileCard(settings: Settings, repository: AppRepository) {
+    val c = Lifeline.colors
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirm by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<Int?>(null) }
+    val label = com.lifeline.mesh.ui.onboarding.profileLabel(
+        com.lifeline.mesh.data.ProfileInfo(settings.activeProfileId ?: "", settings.displayName, settings.role),
+    )
+
+    Column(
+        Modifier.fillMaxWidth().clip(Shapes.card).background(c.surface).padding(Space.l),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(48.dp).clip(Shapes.circle).background(c.surfaceRaised),
+                contentAlignment = Alignment.Center,
+            ) {
+                val initial = settings.displayName.trim().firstOrNull()?.uppercase()
+                if (initial != null) Text(initial, style = Lifeline.type.title, color = c.link)
+                else Icon(painterResource(R.drawable.ic_person), null, tint = c.link)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(label, style = Lifeline.type.bodyStrong, color = c.ink)
+                Text(
+                    stringResource(if (settings.activeProfileId != null) R.string.settings_profile_signed_in else R.string.settings_profile_no_password),
+                    style = Lifeline.type.caption, color = c.inkMuted,
+                )
+            }
+        }
+        if (settings.activeProfileId != null) {
+            Text(stringResource(R.string.settings_sign_out_body), style = Lifeline.type.caption, color = c.inkMuted)
+            com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.settings_sign_out), { repository.signOut() }, Modifier.fillMaxWidth())
+        } else {
+            com.lifeline.mesh.ui.onboarding.PasswordFields(password, { password = it; error = null }, confirm, { confirm = it; error = null }, error)
+            com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.settings_profile_set_password), {
+                error = com.lifeline.mesh.ui.onboarding.passwordProblem(password, confirm)
+                if (error == null) { repository.createProfile(password); password = ""; confirm = "" }
+            }, Modifier.fillMaxWidth())
+        }
     }
 }
 
@@ -240,23 +281,6 @@ private fun BatteryRow() {
 
 private fun isExempt(context: android.content.Context) =
     context.getSystemService(android.os.PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName) ?: false
-
-/** Export measurements (CLAUDE.md 10): CSV of every metric to app files, then the share sheet. */
-@Composable
-private fun ExportRow() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    var result by remember { mutableStateOf<String?>(null) }
-    LinkRow(R.drawable.ic_speed, "Export measurements", result ?: "Writes every measurement to a CSV file and opens the share sheet.", onClick = {
-        scope.launch {
-            val out = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.lifeline.mesh.metrics.Metrics.export(context) } }
-            out.onSuccess { r ->
-                if (r == null) result = "Nothing measured yet."
-                else { result = "Exported ${r.first} measurements."; context.startActivity(r.second) }
-            }.onFailure { result = "Export failed: ${it.message}" }
-        }
-    })
-}
 
 @Composable
 private fun Section(text: String) = Text(

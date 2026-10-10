@@ -228,4 +228,18 @@
         <item quantity="one">%d patient</item>
         <item quantity="other">%d patients</item>
     </plurals>
+    <!-- Profiles and sign-in (on this phone only) -->
+    <string name="onb_password">Password</string>
+    <string name="onb_password_confirm">Repeat password</string>
+    <string name="onb_password_hint">At least 4 characters. Lets you sign out and back in. It never leaves this phone.</string>
+    <string name="password_too_short">Use at least 4 characters.</string>
+    <string name="password_mismatch">The two passwords are different.</string>
+    <string name="signin_title">Who is using this phone?</string>
+    <string name="signin_body">Pick your profile and enter its password.</string>
+    <string name="signin_button">Sign in</string>
+    <string name="signin_checking">Checking…</string>
+    <string name="signin_wrong">Wrong password. Try again.</string>
+    <string name="signin_new">Create a new profile</string>
+    <string name="signin_existing">I already have a profile</string>
+    <string name="profile_no_name">Profile without a name</string>
 </resources>

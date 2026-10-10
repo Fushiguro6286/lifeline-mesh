@@ -177,6 +177,17 @@ Open the Mesh tab on each.
 6. Screen off: lock B's screen, wait 1 minute, send from A. C must still get it through B.
 7. Duplicates: put all three close (triangle). Send from A. Each phone stores it once; events show "Dropped a copy".
 
+## Profiles and sign-in (added 10 Oct 2026, on request)
+
+- Settings (gear, top right) → You: profile card with name, role and Sign out. Sign out opens "Who is using this
+  phone?": pick a profile, enter its password, or Create a new profile (the usual onboarding, now with a password).
+- Profiles live only on this phone (DataStore); passwords are stored as salted PBKDF2-SHA256 hashes, never in plain
+  text (ProfilesTest). A profile holds name, phone, role and travel; language and theme stay per phone.
+- An install that onboarded before this change has no password yet: Settings → You shows "Set password" first.
+- Removed on request: the AI label in the top strip (it now shows only phones nearby), and Settings → On-device AI and
+  Settings → Measurements. The Benchmarks screen has no entry point any more. CLAUDE.md demo step 7 (AI card,
+  Benchmarks) and Export measurements need a new way in if they are still wanted for the demo.
+
 ## Demo steps
 
 Not ready. The 3-minute script in CLAUDE.md section 14 needs phases 2 to 7.
@@ -197,6 +208,9 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
 
 ## Known issues
 
+- Profiles: the mesh origin ID is per install, not per profile, so after switching profiles this phone's earlier alerts
+  and replies still show as "yours". Signed out, the SOS screen is behind the sign-in screen; the mesh keeps relaying only
+  if it was already running. There is no change-password, delete-profile or forgotten-password reset yet.
 - Voice: needs the offline speech pack for the app language. On the iQOO both recognizers report the language as
   unavailable. Fix before the demo: Settings → (Google) Speech / "Speech Recognition & Synthesis from Google" → offline
   speech recognition → download English (India) and Hindi; or use Speak → "Download offline voice" (Android 13+) on Wi-Fi.

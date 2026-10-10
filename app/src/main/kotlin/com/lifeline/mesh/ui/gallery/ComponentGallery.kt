@@ -90,8 +90,8 @@ fun ComponentGallery() {
             Text("ಮನೆಯಲ್ಲಿ 4 ಜನ ಸಿಲುಕಿದ್ದಾರೆ, ನೀರು ಬೇಕು", style = Lifeline.type.body, color = c.ink)
 
             Heading("Status strip and Simulated banner")
-            StatusStrip(StatusItem("3 phones nearby", c.link), StatusItem("AI ready", c.safe), simulated = false)
-            StatusStrip(StatusItem("Searching…", c.warn, searching = true), StatusItem("Rules only", c.inkMuted), simulated = true)
+            StatusStrip(StatusItem("3 phones nearby", c.link), simulated = false)
+            StatusStrip(StatusItem("Searching…", c.warn, searching = true), simulated = true)
             SimulatedBanner()
 
             Heading("SignalRings")

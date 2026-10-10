@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +29,7 @@ import com.lifeline.mesh.data.Settings
 import com.lifeline.mesh.data.ThemeMode
 import com.lifeline.mesh.ui.MainScaffold
 import com.lifeline.mesh.ui.onboarding.OnboardingScreen
+import com.lifeline.mesh.ui.onboarding.SignInScreen
 import com.lifeline.mesh.ui.theme.Lifeline
 import com.lifeline.mesh.ui.theme.LifelineTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -81,16 +85,25 @@ class MainActivity : ComponentActivity() {
             enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
             onDispose { }
         }
+        // Signed out with profiles on the phone: sign in, unless the person chose to create a new profile.
+        var creating by rememberSaveable { mutableStateOf(false) }
+        androidx.compose.runtime.LaunchedEffect(settings?.onboardingDone) { if (settings?.onboardingDone == true) creating = false }
         LifelineTheme(mode) {
             when {
                 settings == null -> Box(Modifier.fillMaxSize().background(Lifeline.colors.bg))
+                !settings.onboardingDone && settings.profiles.isNotEmpty() && !creating -> SignInScreen(
+                    profiles = settings.profiles,
+                    onSignIn = repository::signIn,
+                    onCreate = { creating = true },
+                )
                 !settings.onboardingDone -> OnboardingScreen(
                     settings = settings,
                     onName = repository::setDisplayName,
                     onLanguage = repository::setLanguage,
                     onRole = repository::setRole,
                     onPhone = repository::setPhone,
-                    onDone = repository::setOnboardingDone,
+                    onDone = { password -> repository.createProfile(password) },
+                    onSignIn = if (settings.profiles.isNotEmpty()) { { creating = false } } else null,
                 )
                 else -> MainScaffold(settings, repository)
             }

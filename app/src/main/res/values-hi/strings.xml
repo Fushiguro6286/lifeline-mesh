@@ -218,4 +218,18 @@
         <item quantity="one">%d मरीज़</item>
         <item quantity="other">%d मरीज़</item>
     </plurals>
+    <!-- Profiles and sign-in (on this phone only) -->
+    <string name="onb_password">पासवर्ड</string>
+    <string name="onb_password_confirm">पासवर्ड दोबारा लिखें</string>
+    <string name="onb_password_hint">कम से कम 4 अक्षर। इससे आप साइन आउट करके फिर से साइन इन कर सकते हैं। यह इसी फ़ोन पर रहता है।</string>
+    <string name="password_too_short">कम से कम 4 अक्षर रखें।</string>
+    <string name="password_mismatch">दोनों पासवर्ड अलग हैं।</string>
+    <string name="signin_title">यह फ़ोन कौन इस्तेमाल कर रहा है?</string>
+    <string name="signin_body">अपनी प्रोफ़ाइल चुनें और उसका पासवर्ड डालें।</string>
+    <string name="signin_button">साइन इन करें</string>
+    <string name="signin_checking">जाँच हो रही है…</string>
+    <string name="signin_wrong">गलत पासवर्ड। फिर से कोशिश करें।</string>
+    <string name="signin_new">नई प्रोफ़ाइल बनाएँ</string>
+    <string name="signin_existing">मेरी प्रोफ़ाइल पहले से है</string>
+    <string name="profile_no_name">बिना नाम की प्रोफ़ाइल</string>
 </resources>
