@@ -48,6 +48,7 @@ fun CanvasFallbackMap(
     routes: List<Route> = emptyList(),
     gapLines: List<List<Pair<Double, Double>>> = emptyList(),
     evac: List<Pair<Double, Double>> = emptyList(),
+    meshPaths: List<DrawnPath> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val onPlace by rememberUpdatedState(onPlaceTap)
@@ -133,6 +134,21 @@ fun CanvasFallbackMap(
             val path = androidx.compose.ui.graphics.Path()
             evac.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
             drawPath(path, c.safe.copy(alpha = 0.8f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5.dp.toPx()))
+        }
+
+        // Mesh paths: thin ink lines, numbered hops.
+        for (mp in meshPaths) {
+            if (mp.points.size < 2) continue
+            val path = androidx.compose.ui.graphics.Path()
+            mp.points.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
+            drawPath(path, c.ink.copy(alpha = 0.6f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f.dp.toPx()))
+            for ((la, lo, n) in mp.badges) {
+                val o = at(plot(la, lo))
+                drawCircle(c.bg, 11.dp.toPx(), o)
+                drawCircle(c.ink, 9.dp.toPx(), o)
+                val t = measurer.measure(n.toString(), TextStyle(fontFamily = type.label.fontFamily, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = c.bg))
+                drawText(t, topLeft = Offset(o.x - t.size.width / 2, o.y - t.size.height / 2))
+            }
         }
 
         // Relay gaps: amber, short dashes.

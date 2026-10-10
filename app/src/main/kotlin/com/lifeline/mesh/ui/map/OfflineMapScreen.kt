@@ -216,6 +216,8 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     // "Where do I go?": the walking route to the open shelter, for anyone who is not on a rescue team.
     val shelter = com.lifeline.mesh.ui.send.rememberShelterChoice(repo)
     val evac = if (settings.role.isTeam) emptyList() else shelter?.plan?.points.orEmpty()
+    // Mesh paths between rescue teams and the people they are helping (phone by phone for teams).
+    val meshPaths = rememberMeshPaths(settings)
     val archive by produceState<Result<File?>?>(null) { value = Result.success(MapAssets.prepare(context)) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
@@ -236,7 +238,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize()) {
             if (mode == MapMode.MAP && mapUsable) {
                 key(c.isNight) {
-                    LibreMap(file!!, c, ranked, shown, lines, me, gapLines, evac, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
+                    LibreMap(file!!, c, ranked, shown, lines, me, gapLines, evac, meshPaths, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
                 }
                 Text(
                     stringResource(R.string.map_attribution), style = Lifeline.type.caption, color = c.ink,
@@ -244,8 +246,9 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
                         .background(c.bg.copy(alpha = 0.75f), Shapes.chip).padding(horizontal = Space.s, vertical = 2.dp),
                 )
                 if (me != null && !MapAssets.contains(me!!.lat, me!!.lon)) Banner(stringResource(R.string.map_outside), Modifier.align(Alignment.TopCenter))
+                else MeshPathBanner(meshPaths, Modifier.align(Alignment.TopCenter))
             } else {
-                CanvasFallbackMap(ranked, shown, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, gapLines = gapLines, evac = evac,
+                CanvasFallbackMap(ranked, shown, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, gapLines = gapLines, evac = evac, meshPaths = meshPaths,
                     modifier = Modifier.fillMaxSize())
                 if (mode == MapMode.MAP && note != null) Banner(note, Modifier.align(Alignment.TopCenter))
             }
@@ -332,6 +335,7 @@ private fun LibreMap(
     me: GeoFix?,
     gapLines: List<List<Pair<Double, Double>>>,
     evac: List<Pair<Double, Double>>,
+    meshPaths: List<DrawnPath>,
     onAlertTap: (Long) -> Unit,
     onPlaceTap: (String) -> Unit,
     onFail: () -> Unit,
@@ -402,6 +406,8 @@ private fun LibreMap(
                         st.addSource(GeoJsonSource("routes"))
                         st.addSource(GeoJsonSource("gaps"))
                         st.addSource(GeoJsonSource("evac"))
+                        st.addSource(GeoJsonSource("meshpath"))
+                        st.addSource(GeoJsonSource("hops"))
                         st.addSource(GeoJsonSource("places"))
                         st.addSource(GeoJsonSource("alerts"))
                         st.addSource(GeoJsonSource("me"))
@@ -429,6 +435,13 @@ private fun LibreMap(
                             PropertyFactory.lineWidth(5f),
                             PropertyFactory.lineOpacity(0.8f),
                         ))
+                        // Mesh paths: thin solid ink lines through each relay phone, with numbered hop badges.
+                        st.addLayer(LineLayer("meshpath", "meshpath").withProperties(
+                            PropertyFactory.lineColor(c.ink.toArgb()),
+                            PropertyFactory.lineWidth(2.5f),
+                            PropertyFactory.lineOpacity(0.6f),
+                        ))
+                        st.addLayer(SymbolLayer("hops", "hops").withProperties(*icon.toTypedArray()))
                         // Relay gaps: amber, dashed shorter than the teal job lines.
                         st.addLayer(LineLayer("gaps", "gaps").withProperties(
                             PropertyFactory.lineColor(c.signal.toArgb()),
@@ -489,8 +502,16 @@ private fun LibreMap(
     }
 
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.
-    LaunchedEffect(style, ranked, places, routes, me, gapLines, evac) {
+    LaunchedEffect(style, ranked, places, routes, me, gapLines, evac, meshPaths) {
         val st = style ?: return@LaunchedEffect
+        st.getSourceAs<GeoJsonSource>("meshpath")?.setGeoJson(FeatureCollection.fromFeatures(meshPaths.filter { it.points.size >= 2 }.map { p ->
+            Feature.fromGeometry(LineString.fromLngLats(p.points.map { (la, lo) -> Point.fromLngLat(lo, la) }))
+        }))
+        st.getSourceAs<GeoJsonSource>("hops")?.setGeoJson(FeatureCollection.fromFeatures(meshPaths.flatMap { it.badges }.map { (la, lo, n) ->
+            val name = "hop-$n"
+            if (st.getImage(name) == null) st.addImage(name, MarkerBitmaps.alert(n, c.ink.toArgb(), c.bg.toArgb(), c.bg.toArgb(), 0, density))
+            Feature.fromGeometry(Point.fromLngLat(lo, la)).apply { addStringProperty("icon", name) }
+        }))
         st.getSourceAs<GeoJsonSource>("evac")?.setGeoJson(FeatureCollection.fromFeatures(
             if (evac.size < 2) emptyList() else listOf(Feature.fromGeometry(LineString.fromLngLats(evac.map { (la, lo) -> Point.fromLngLat(lo, la) })))
         ))

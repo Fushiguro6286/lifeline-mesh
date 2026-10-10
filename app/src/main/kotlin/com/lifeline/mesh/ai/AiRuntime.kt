@@ -183,6 +183,15 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
         }
     }
 
+    /** A mesh path in one sentence, validated (team named, only the hop count); null = the computed text. */
+    suspend fun path(f: PathFacts): String? {
+        if (!canUse("en")) return null
+        return nonEssential { e ->
+            val r = e.generate(PathLine.request(f))
+            (if (r.ok) PathLine.validate(r.text, f) else null) to r
+        }
+    }
+
     /** The rescue plan explained in at most two sentences, validated against its numbers; null = the computed text. */
     suspend fun plan(stops: List<PlanStop>): String? {
         if (!canUse("en")) return null

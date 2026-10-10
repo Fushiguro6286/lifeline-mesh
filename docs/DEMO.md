@@ -753,3 +753,16 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
   - Airplane mode belongs to the three-phone test (it cuts the Wi-Fi to the laptop and only proves anything with other
     phones around).
 
+## Mesh path on the map (added 11 Oct 2026, on request)
+- MeshPath (pure Kotlin): the fewest hops between two phones through the live Hello graph (about 3 hops around this
+  phone), breadth-first with neighbours in origin order, so every phone draws the same path from the same graph.
+- Person in need: a thin ink line from them to each team that said "help is coming" (before anyone answers, the
+  nearest team in reach), with one badge giving the hop count. The people in between are not drawn (only teams see
+  people's positions). Rescue team: the full path, phone by phone, to each person whose alert it accepted, each hop
+  numbered at its midpoint.
+- A banner at the top of the map says it in one sentence, e.g. "Your alert reaches Kiran (Ambulance) through Divya:
+  2 hops, no internet." The on-device model may phrase it ("Written on device"); its sentence is used only if it names
+  the team (or person), uses no number but the hop count, writes no number as a word and is one sentence.
+- MeshPathTest: shortest paths on the simulated layout, unreachable, ties, the computed sentences, model checks.
+- NOT checked on the phone yet (it was locked).
+
