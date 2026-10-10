@@ -188,7 +188,7 @@ On receiving a relayable packet:
 Type handling:
 - **Ack:** if the referenced ID is one of mine, show it as a reply ("Help is coming, ETA 20 min") with sound, vibration and read-aloud.
 - **Ping:** if echo flag is 0 and I am the rescuer role (or the referenced alert's first receiver, or its sender), send back a Ping with echo flag 1 referencing the same ID. If echo flag is 1 and the original ping is mine, record round-trip time.
-- **Automatic pings (10 Oct 2026):** the app pings my alert as soon as a neighbor takes it, and a team phone pings each new alert back towards its sender, so the round trip is measured without the debug panel. At most one automatic ping per 30 s per phone, so pings never use up the 10-a-minute budget alerts and acks need.
+- **Automatic pings (10 Oct 2026):** the app pings my alert as soon as a neighbor takes it, and a team phone pings each new alert back towards its sender, so the round trip is measured without the debug panel. At most one automatic ping of my own alerts per 30 s; a team phone's pings back (receipts, one per new alert) go at most one per 15 s, the rest queued for up to 10 minutes, so pings never use up the 10-a-minute budget alerts and acks need.
 - **Hello:** update the topology table (origin → neighbors, battery, role, name, last heard). Expire after 60 s silence.
 
 ### 7.3 Store and forward
