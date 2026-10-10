@@ -199,6 +199,15 @@ Open the Mesh tab on each.
   guide. Until then each guide says "Not yet reviewed by a medical professional". Emergency numbers used: 112 (and 108
   for an ambulance).
 
+## Round trip on the scoreboard (fixed 10 Oct 2026)
+
+- Before: only the Mesh debug panel's "Send ping" measured a round trip, so the Mesh tab tile stayed "Not measured".
+- Now: the sender pings its alert as soon as a neighbor takes it (answered by the first receiver and any team phone),
+  and a team phone pings each new alert back to its sender (the sender answers). At most one automatic ping per 30 s.
+  Checked on the iQOO 15 in simulation: "Round trip to Ravi: 247 ms over 1 hop", "to Meena: 1005 ms over 2 hops",
+  tile shows ms with "Simulated". Real 3-phone check still open: A and C each show a round trip after A's alert.
+
+## Demo steps
 
 Not ready. The 3-minute script in CLAUDE.md section 14 needs phases 2 to 7.
 
