@@ -152,7 +152,20 @@ fun LiveMeshScreen(settings: Settings, repository: AppRepository, onDebug: () ->
         Box(Modifier.fillMaxSize().padding(inner)) {
             if (!running) {
                 val canStart = settings.simulationMode || health.permissionsOk
-                Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    // Why it is not running, with the fix, first: in landscape the scoreboard sheet leaves little room,
+                    // and a centred message had its button hidden under it (seen on the iQOO 15, 11 Oct 2026).
+                    firstProblem(health, settings.simulationMode)?.let { text ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(Space.screen).background(c.surface, Shapes.card).border(1.dp, c.warn, Shapes.card).padding(Space.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Space.m),
+                        ) {
+                            Icon(painterResource(R.drawable.ic_warning), null, tint = c.warn, modifier = Modifier.size(20.dp))
+                            Text(text, style = Lifeline.type.caption, color = c.ink, modifier = Modifier.weight(1f))
+                            SecondaryButton(stringResource(if (canStart) R.string.mesh_fix else R.string.mesh_grant), if (canStart) onDebug else onPermissions)
+                        }
+                    }
                     EmptyState(
                         title = stringResource(R.string.mesh_off_title),
                         body = stringResource(R.string.mesh_off_body),

@@ -20,8 +20,9 @@ relying on them. Every step has a simulation fallback.
 - Near a window for 5 minutes so each phone has a GPS fix (offline, the first fix is slow; after that it is quick).
 - A and C far enough apart that they do not link directly (different ends of the stage, or a wall); B in between.
   On C's Mesh tab you should see B, and A beyond it.
-- On A, Settings → On-device AI shows the chosen model ("AI ready (… · GPU)"). If it says Rules only, the demo still
-  works; just do not claim the AI label in step 2.
+- On A, the speed icon in the top bar (How it works) → On-device AI card shows "Ready · Gemma 4 E4B on GPU" (checked
+  11 Oct 2026: first token 0.7 s, 20.9 tok/s, English, Hindi and Kannada passed). If it says Rules only, the demo
+  still works; just do not claim the AI label in step 2.
 
 ### The 3 minutes
 | Time | Who | Do | Say / point at |
@@ -37,7 +38,7 @@ relying on them. Every step has a simulation fallback.
 | 2:00 | A | Settings → **Simulation mode** on → Mesh tab. | "Now a whole neighbourhood, simulated, labelled Simulated." |
 | 2:10 | A | Mesh tab → **Ravi's battery to 8 %** → banner **Show**. | "Ravi's phone is your only link to 5 phones · battery 8 %": survival mode passes on only urgent alerts; the gap finder says where to put a second phone. |
 | 2:25 | A | Mesh tab → **Fill the nearest shelter** → SOS tab, **Where to go**. | "Temple hall open, 80 places · About 24 min on foot along the roads · skipped 1 reported full". Map tab: the green route. |
-| 2:45 | A | Speed icon in the top bar (How it works) → **Benchmarks**, or Settings → On-device AI → **Benchmarks**. | Measured hops, bytes, round trip; GPU vs CPU timings (and NPU only if it really ran). |
+| 2:45 | A | Speed icon in the top bar (How it works) → On-device AI card → **Benchmarks**. | Measured hops, bytes, round trip; GPU vs CPU timings (and NPU only if it really ran). |
 | 3:00 | – | – | "Everything you saw ran on these phones, with no internet." |
 
 ### If something misbehaves on stage
@@ -734,6 +735,21 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
   single links on their own get a quiet row "N phones are your only link to others · Show".
 - Simulation script: shelters and the water point are reported in the first 7 seconds (was after about 95 s), so the
   stage script can switch simulation on and use "Fill the nearest shelter" at once.
-- NOT run yet (needs the phone free for about 10 minutes): Bluetooth off, a permission revoked, model file renamed
-  ("Rules only"), force-stop and reopen. Airplane mode belongs to the three-phone test (it cuts Wi-Fi to the laptop).
+- Run on the iQOO 15 on 11 Oct 2026 (real mesh, simulation off; everything restored afterwards). No crash in any
+  of them (crash log empty):
+  - Force-stop and reopen: 6 real packets before and after (5 mine, 1 reply); the mesh started again by itself and
+    simulation stayed off.
+  - Bluetooth off: Mesh tab "Bluetooth is off. Turn it on so nearby phones can reach you."; round trip and link range
+    say "Not measured". Bluetooth back on.
+  - Nearby devices permission revoked: top bar "Mesh not running". Found: in landscape the scoreboard sheet hid the
+    message's button, and the message did not say why. Fixed: the cause ("Nearby devices permission is missing.") with
+    a Grant permissions button now comes first. Grant permissions opens the app's permission list ("Nearby devices ·
+    Grant"); once granted, it shows Done and the mesh starts again by itself ("Looking for phones").
+    Note: the SOS tab has no warning of its own; the top bar says "Mesh not running" on every tab.
+  - Model files renamed: How it works → On-device AI "Rules only. No model passed on this phone, so every AI feature
+    uses its rule-based fallback", with Re-test, Import model file and a download offer. The stage sentence typed on
+    the SOS tab: "Understood by: Rules", Trapped + Medical, 4 people, Urgent (not sent). Files put back and the app
+    restarted: "Ready · Gemma 4 E4B on GPU · first token 0.7 s · 20.9 tok/s", English, Hindi and Kannada passed.
+  - Airplane mode belongs to the three-phone test (it cuts the Wi-Fi to the laptop and only proves anything with other
+    phones around).
 
