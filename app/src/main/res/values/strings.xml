@@ -280,4 +280,12 @@
     <string name="noapp_share_preparing">Preparing…</string>
     <string name="noapp_share_title">Share Lifeline Mesh</string>
     <string name="noapp_share_hint">Choose Quick Share (fast) or Bluetooth (slow, about 70 MB). On their phone, allow installing apps from this source.</string>
+    <!-- Official warnings (10 Oct 2026) -->
+    <string name="warning_channel">Official warnings</string>
+    <string name="warning_title">Official warning: %1$s</string>
+    <string name="warning_title_drill">DRILL, not real: %1$s</string>
+    <string name="warning_until">In force until %1$s</string>
+    <string name="warning_via_internet">From the rescue server</string>
+    <string name="warning_source">Source: NDMA SACHET</string>
+    <string name="warning_via_mesh">Passed on by nearby phones, cannot be verified</string>
 </resources>

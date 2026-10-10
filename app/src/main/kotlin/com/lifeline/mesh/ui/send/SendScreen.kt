@@ -262,6 +262,7 @@ fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewMode
         verticalArrangement = Arrangement.spacedBy(Space.l),
     ) {
         Text(stringResource(R.string.sos_greeting), style = Lifeline.type.title, color = c.ink, textAlign = TextAlign.Center)
+        com.lifeline.mesh.ui.components.WarningBanner(packets)
 
         if (statusAlert != null) {
             DeliveryStatusCard(statusAlert, ack, onSendAnother = { vm.dismissStatus(statusAlert.id) })

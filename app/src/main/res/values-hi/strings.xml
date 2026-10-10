@@ -270,4 +270,12 @@
     <string name="noapp_share_preparing">तैयार हो रहा है…</string>
     <string name="noapp_share_title">Lifeline Mesh शेयर करें</string>
     <string name="noapp_share_hint">Quick Share (तेज़) या ब्लूटूथ (धीमा, लगभग 70 MB) चुनें। उनके फ़ोन पर इस स्रोत से ऐप इंस्टॉल करने की अनुमति दें।</string>
+    <!-- Official warnings (10 Oct 2026) -->
+    <string name="warning_channel">आधिकारिक चेतावनियाँ</string>
+    <string name="warning_title">आधिकारिक चेतावनी: %1$s</string>
+    <string name="warning_title_drill">अभ्यास, असली नहीं: %1$s</string>
+    <string name="warning_until">%1$s तक लागू</string>
+    <string name="warning_via_internet">बचाव सर्वर से</string>
+    <string name="warning_source">स्रोत: NDMA SACHET</string>
+    <string name="warning_via_mesh">पास के फ़ोन से मिली, पुष्टि नहीं हो सकती</string>
 </resources>

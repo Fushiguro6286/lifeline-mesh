@@ -116,6 +116,11 @@ fun Packet.toEntity(raw: ByteArray, fromEndpoint: String?, linkHops: Int, mine: 
         is Packet.Ping -> base.copy(refId = refId)
         is Packet.Hello -> base.copy(name = name)
         is Packet.Position -> base.copy(name = name) // never stored; kept total for completeness
+        is Packet.Warning -> base.copy(severity = level, name = event, note = headline) // expiry and drill: see warning()
         is Packet.Summary -> base
     }
 }
+
+/** A stored official warning with every field (expiry and drill come from the raw bytes), or null for other types. */
+fun PacketEntity.warning(): Packet.Warning? =
+    ((com.lifeline.mesh.packet.PacketCodec.decode(rawBytes) as? com.lifeline.mesh.packet.DecodeResult.Ok)?.packet as? Packet.Warning)

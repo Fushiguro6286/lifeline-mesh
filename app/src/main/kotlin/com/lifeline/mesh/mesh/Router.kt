@@ -476,9 +476,10 @@ class Router(
         /** Automatic pings: at most one per 30 s from this phone (see [autoPing]). */
         const val AUTO_PING_GAP_MS = 30_000L
 
-        /** 0 = most urgent. Severity-3 alerts and acks, then alerts, pings, check-ins, reports, hellos. */
+        /** 0 = most urgent. Severity-3 alerts, acks and severe warnings, then alerts, pings, check-ins, reports, hellos. */
         fun priority(p: Packet): Int = when (p) {
             is Packet.Alert -> if (p.severity >= 3) 0 else 1
+            is Packet.Warning -> if (p.level >= 2) 0 else 1
             is Packet.Ack -> 0
             is Packet.Summary -> 0
             is Packet.Ping -> 2
@@ -496,7 +497,7 @@ class Router(
         fun beacon(p: Packet): Boolean = p is Packet.Hello || p is Packet.Position
 
         fun storable(p: Packet): Boolean =
-            p is Packet.Alert || p is Packet.CheckIn || p is Packet.Ack || p is Packet.Report
+            p is Packet.Alert || p is Packet.CheckIn || p is Packet.Ack || p is Packet.Report || p is Packet.Warning
 
         fun label(p: Packet): String = when (p) {
             is Packet.Alert -> "alert"
@@ -506,6 +507,7 @@ class Router(
             is Packet.Ping -> if (p.echo) "ping echo" else "ping"
             is Packet.Hello -> "hello"
             is Packet.Position -> "position"
+            is Packet.Warning -> if (p.drill) "drill warning" else "official warning"
             is Packet.Summary -> "summary"
         }
 

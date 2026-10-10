@@ -125,7 +125,16 @@ fun NoAppCard(sosName: String, modifier: Modifier = Modifier) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var problem by remember { mutableStateOf<Int?>(null) }
     var sharing by remember { mutableStateOf(false) }
-    LaunchedEffect(visibleUntil) { while (System.currentTimeMillis() < visibleUntil) { delay(1_000); now = System.currentTimeMillis() } }
+    LaunchedEffect(visibleUntil, sosName) {
+        var tick = 0
+        while (System.currentTimeMillis() < visibleUntil) {
+            delay(1_000); now = System.currentTimeMillis()
+            // Nearby Connections renames the adapter for its own Bluetooth discovery (seen on the iQOO 15 ~90 s in).
+            // While we are visible, put the SOS name back: nearby strangers must see it. Nearby still finds phones
+            // over BLE and Wi-Fi meanwhile.
+            if (++tick % 3 == 0 && beacon.active && beacon.currentName() != sosName) beacon.start(sosName)
+        }
+    }
 
     val discoverable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         // RESULT_CANCELED = the person said no; any other code is the number of seconds the phone stays visible.

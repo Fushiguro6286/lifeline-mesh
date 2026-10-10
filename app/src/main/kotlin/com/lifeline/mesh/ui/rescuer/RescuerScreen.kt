@@ -180,6 +180,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         item { Spacer(Modifier.height(Space.s)) }
+        item { com.lifeline.mesh.ui.components.WarningBanner(packets) }
         item { Header(ranked, settings.simulationMode) }
         item {
             val facts = remember(ranked, checkIns) { com.lifeline.mesh.ai.SituationReport.facts(ranked, checkIns.size, ::distanceText) }

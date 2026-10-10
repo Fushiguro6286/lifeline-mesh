@@ -186,6 +186,11 @@ class ServerUploader(
                 if (p.assigned) p.id.toULongOrNull(16)?.toLong()?.let { repo.assignedToMe.add(it) }
                 if (repo.receiveFromInternet(bytes)) injected++
             }
+            // Official warnings: into the mesh like any packet (duplicates are dropped by message ID).
+            for (w in feed.warnings) {
+                val bytes = runCatching { com.lifeline.mesh.packet.PacketCodec.encode(SyncFormat.warningPacket(w)) }.getOrNull() ?: continue
+                if (repo.receiveFromInternet(bytes)) injected++
+            }
             _state.update { it.copy(lastPollAt = System.currentTimeMillis(), received = it.received + injected, pollError = null) }
             feed.now
         } catch (e: Exception) {
@@ -267,8 +272,15 @@ data class UploadPacket(
 @Serializable
 data class FeedPacket(val id: String, val raw: String, val assigned: Boolean = false)
 
+/** An official warning in force (NDMA SACHET, or a drill from the server laptop). Times in unix seconds. */
 @Serializable
-data class FeedResponse(val now: Long, val packets: List<FeedPacket> = emptyList())
+data class FeedWarning(
+    val id: String, val event: String = "", val severity: String = "", val headline: String = "", val area: String = "",
+    val sent: Long = 0, val expires: Long = 0, val drill: Boolean = false,
+)
+
+@Serializable
+data class FeedResponse(val now: Long, val packets: List<FeedPacket> = emptyList(), val warnings: List<FeedWarning> = emptyList())
 
 /** Pure mapping and URL rules (unit-tested). */
 object SyncFormat {
@@ -280,6 +292,18 @@ object SyncFormat {
         if (name.isNotBlank()) add("name=" + java.net.URLEncoder.encode(name, "UTF-8"))
         if (lat != null && lon != null) { add("lat=$lat"); add("lon=$lon") }
     }.joinToString("&")
+
+    /**
+     * The mesh packet for an official warning. Same CAP identifier → same message ID on every phone, so copies brought
+     * in by several online phones are dropped as duplicates. TTL 5 like an alert.
+     */
+    fun warningPacket(w: FeedWarning): com.lifeline.mesh.packet.Packet.Warning {
+        val clamp = { t: Long -> t.coerceIn(0, 0xFFFF_FFFFL) }
+        val header = com.lifeline.mesh.packet.Header(com.lifeline.mesh.packet.Warnings.messageId(w.id),
+            com.lifeline.mesh.packet.Warnings.ORIGIN, com.lifeline.mesh.packet.PacketCodec.TTL_DEFAULT, 0, clamp(w.sent))
+        return com.lifeline.mesh.packet.Packet.Warning(header, com.lifeline.mesh.packet.Warnings.level(w.severity), w.drill,
+            clamp(w.expires), w.event, w.headline)
+    }
 
     fun hex64(v: Long) = "%016x".format(v)
     fun hex32(v: Int) = "%08x".format(v)

@@ -17,6 +17,8 @@ enum class PacketType(val code: Int, val relayable: Boolean) {
     HELLO(6, true),
     /** Live position beacon (Phase 10): relayed like a Hello, never stored or uploaded. */
     POSITION(7, true),
+    /** Official disaster warning (10 Oct 2026), brought in by an online phone from the sync server; stored, never uploaded. */
+    WARNING(8, true),
     SUMMARY(15, false);
 
     companion object {
@@ -155,6 +157,28 @@ sealed interface Packet {
         init { require(accuracy in 0..255) }
     }
 
+    /**
+     * An official disaster warning (NDMA SACHET via the sync server). [level] is the issuer's CAP severity (0 Minor,
+     * 1 Moderate, 2 Severe, 3 Extreme); [expires] unix seconds; [drill] = a rehearsal from the server laptop. The header's
+     * message ID is derived from the CAP identifier ([Warnings.messageId]), so every phone that brings in the same
+     * warning makes the same packet and the mesh drops the copies. Links are not authenticated: a phone cannot prove
+     * a warning came from the server, so the app says how it arrived.
+     */
+    data class Warning(
+        override val header: Header,
+        val level: Int,
+        val drill: Boolean,
+        val expires: Long,
+        val event: String,
+        val headline: String,
+    ) : Packet {
+        override val type get() = PacketType.WARNING
+        init {
+            require(level in 0..3) { "level out of range: $level" }
+            require(expires in 0..0xFFFF_FFFFL) { "expires out of range: $expires" }
+        }
+    }
+
     /** Control packet sent once per new link; never relayed. */
     data class Summary(
         override val header: Header,
@@ -174,7 +198,19 @@ fun Packet.withHeader(h: Header): Packet = when (this) {
     is Packet.Ping -> copy(header = h)
     is Packet.Hello -> copy(header = h)
     is Packet.Position -> copy(header = h)
+    is Packet.Warning -> copy(header = h)
     is Packet.Summary -> copy(header = h)
+}
+
+/** Official warnings (10 Oct 2026): fixed origin and deterministic IDs, so copies from many phones are one packet. */
+object Warnings {
+    /** Shown as the sender of every warning; no phone uses it (origins are random per install). */
+    const val ORIGIN = 0x5AC4E700
+    /** CAP severity words to [Packet.Warning.level]. */
+    fun level(severity: String): Int = when (severity.trim().lowercase()) { "extreme" -> 3; "severe" -> 2; "moderate" -> 1; else -> 0 }
+    /** First 8 bytes of SHA-256 of the CAP identifier. */
+    fun messageId(capIdentifier: String): Long =
+        java.nio.ByteBuffer.wrap(java.security.MessageDigest.getInstance("SHA-256").digest(capIdentifier.toByteArray(Charsets.UTF_8))).long
 }
 
 object Geo {

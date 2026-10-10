@@ -9,6 +9,10 @@ fire → fire service, trapped → NDRF, road blocked → police; otherwise any 
 near them with the raw packet bytes, which they inject into their own mesh. Every phone receives replies to its own
 alerts. Distances are straight-line (haversine), like on the phones.
 
+Official warnings (official_warnings.py): the server polls NDMA SACHET's public CAP feeds; Severe and Extreme warnings
+in force go to every phone in GET /api/feed, and phones pass them into the mesh. A drill warning (clearly labelled) can
+be sent from the dashboard on this laptop for rehearsals.
+
 Run:  uvicorn main:app --host 0.0.0.0 --port 8000
 """
 
@@ -17,12 +21,15 @@ import math
 import os
 import sqlite3
 import time
-from contextlib import closing
+from contextlib import asynccontextmanager, closing
 from typing import Literal, Optional
+from urllib.parse import parse_qs
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
+
+import official_warnings as ow
 
 DB_PATH = os.environ.get("LIFELINE_DB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "lifeline.db"))
 
@@ -113,6 +120,7 @@ def init() -> None:
             """CREATE TABLE IF NOT EXISTS assignments (
                 packetId TEXT PRIMARY KEY, teamOrigin TEXT NOT NULL, distanceM REAL, assignedAt INTEGER NOT NULL)"""
         )
+        ow.init(conn)
 
 
 def assign_open_alerts(conn: sqlite3.Connection, now: int) -> None:
@@ -138,7 +146,20 @@ def assign_open_alerts(conn: sqlite3.Connection, now: int) -> None:
 
 
 init()
-app = FastAPI(title="Lifeline Mesh sync")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    ow.start_polling(db)
+    yield
+
+
+app = FastAPI(title="Lifeline Mesh sync", lifespan=lifespan)
+
+
+def warning_json(r: sqlite3.Row) -> dict:
+    return {"id": r["id"], "event": r["event"], "severity": r["severity"], "headline": r["headline"], "area": r["area"],
+            "sent": r["sent"], "expires": r["expires"] or (r["sent"] or 0) + ow.NO_EXPIRY_S, "drill": bool(r["drill"])}
 
 
 @app.post("/api/packets")
@@ -193,7 +214,25 @@ def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[
             (origin, since),
         ):
             out.append({"id": r["id"], "raw": r["raw"], "assigned": False})
-    return {"now": now, "packets": out}
+        warnings = [warning_json(w) for w in ow.active(conn, now // 1000)]
+    return {"now": now, "packets": out, "warnings": warnings}
+
+
+@app.post("/api/warnings/drill")
+async def drill(request: Request):
+    """A rehearsal warning, labelled DRILL on every phone. Only from this laptop (the dashboard form)."""
+    if request.client is None or request.client.host not in ("127.0.0.1", "::1"):
+        raise HTTPException(403, "Drills can only be sent from the server laptop.")
+    form = {k: v[0] for k, v in parse_qs((await request.body()).decode("utf-8")).items()}
+    now = int(time.time())
+    minutes = max(1, min(int(form.get("minutes", "30") or 30), 24 * 60))
+    w = {"id": f"DRILL-{now}", "sender": "Lifeline Mesh drill", "sent": now, "status": "Actual", "msgType": "Alert",
+         "refs": "", "event": (form.get("event") or "Flood")[:40], "severity": "Severe", "urgency": "Immediate",
+         "certainty": "Likely", "headline": (form.get("headline") or "Drill: flood warning for this area.")[:300],
+         "area": "Drill", "expires": now + minutes * 60}
+    with closing(db()) as conn, conn:
+        ow.store(conn, w, "drill", now, drill=True)
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/api/packets")
@@ -243,6 +282,8 @@ def index() -> str:
         assigned = {r["packetId"]: r for r in conn.execute(
             "SELECT a.packetId, a.distanceM, t.role, t.name, t.origin FROM assignments a JOIN teams t ON t.origin = a.teamOrigin")}
         teams = conn.execute("SELECT * FROM teams ORDER BY seenAt DESC").fetchall()
+        in_force = ow.active(conn, now_ms // 1000)
+        recent = conn.execute("SELECT * FROM warnings ORDER BY storedAt DESC, sent DESC LIMIT 8").fetchall()
 
     def alert_row(r: sqlite3.Row) -> str:
         ack = acks.get(r["id"])
@@ -278,6 +319,14 @@ tr.sev3 td:nth-child(4){{color:#ff6b5b;font-weight:700}} tr.sev2 td:nth-child(4)
 </style></head><body>
 <h1>Lifeline Mesh · uploaded from the mesh</h1>
 <p class="muted">{total[0]} packets from {total[1]} phones · refreshes every 5 s · each packet is stored once, however many phones upload it</p>
+<h2>Official warnings sent to phones ({len(in_force)})</h2>
+<p class="muted">NDMA SACHET feeds: {_e(", ".join(ow.status["feeds"]) or "off")} · last check {_t((ow.status["lastPollAt"] or 0) * 1000)}{(" · error: " + _e(ow.status["lastError"])) if ow.status["lastError"] else ""} · only Severe and Extreme warnings in force go to phones</p>
+{simple(in_force, [("Event", lambda w: ("DRILL · " if w["drill"] else "") + _e(w["event"])), ("Severity", lambda w: _e(w["severity"])), ("Headline", lambda w: _e(w["headline"])), ("Until", lambda w: _t((w["expires"] or 0) * 1000))])}
+<p class="muted">Latest received (any severity):</p>
+{simple(recent, [("Event", lambda w: _e(w["event"])), ("Severity", lambda w: _e(w["severity"])), ("Area", lambda w: _e(w["area"])), ("Sent", lambda w: _t((w["sent"] or 0) * 1000))])}
+<form method="post" action="/api/warnings/drill" style="margin-top:10px">
+<input name="event" value="Flood" size="10"> <input name="headline" value="Drill: flood warning for this area. Move to higher ground." size="50">
+<input name="minutes" value="30" size="3"> min <button>Send a drill warning to phones</button></form>
 <h2>Alerts ({len(alerts)})</h2>{alert_table}
 <h2>Teams online ({sum(1 for t in teams if now_ms - t["seenAt"] < ONLINE_MS)})</h2>{simple(teams, [("Team", lambda t: _e(TEAM_NAMES.get(t["role"], "team"))), ("Name", lambda t: _e(t["name"] or t["origin"][-4:])), ("Place", lambda t: "unknown" if t["lat"] is None else f"{t['lat']:.5f}, {t['lon']:.5f}"), ("Last seen", lambda t: _t(t["seenAt"])), ("Online", lambda t: "yes" if now_ms - t["seenAt"] < ONLINE_MS else "no")])}
 <h2>Check-ins ({len(checkins)})</h2>{simple(checkins, [("Sent", lambda r: _t(r["sentAt"])), ("Name", lambda r: _e(r["name"])), ("Place", _place), ("Hops", lambda r: r["hops"])])}

@@ -91,4 +91,18 @@ class SyncFormatTest {
         assertEquals(5L, f.now)
         assertTrue(f.packets.single().assigned)
     }
+
+    @Test fun feedWarningBecomesTheSameMeshPacketOnEveryPhone() {
+        val w = FeedWarning(id = "IN-42_1", event = "Flood", severity = "Severe", headline = "Flood warning", sent = 1_791_600_000, expires = 1_791_603_600)
+        val a = SyncFormat.warningPacket(w); val b = SyncFormat.warningPacket(w)
+        assertEquals(a, b) // two online phones inject one packet; the mesh drops the copy
+        assertEquals(com.lifeline.mesh.packet.Warnings.ORIGIN, a.header.origin)
+        assertEquals(com.lifeline.mesh.packet.PacketCodec.TTL_DEFAULT, a.header.ttl)
+        assertEquals(2, a.level); assertEquals(1_791_603_600L, a.expires); assertFalse(a.drill)
+        val feed = SyncFormat.json.decodeFromString<FeedResponse>(
+            """{"now":1,"packets":[],"warnings":[{"id":"DRILL-1","event":"Flood","severity":"Severe","headline":"h","sent":5,"expires":9,"drill":true,"area":"Drill"}]}""")
+        assertTrue(SyncFormat.warningPacket(feed.warnings.single()).drill)
+        // An older server without warnings still parses.
+        assertTrue(SyncFormat.json.decodeFromString<FeedResponse>("""{"now":1,"packets":[]}""").warnings.isEmpty())
+    }
 }

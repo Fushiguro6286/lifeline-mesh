@@ -237,13 +237,38 @@ this app"):
   or I'm safe, puts the original name back (kept in SharedPreferences, so it survives the app closing). One-way: the
   other person can only see the name. Checked on the iQOO 15: name "SOS · needs help · Piyush", scan mode
   CONNECTABLE_DISCOVERABLE, still set after 30 s, Stop restored "iQOO 15".
-  NOT checked: with simulation off. Nearby Connections may rename the adapter while it advertises over Bluetooth, which
-  could overwrite the SOS name. Test: real mesh running, Show my SOS, then on a second phone open Bluetooth → pair new
-  device and look for the SOS name for the full 5 minutes.
+  With simulation off, see "Bluetooth SOS with the real mesh" below. Still to do: look for the SOS name from a second
+  phone (Bluetooth → pair new device) for the full 5 minutes.
 - Share this app: copies the installed APK (about 69 MB debug) and opens the share sheet. Quick Share is fast;
   Bluetooth takes several minutes. The receiver must allow installing apps from that source. Checked on the iQOO 15:
   share sheet with LifelineMesh.apk, Quick Share, iQOOshare, Bluetooth (nothing sent).
 - The card's Hindi and Kannada texts are machine-drafted: check them with a native speaker.
+
+## Official disaster warnings (added 10 Oct 2026, on request)
+
+- The laptop server polls NDMA SACHET's public CAP feeds (default Karnataka; LIFELINE_SACHET_FEEDS=karnataka,india,...
+  or off; every LIFELINE_SACHET_EVERY=300 s). Only warnings the issuer rated Severe or Extreme, status Actual, not
+  cancelled and not expired go to phones, in GET /api/feed. Every online phone turns each into a Warning packet (type 8)
+  and passes it into the mesh; the message ID comes from the CAP identifier, so copies from several phones are one.
+- Phones that get one (from the server or over the mesh): strong vibration, an alarm notification (own channel, alarm
+  sound), read aloud if on, and a red banner on the SOS and Rescue tabs until it expires. Each says how it arrived:
+  "From the rescue server" or "Passed on by nearby phones, cannot be verified" (links are not authenticated, so any
+  phone with the app could fake one). Real ones add "Source: NDMA SACHET"; drills say "DRILL, not real".
+- Feeds are per state, not per district: the official headline names the districts. The per-warning polygon file
+  answers scripts with 403, so it is not used.
+- Drill for rehearsal and the demo: dashboard on the laptop (http://localhost:8000) → "Send a drill warning to phones"
+  (only from the laptop itself).
+- Checked 10 Oct: a live poll read 10 real Karnataka warnings (all Moderate thunderstorms, so none went to phones).
+  On the iQOO 15 (simulation off, laptop server): a drill reached the phone on its next poll, the alarm notification
+  "DRILL, not real: Flood" showed, and the SOS banner said "In force until 1:06 PM · From the rescue server".
+  NOT checked: a warning travelling over the mesh to a phone with no internet (needs a second phone).
+- Hindi and Kannada warning texts are machine-drafted: check them.
+
+Bluetooth SOS with the real mesh (checked 10 Oct on the iQOO 15): Nearby Connections renamed the adapter to its own code
+about 90 s in. The card now puts the SOS name back every 3 s while the phone is visible; with that the name held for
+3.5 minutes with the mesh running, and Stop restored "iQOO 15", which then stayed. Trade-off: during those minutes
+Nearby's classic-Bluetooth discovery may be weaker (BLE and Wi-Fi are not affected). Stop cannot end the visible window
+early (apps cannot), it runs out by itself.
 
 ## Round trip on the scoreboard (fixed 10 Oct 2026)
 

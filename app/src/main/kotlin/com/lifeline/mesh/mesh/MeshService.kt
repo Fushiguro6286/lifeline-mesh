@@ -73,6 +73,8 @@ class MeshService : Service() {
         private const val CHANNEL_REPLIES = "replies"
         private const val CHANNEL_AMBULANCE = "ambulance"
         private const val CHANNEL_FALL = "fall"
+        private const val CHANNEL_WARNINGS = "warnings"
+        private const val NOTIF_WARNING = 5
         private const val NOTIF_AMBULANCE = 3
         private const val NOTIF_FALL = 4
         private const val ACTION_FALL_OK = "com.lifeline.mesh.FALL_OK"
@@ -478,6 +480,7 @@ class MeshService : Service() {
                 return
             }
             if (!Router.storable(packet)) return
+            if (packet is Packet.Warning && !mine) scope.launch { warningAlarm(packet, viaInternet = fromPeer == Router.INTERNET) }
             if (packet is Packet.Alert && !mine) {
                 val role = repo.settings.value?.role
                 val ambulance = packet.needs and com.lifeline.mesh.packet.Need.AMBULANCE.bit != 0 && role == com.lifeline.mesh.data.Role.AMBULANCE
@@ -576,8 +579,44 @@ class MeshService : Service() {
         if (s?.readAloud == true && !assignedOnly) (application as LifelineApp).readAloud.speak(getString(R.string.notif_amb_say, patients, far), s.language.tag)
     }
 
+    /**
+     * An official warning arrived (first copy only). Severe or Extreme and still in force: strong vibration, an alarm
+     * notification and read aloud. Says how it arrived: from the server, or passed on by nearby phones (not verifiable).
+     */
+    private fun warningAlarm(w: Packet.Warning, viaInternet: Boolean) {
+        if (w.level < 2 || w.expires * 1000 <= System.currentTimeMillis()) return
+        Haptics.strong(this)
+        val title = getString(if (w.drill) R.string.warning_title_drill else R.string.warning_title, w.event.ifBlank { "—" })
+        val until = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(w.expires * 1000))
+        val how = (if (w.drill) "" else getString(R.string.warning_source) + " · ") +
+            getString(if (viaInternet) R.string.warning_via_internet else R.string.warning_via_mesh)
+        val n = NotificationCompat.Builder(this, CHANNEL_WARNINGS)
+            .setSmallIcon(R.drawable.ic_warning)
+            .setContentTitle(title)
+            .setContentText(w.headline)
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${w.headline}\n${getString(R.string.warning_until, until)} · $how"))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(openApp())
+            .build()
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_WARNING, n) }
+        val s = repo.settings.value
+        if (s?.readAloud == true) (application as LifelineApp).readAloud.speak("$title. ${w.headline}", s.language.tag)
+    }
+
     private fun createChannels() {
         val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_WARNINGS, getString(R.string.warning_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 1000, 400, 1000, 400, 1000)
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build(),
+                )
+            }
+        )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_AMBULANCE, "Ambulance requests", NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)

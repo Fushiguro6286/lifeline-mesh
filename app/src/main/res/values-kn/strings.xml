@@ -270,4 +270,12 @@
     <string name="noapp_share_preparing">ಸಿದ್ಧವಾಗುತ್ತಿದೆ…</string>
     <string name="noapp_share_title">Lifeline Mesh ಹಂಚಿಕೊಳ್ಳಿ</string>
     <string name="noapp_share_hint">Quick Share (ವೇಗ) ಅಥವಾ ಬ್ಲೂಟೂತ್ (ನಿಧಾನ, ಸುಮಾರು 70 MB) ಆಯ್ಕೆಮಾಡಿ. ಅವರ ಫೋನ್‌ನಲ್ಲಿ ಈ ಮೂಲದಿಂದ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಲು ಅನುಮತಿಸಿ.</string>
+    <!-- Official warnings (10 Oct 2026) -->
+    <string name="warning_channel">ಅಧಿಕೃತ ಎಚ್ಚರಿಕೆಗಳು</string>
+    <string name="warning_title">ಅಧಿಕೃತ ಎಚ್ಚರಿಕೆ: %1$s</string>
+    <string name="warning_title_drill">ಅಭ್ಯಾಸ, ನಿಜವಲ್ಲ: %1$s</string>
+    <string name="warning_until">%1$s ವರೆಗೆ ಜಾರಿಯಲ್ಲಿದೆ</string>
+    <string name="warning_via_internet">ರಕ್ಷಣಾ ಸರ್ವರ್‌ನಿಂದ</string>
+    <string name="warning_source">ಮೂಲ: NDMA SACHET</string>
+    <string name="warning_via_mesh">ಹತ್ತಿರದ ಫೋನ್‌ಗಳಿಂದ ಬಂದಿದೆ, ಖಚಿತಪಡಿಸಲು ಆಗುವುದಿಲ್ಲ</string>
 </resources>

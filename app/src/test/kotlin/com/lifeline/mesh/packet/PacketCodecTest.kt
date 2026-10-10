@@ -229,7 +229,7 @@ class PacketCodecTest {
     }
 
     @Test fun unknownType() {
-        for (t in listOf(0, 8, 9, 10, 11, 12, 13, 14)) {
+        for (t in listOf(0, 9, 10, 11, 12, 13, 14)) { // 8 = official warning (10 Oct 2026)
             assertTrue("type $t", malformed(raw(0x10 or t, ByteArray(20))).startsWith("unknown type"))
         }
     }
@@ -374,5 +374,47 @@ class PacketCodecTest {
         }
         val sent = (roundTrip(samples[1].second) as Packet.Alert).note
         println("  Hinglish note as sent: \"$sent\"")
+    }
+
+    // ------------------------------------------------------------------ official warnings (type 8)
+
+    @Test fun warningRoundTripAndSize() {
+        val w = Packet.Warning(h, level = 3, drill = false, expires = 1_791_600_000L, event = "Tsunami",
+            headline = "Tsunami warning for the Karnataka coast. Move inland now.")
+        assertEquals(w, roundTrip(w))
+        val bytes = PacketCodec.encode(w)
+        println("warning: ${bytes.size} bytes")
+        assertEquals(PacketCodec.HEADER_SIZE + 7 + "Tsunami".length + w.headline.length, bytes.size)
+        assertTrue(roundTrip(w.copy(drill = true)).let { it is Packet.Warning && it.drill })
+    }
+
+    @Test fun warningTextIsTrimmedOnWholeCharacters() {
+        val w = Packet.Warning(h, 2, false, 1_791_600_000L, event = kannada, headline = hindi.repeat(5))
+        val back = roundTrip(w) as Packet.Warning
+        assertTrue(back.event.toByteArray().size <= PacketCodec.MAX_WARNING_EVENT && kannada.startsWith(back.event))
+        assertTrue(back.headline.toByteArray().size <= PacketCodec.MAX_WARNING_TEXT && hindi.repeat(5).startsWith(back.headline))
+        assertTrue(PacketCodec.encode(w).size <= PacketCodec.MAX_PAYLOAD)
+    }
+
+    @Test fun malformedWarningsAreRejected() {
+        val event = "Flood".toByteArray()
+        fun body(level: Int = 2, flags: Int = 0, eventLen: Int = event.size, text: ByteArray = "x".toByteArray()) =
+            ByteBuffer.allocate(7 + event.size + text.size).apply {
+                put(level.toByte()); put(flags.toByte()); putInt(1_791_600_000); put(eventLen.toByte()); put(event); put(text)
+            }.array()
+        val first = (PacketCodec.VERSION shl 4) or PacketType.WARNING.code
+        assertTrue(PacketCodec.decode(raw(first, body())) is DecodeResult.Ok)
+        assertEquals("level out of range", malformed(raw(first, body(level = 4))))
+        assertEquals("bad warning flags", malformed(raw(first, body(flags = 2))))
+        assertEquals("event too long", malformed(raw(first, body(eventLen = 25))))
+        assertEquals("too short", malformed(raw(first, body(eventLen = 20, text = ByteArray(0)))))
+        assertEquals("too short", malformed(raw(first, byteArrayOf(2, 0, 0))))
+        assertEquals("headline too long", malformed(raw(first, body(text = ByteArray(161) { 'a'.code.toByte() }))))
+    }
+
+    @Test fun warningIdsComeFromTheCapIdentifier() {
+        assertEquals(Warnings.messageId("IN-1791553740889019_19"), Warnings.messageId("IN-1791553740889019_19"))
+        assertTrue(Warnings.messageId("IN-1791553740889019_19") != Warnings.messageId("IN-1791553740889019_20"))
+        assertEquals(3, Warnings.level("Extreme")); assertEquals(2, Warnings.level("severe ")); assertEquals(0, Warnings.level("Unknown"))
     }
 }

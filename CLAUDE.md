@@ -158,6 +158,7 @@ Every packet starts with a 19-byte header:
 | 5 | Ping | referenced message ID (8), echo flag (1) |
 | 6 | Hello | battery % (1), role (1: needs help, 2: volunteer, 3: other rescue team, 4: firefighter, 5: ambulance, 6: police, 7: NDRF; 3 and up are teams), neighbor count (1), neighbor origins (4 each, max 16), display name ≤ 16 bytes |
 | 7 | Position (Phase 10, beacon like Hello: not rate limited, not stored, no events) | lat (4), lon (4), accuracy (1), role (1, as Hello), display name ≤ 16 bytes |
+| 8 | Official warning (10 Oct 2026; brought in by an online phone from the sync server, stored, relayed, never uploaded) | level = CAP severity 0–3 (1), flags bit0 drill (1), expires unix s (4), event length (1), event UTF-8 ≤ 24 bytes, headline UTF-8 ≤ 160 bytes to end. Origin 0x5AC4E700, message ID = first 8 bytes of SHA-256 of the CAP identifier |
 | 15 | Summary (control, never relayed) | count (1), up to 100 message IDs (8 each) |
 
 Needs bitmask: 1 trapped, 2 medical, 4 water or food, 8 fire, 16 road blocked, 32 panic SOS, 64 ambulance requested (Phase 10).

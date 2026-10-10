@@ -32,6 +32,8 @@ object PacketCodec {
     const val MAX_HELLO_NEIGHBORS = 16
     const val MAX_SUMMARY_IDS = 100
     const val MAX_POSITION_NAME = 16
+    const val MAX_WARNING_EVENT = 24
+    const val MAX_WARNING_TEXT = 160
 
     private const val KNOWN_NEEDS_MASK = 0x7F
 
@@ -80,6 +82,14 @@ object PacketCodec {
                 val name = utf8Trimmed(p.name, MAX_POSITION_NAME)
                 ByteBuffer.allocate(10 + name.size).apply {
                     putInt(p.latE6); putInt(p.lonE6); put(p.accuracy.toByte()); put(p.role.code.toByte()); put(name)
+                }.array()
+            }
+            is Packet.Warning -> {
+                val event = utf8Trimmed(p.event, MAX_WARNING_EVENT)
+                val text = utf8Trimmed(p.headline, MAX_WARNING_TEXT)
+                ByteBuffer.allocate(7 + event.size + text.size).apply {
+                    put(p.level.toByte()); put(if (p.drill) 1 else 0); putInt(p.expires.toInt())
+                    put(event.size.toByte()); put(event); put(text)
                 }.array()
             }
             is Packet.Summary -> ByteBuffer.allocate(1 + 8 * p.ids.size).apply {
@@ -189,6 +199,18 @@ object PacketCodec {
                 val lat = buf.lat(); val lon = buf.lon(); val acc = buf.u8()
                 val role = HelloRole.fromCode(buf.u8()) ?: bad("unknown role")
                 Packet.Position(header, lat, lon, acc, role, buf.text(MAX_POSITION_NAME, "name"))
+            }
+            PacketType.WARNING -> {
+                buf.need(7)
+                val level = buf.u8()
+                if (level > 3) bad("level out of range")
+                val drill = when (buf.u8()) { 0 -> false; 1 -> true; else -> bad("bad warning flags") }
+                val expires = buf.int.toLong() and 0xFFFF_FFFFL
+                val eventLen = buf.u8()
+                if (eventLen > MAX_WARNING_EVENT) bad("event too long")
+                buf.need(eventLen)
+                val event = utf8Decode(ByteArray(eventLen).also { buf.get(it) })
+                Packet.Warning(header, level, drill, expires, event, buf.text(MAX_WARNING_TEXT, "headline"))
             }
             PacketType.SUMMARY -> {
                 buf.need(1)
