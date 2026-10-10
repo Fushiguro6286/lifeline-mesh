@@ -187,7 +187,7 @@
 
     <!-- Phase 9: first aid -->
     <string name="firstaid_title">First aid</string>
-    <string name="firstaid_open_body">Vetted guides, shown word for word</string>
+    <string name="firstaid_open_body">Step-by-step help for common injuries</string>
     <string name="firstaid_contact">Contact emergency services if you can.</string>
     <string name="firstaid_missing">First-aid guides have not been added to this app yet.</string>
     <string name="firstaid_ask">What happened?</string>
@@ -242,4 +242,6 @@
     <string name="signin_new">Create a new profile</string>
     <string name="signin_existing">I already have a profile</string>
     <string name="profile_no_name">Profile without a name</string>
+    <string name="firstaid_unreviewed">Not yet reviewed by a medical professional. Trained responders know best: follow them.</string>
+    <string name="firstaid_unreviewed_short">Not yet reviewed by a medical professional</string>
 </resources>

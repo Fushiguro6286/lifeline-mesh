@@ -177,7 +177,7 @@
 
     <!-- Phase 9: first aid -->
     <string name="firstaid_title">ಪ್ರಥಮ ಚಿಕಿತ್ಸೆ</string>
-    <string name="firstaid_open_body">ಪರಿಶೀಲಿಸಿದ ಮಾರ್ಗದರ್ಶಿಗಳು, ಬದಲಾವಣೆ ಇಲ್ಲದೆ</string>
+    <string name="firstaid_open_body">ಸಾಮಾನ್ಯ ಗಾಯಗಳಿಗೆ ಹಂತ ಹಂತದ ಸಹಾಯ</string>
     <string name="firstaid_contact">ಸಾಧ್ಯವಾದರೆ ತುರ್ತು ಸೇವೆಗಳನ್ನು ಸಂಪರ್ಕಿಸಿ.</string>
     <string name="firstaid_missing">ಈ ಆ್ಯಪ್‌ಗೆ ಇನ್ನೂ ಪ್ರಥಮ ಚಿಕಿತ್ಸೆ ಮಾರ್ಗದರ್ಶಿಗಳನ್ನು ಸೇರಿಸಿಲ್ಲ.</string>
     <string name="firstaid_ask">ಏನಾಯಿತು?</string>
@@ -232,4 +232,6 @@
     <string name="signin_new">ಹೊಸ ಪ್ರೊಫೈಲ್ ರಚಿಸಿ</string>
     <string name="signin_existing">ನನಗೆ ಈಗಾಗಲೇ ಪ್ರೊಫೈಲ್ ಇದೆ</string>
     <string name="profile_no_name">ಹೆಸರಿಲ್ಲದ ಪ್ರೊಫೈಲ್</string>
+    <string name="firstaid_unreviewed">ಇದನ್ನು ಇನ್ನೂ ವೈದ್ಯಕೀಯ ತಜ್ಞರು ಪರಿಶೀಲಿಸಿಲ್ಲ. ತರಬೇತಿ ಪಡೆದ ರಕ್ಷಕರಿಗೆ ಚೆನ್ನಾಗಿ ತಿಳಿದಿದೆ: ಅವರನ್ನು ಅನುಸರಿಸಿ.</string>
+    <string name="firstaid_unreviewed_short">ಇನ್ನೂ ವೈದ್ಯಕೀಯ ತಜ್ಞರು ಪರಿಶೀಲಿಸಿಲ್ಲ</string>
 </resources>

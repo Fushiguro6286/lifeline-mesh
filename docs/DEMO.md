@@ -188,7 +188,17 @@ Open the Mesh tab on each.
   Settings → Measurements. The Benchmarks screen has no entry point any more. CLAUDE.md demo step 7 (AI card,
   Benchmarks) and Export measurements need a new way in if they are still wanted for the demo.
 
-## Demo steps
+## First aid guides (added 10 Oct 2026, on request)
+
+- SOS tab → First aid: 17 English guides (most serious first), search box ("What happened?", on-device pick or keywords,
+  English plus some Hindi/Hinglish/Kannada words), every guide shown word for word with its source and "Contact
+  emergency services if you can." Checked on the iQOO 15: list, search ("twisted my ankle" → Sprains, picked on device),
+  opening CPR from the list.
+- **Before the demo: have a doctor, nurse or certified first-aid trainer read all 17 guides** in
+  `app/src/main/assets/firstaid.json`, fix anything they want changed, then set `"reviewed": true` on each checked
+  guide. Until then each guide says "Not yet reviewed by a medical professional". Emergency numbers used: 112 (and 108
+  for an ambulance).
+
 
 Not ready. The 3-minute script in CLAUDE.md section 14 needs phases 2 to 7.
 

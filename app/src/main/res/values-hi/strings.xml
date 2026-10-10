@@ -177,7 +177,7 @@
 
     <!-- Phase 9: first aid -->
     <string name="firstaid_title">प्राथमिक उपचार</string>
-    <string name="firstaid_open_body">जाँची हुई जानकारी, बिना बदलाव</string>
+    <string name="firstaid_open_body">आम चोटों के लिए कदम-दर-कदम मदद</string>
     <string name="firstaid_contact">अगर हो सके तो आपातकालीन सेवाओं से संपर्क करें।</string>
     <string name="firstaid_missing">इस ऐप में अभी प्राथमिक उपचार की जानकारी नहीं जोड़ी गई है।</string>
     <string name="firstaid_ask">क्या हुआ?</string>
@@ -232,4 +232,6 @@
     <string name="signin_new">नई प्रोफ़ाइल बनाएँ</string>
     <string name="signin_existing">मेरी प्रोफ़ाइल पहले से है</string>
     <string name="profile_no_name">बिना नाम की प्रोफ़ाइल</string>
+    <string name="firstaid_unreviewed">अभी किसी चिकित्सा विशेषज्ञ ने इसकी जाँच नहीं की है। प्रशिक्षित बचावकर्मी बेहतर जानते हैं: उनकी बात मानें।</string>
+    <string name="firstaid_unreviewed_short">अभी चिकित्सा विशेषज्ञ ने जाँच नहीं की है</string>
 </resources>

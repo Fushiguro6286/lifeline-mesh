@@ -3,9 +3,19 @@ package com.lifeline.mesh.ai
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** One vetted first-aid guide from assets/firstaid.json (SETUP.md 8). [text] is shown verbatim, never rewritten. */
+/**
+ * One first-aid guide from assets/firstaid.json (SETUP.md 8). [text] is shown verbatim, never rewritten.
+ * [reviewed] stays false until a medical professional has checked the guide; until then the screen says so.
+ */
 @Serializable
-data class FirstAidEntry(val id: String, val title: String, val keywords: List<String> = emptyList(), val text: String, val source: String)
+data class FirstAidEntry(
+    val id: String,
+    val title: String,
+    val keywords: List<String> = emptyList(),
+    val text: String,
+    val source: String,
+    val reviewed: Boolean = false,
+)
 
 /**
  * First aid (CLAUDE.md 9.7, rule 10). The app never writes medical text: entries come only from the supplied file.

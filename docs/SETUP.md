@@ -220,7 +220,7 @@ Hindi and Kannada fall back to the phone's system Noto fonts.
 
 ## 8. Vetted first-aid text
 
-`app/src/main/assets/firstaid.json`, about five entries I will supply from a trusted source (for example national disaster-management or Red Cross guidance), each with: `id`, `title`, `keywords`, `text`, `source`. Claude Code must not write medical content itself.
+`app/src/main/assets/firstaid.json`: 17 English guides (CPR, recovery position, choking, heavy bleeding, electric shock, burns, broken bone, head bump, bites and stings, animal bite, eye, fainting, cuts, sprains, nosebleed, bruises, splinters), each with `id`, `title`, `keywords`, `text`, `source`, `reviewed`. Drafted by Claude Code on 10 Oct 2026 at my request from published Red Cross / St John / NHS / WHO guidance, ordered most serious first. `reviewed` stays false (the app shows "Not yet reviewed by a medical professional") until a qualified person has checked the guide; only they set it to true.
 
 ---
 

@@ -39,7 +39,7 @@ Lifeline Mesh is an Android app that keeps emergency alerts moving when cell tow
 7. **Keep it simple.** Plain code, few files, no DI framework, no feature outside this file without asking me.
 8. **Verify current APIs and versions.** Check official docs before using Nearby Connections, LiteRT-LM, MapLibre, Android permissions and foreground services. Tell me if anything here is out of date.
 9. **Commit after each working step** with a clear message.
-10. **Medical safety.** The first-aid helper only quotes vetted text I supply, never generates medical advice, and always says to contact emergency services if possible.
+10. **Medical safety.** The first-aid helper only quotes the guide text in `assets/firstaid.json`, never generates medical advice, and always says to contact emergency services if possible. (10 Oct 2026, my decision: Claude Code drafted the 17 guides from published Red Cross / St John / NHS / WHO guidance. Each has `"reviewed": false` and the app shows "Not yet reviewed by a medical professional" until a qualified person checks it and sets it to true. Claude Code must not mark a guide reviewed.)
 11. **Design matters.** Follow `docs/DESIGN.md`. The app must look intentional and calm under stress, not like a default template.
 
 ---
@@ -239,7 +239,7 @@ Chat screen for rescuers. Prompt includes only the ranked merged alerts as numbe
 Translate alert notes for the rescuer and ack notes for the sender. Label "Machine translated". Fallback: original text.
 
 ### 9.7 First aid (last priority)
-Load `assets/firstaid.json` (I will supply about five vetted entries). The LLM only picks which entry matches the question (returns an entry ID). Show the entry text verbatim plus "Contact emergency services if you can." If no match, say so.
+Load `assets/firstaid.json` (17 English guides drafted from published guidance, each flagged unreviewed until a medical professional checks it; see rule 10). The LLM only picks which entry matches the question (returns an entry ID). Show the entry text verbatim plus "Contact emergency services if you can." If no match, say so.
 
 ### 9.8 LLM engine and model selection
 - Follow `docs/MODEL_SELECTOR.md` exactly: `DeviceProfiler` reads the phone, `ModelShortlist` (pure Kotlin, unit-tested) filters the ladder, `ModelSelector` loads and probes installed candidates (speed probe, then per-language probe), keeps the first that passes, and saves the result. No model passes → rules only.

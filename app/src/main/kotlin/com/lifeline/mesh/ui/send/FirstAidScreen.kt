@@ -135,7 +135,10 @@ fun FirstAidScreen() {
                             .clickable(role = Role.Button) { pick = Pick.Found(e, byModel = false); question = "" }.padding(Space.l),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(e.title, style = Lifeline.type.bodyStrong, color = c.ink, modifier = Modifier.weight(1f))
+                        Column(Modifier.weight(1f)) {
+                            Text(e.title, style = Lifeline.type.bodyStrong, color = c.ink)
+                            if (!e.reviewed) Text(stringResource(R.string.firstaid_unreviewed_short), style = Lifeline.type.caption, color = c.inkMuted)
+                        }
                         Icon(painterResource(R.drawable.ic_chevron_right), null, tint = c.inkMuted)
                     }
                 }
@@ -145,7 +148,7 @@ fun FirstAidScreen() {
     }
 }
 
-/** The guide word for word, its source, and the emergency line again under it. */
+/** The guide word for word (with the not-reviewed warning when it applies), its source, and the emergency line again. */
 @Composable
 private fun EntryCard(e: FirstAidEntry, pickedBy: String) {
     val c = Lifeline.colors
@@ -154,6 +157,7 @@ private fun EntryCard(e: FirstAidEntry, pickedBy: String) {
         verticalArrangement = Arrangement.spacedBy(Space.s),
     ) {
         Text(e.title, style = Lifeline.type.title, color = c.ink, modifier = Modifier.semantics { heading() })
+        if (!e.reviewed) Text(stringResource(R.string.firstaid_unreviewed), style = Lifeline.type.caption, color = c.warn)
         Text(e.text, style = Lifeline.type.body, color = c.ink)
         Text(stringResource(R.string.firstaid_source, e.source), style = Lifeline.type.caption, color = c.inkMuted)
         Text(stringResource(R.string.firstaid_contact), style = Lifeline.type.bodyStrong, color = c.warn)

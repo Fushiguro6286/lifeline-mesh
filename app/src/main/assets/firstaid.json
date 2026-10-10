@@ -1,0 +1,282 @@
+[
+  {
+    "id": "cpr",
+    "title": "CPR (not responding, not breathing)",
+    "keywords": [
+      "cpr",
+      "not breathing",
+      "no breathing",
+      "heart attack",
+      "cardiac",
+      "saans nahi",
+      "सांस नहीं",
+      "ಉಸಿರು"
+    ],
+    "text": "1. Check it is safe. Shout and gently shake their shoulders. If they do not respond and are not breathing normally, call 112 and put the phone on speaker.\n2. Kneel next to them. Put the heel of one hand in the centre of the chest, the other hand on top, and lock your fingers.\n3. With straight arms, push down hard, about 5 to 6 cm, then let the chest come back up. Push fast, about 2 times every second.\n4. Keep going without stopping until help arrives, the person starts breathing normally, or you are too tired to continue. Swap with someone every 2 minutes if you can.\n5. If you are trained, give 2 rescue breaths after every 30 pushes.",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and resuscitation council guidance",
+    "reviewed": false
+  },
+  {
+    "id": "recovery_position",
+    "title": "Recovery position (not responding, but breathing)",
+    "keywords": [
+      "recovery position",
+      "unconscious",
+      "unresponsive",
+      "not waking"
+    ],
+    "text": "1. Kneel next to them while they lie on their back.\n2. Put the arm nearest you at a right angle to their body, palm up.\n3. Bring their other arm across their chest and hold the back of that hand against the cheek nearest you.\n4. Bend their far knee up, then pull on that knee to roll them onto their side towards you.\n5. Tilt the head back slightly and lift the chin so the airway stays open.\n6. Call 112 and keep checking their breathing until help arrives. If they stop breathing normally, use the 'CPR' guide.\n\nGet medical help now if:\n• Do not use this position if you think the neck or back is hurt, unless you must, to keep the airway open.",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "choking",
+    "title": "Choking (adult or child over 1 year)",
+    "keywords": [
+      "choke",
+      "choking",
+      "stuck in throat",
+      "gale mein",
+      "गले में",
+      "ಗಂಟಲು"
+    ],
+    "text": "1. If they can cough, tell them to keep coughing.\n2. If they cannot cough, speak or breathe: stand behind them, lean them forward, and give up to 5 firm blows between the shoulder blades with the heel of your hand.\n3. If that does not work: stand behind them, put a fist just above the belly button, hold it with your other hand, and pull sharply inwards and upwards. Do this up to 5 times.\n4. If it is still stuck after 3 rounds of back blows and thrusts, call 112, then keep going until help arrives.\n5. If they stop responding, call 112 and use the 'CPR' guide.\n6. Babies under 1 year: do not use belly thrusts. Lay the baby face down along your forearm, support the head, and give up to 5 back blows; then turn the baby over and give up to 5 chest pushes with two fingers in the middle of the chest.\n\nGet medical help now if:\n• anyone who was given belly thrusts should be checked by a doctor",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "heavy_bleeding",
+    "title": "Heavy bleeding",
+    "keywords": [
+      "bleeding",
+      "blood",
+      "bleed",
+      "deep cut",
+      "khoon",
+      "खून",
+      "ರಕ್ತ"
+    ],
+    "text": "1. Call 112 (or 108 for an ambulance), or ask someone else to call.\n2. Press firmly on the wound with a clean cloth, or your hand if nothing else is there. Keep pressing; do not lift it to look.\n3. If blood soaks through, put another cloth on top and keep pressing. Do not remove the first one.\n4. If something is stuck in the wound, do not pull it out. Press on both sides of it instead.\n5. Help the person lie down and keep them warm. Pale, cold, sweaty skin and fast breathing are signs of shock.\n6. Keep pressing until help arrives.",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "electric_shock",
+    "title": "Electric shock",
+    "keywords": [
+      "electric",
+      "shock",
+      "current",
+      "karant",
+      "करंट",
+      "ವಿದ್ಯುತ್"
+    ],
+    "text": "1. Do not touch the person while they are still touching the electricity.\n2. Switch off the power at the switch, plug or main switch if you can.\n3. If you cannot, stand on something dry like wood, rubber or thick paper, and push the source away from them with something dry that is not metal, like a wooden stick.\n4. Stay at least 20 metres away from fallen high-voltage power lines and wait for help.\n5. Call 112. When it is safe, check breathing: if not breathing normally, use the 'CPR' guide; if breathing, use the 'Recovery position' guide.\n6. Cool any burns with running water for 20 minutes.\n\nGet medical help now if:\n• always: everyone who had an electric shock should be checked by a doctor",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "burns",
+    "title": "Burns and scalds",
+    "keywords": [
+      "burn",
+      "scald",
+      "fire",
+      "hot water",
+      "jal gaya",
+      "jala",
+      "जल गया",
+      "जला",
+      "ಸುಟ್ಟ"
+    ],
+    "text": "1. Move away from the heat. Take off rings, watches and tight clothing near the burn, unless they are stuck to the skin.\n2. Cool the burn under cool or lukewarm running water for 20 minutes. Do not use ice, butter, toothpaste, oil or creams.\n3. Keep the person warm while you cool the burn.\n4. Cover the burn loosely with cling film, a clean plastic bag, or a clean cloth that does not shed fluff. Do not wrap it tightly.\n5. Do not burst blisters.\n\nGet medical help now if:\n• the burn is bigger than the person's hand\n• it is on the face, hands, feet, joints or private parts\n• the skin looks white, brown or black, or the burn does not hurt\n• it was caused by chemicals or electricity, or the person breathed in smoke\n• the person is a young child, elderly, or unwell",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "broken_bone",
+    "title": "Possible broken bone",
+    "keywords": [
+      "broken",
+      "fracture",
+      "bone",
+      "haddi",
+      "टूट",
+      "हड्डी",
+      "ಮೂಳೆ"
+    ],
+    "text": "1. Call 112 or 108 for a broken leg, hip, back or neck, or if bone is showing through the skin.\n2. Keep the person still. Do not try to straighten the limb or push a bone back in.\n3. Support the injured part in the position you found it, with rolled clothes or cushions around it.\n4. If bone or a wound is showing, cover it with a clean cloth and press around it, not on the bone.\n5. If the neck or back may be hurt, do not move the person unless they are in danger. Keep their head and neck still.\n6. Keep them warm. Do not give food or drink, in case they need an operation.",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "head_bump",
+    "title": "Bump on the head",
+    "keywords": [
+      "head",
+      "concussion",
+      "sir pe",
+      "सिर",
+      "ತಲೆ"
+    ],
+    "text": "1. Help the person sit down and rest.\n2. Hold a cold pack wrapped in a cloth on the bump for up to 20 minutes.\n3. Someone should stay with them and watch them closely for the next 24 hours.\n\nGet medical help now if:\n• they were knocked out, even for a moment\n• they vomit, are confused, very sleepy or hard to wake\n• they have a headache that keeps getting worse, a fit, or problems seeing, speaking or walking\n• clear fluid or blood comes from the nose or ears\n• the neck hurts: then do not move them, keep the head and neck still and call 112",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "bites_stings",
+    "title": "Insect bites and stings",
+    "keywords": [
+      "sting",
+      "bee",
+      "wasp",
+      "insect",
+      "mosquito",
+      "keeda",
+      "डंक",
+      "मधुमक्खी",
+      "ಕುಟುಕು",
+      "ಜೇನು"
+    ],
+    "text": "1. Move away from the insects.\n2. If a bee sting is left in the skin, scrape it out sideways with a fingernail or the edge of a card. Do not squeeze it.\n3. Wash the area with soap and water.\n4. Hold a cold pack wrapped in a cloth on it for at least 10 minutes. Raise the area if it is swollen.\n5. Try not to scratch.\n\nGet medical help now if:\n• the person has trouble breathing or swallowing, or a hoarse voice\n• the face, lips, tongue or throat swell\n• they feel faint or dizzy, or a rash spreads over the body\n• they were stung in the mouth or throat\n• If they carry an adrenaline auto-injector for allergies, help them use it and call 112.",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "animal_bite",
+    "title": "Dog or other animal bite",
+    "keywords": [
+      "dog",
+      "animal",
+      "bite",
+      "monkey",
+      "cat bite",
+      "bat",
+      "rabies",
+      "kutta",
+      "kaata",
+      "कुत्ता",
+      "कुत्ते",
+      "काटा",
+      "बंदर",
+      "ನಾಯಿ",
+      "ಕಚ್ಚಿ"
+    ],
+    "text": "1. Get away from the animal.\n2. Wash the wound with soap and plenty of running water for about 15 minutes.\n3. Press with a clean cloth to stop bleeding, then cover with a clean dressing.\n4. Go to a doctor or health centre the same day for any bite or scratch that breaks the skin. Rabies injections may be needed, and they work only if given early. Do not wait for symptoms.\n\nGet medical help now if:\n• the bite is deep or bleeding heavily (use the 'Heavy bleeding' guide)\n• it is on the face, head, neck, hands or private parts",
+    "source": "Based on World Health Organization rabies guidance and British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "eye",
+    "title": "Something in the eye",
+    "keywords": [
+      "eye",
+      "dust",
+      "grit",
+      "aankh",
+      "आंख",
+      "आँख",
+      "ಕಣ್ಣು"
+    ],
+    "text": "1. Do not rub the eye.\n2. Wash your hands. Ask the person to blink several times.\n3. Rinse the eye with clean water: tilt the head so the hurt eye is lower, and pour water from the inner corner outwards.\n4. If a chemical got in the eye, rinse it with clean running water for at least 20 minutes and get medical help.\n5. Do not try to remove anything stuck in the eye or on the coloured part. Cover the eye lightly and get help.\n\nGet medical help now if:\n• something is stuck in the eye\n• the person cannot see properly, or pain continues after rinsing\n• a chemical got in the eye",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "fainting",
+    "title": "Fainting",
+    "keywords": [
+      "faint",
+      "dizzy",
+      "passed out",
+      "behosh",
+      "बेहोश",
+      "ಮೂರ್ಛೆ"
+    ],
+    "text": "1. If someone feels faint, help them sit or lie down.\n2. If they have fainted, lay them on their back and raise their legs, for example on a bag.\n3. Give them fresh air and loosen tight clothing.\n4. When they wake, let them rest and get up slowly.\n\nGet medical help now if:\n• they do not wake up within a minute or two: check breathing. If breathing, use the 'Recovery position' guide and call 112. If not breathing normally, call 112 and use the 'CPR' guide\n• they were hurt when they fell, or they have chest pain\n• they faint again, or are pregnant",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "cuts_scrapes",
+    "title": "Small cuts and scrapes",
+    "keywords": [
+      "cut",
+      "scrape",
+      "graze",
+      "scratch",
+      "chot",
+      "चोट",
+      "कट",
+      "ಗಾಯ"
+    ],
+    "text": "1. Wash your hands if you can.\n2. Press on the cut with a clean cloth until it stops bleeding, usually a few minutes.\n3. Rinse the wound under clean running water. Remove dirt you can see, but do not dig into the wound.\n4. Pat dry and cover with a clean plaster or dressing.\n5. Keep it clean and dry. Change the dressing every day, or sooner if it gets wet or dirty.\n\nGet medical help now if:\n• it is still bleeding after 10 minutes of firm pressure\n• it is deep or gaping, or there is glass or dirt you cannot remove\n• it was caused by a rusty or dirty object, or an animal (a tetanus injection may be needed)\n• it later becomes red, swollen, hot, smelly or full of pus",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "sprain",
+    "title": "Sprains and strains (twisted ankle, wrist or knee)",
+    "keywords": [
+      "sprain",
+      "strain",
+      "twist",
+      "ankle",
+      "wrist",
+      "knee",
+      "moch",
+      "मोच",
+      "ಉಳುಕು"
+    ],
+    "text": "1. Stop and rest the injured part.\n2. Hold a cold pack on it for up to 20 minutes. Wrap ice or a cold pack in a cloth; never put ice directly on the skin. Repeat every 2 to 3 hours for the first day or two.\n3. Support it with a soft bandage that is firm but not tight.\n4. Raise the injured part on a pillow when you can.\n\nGet medical help now if:\n• the person cannot put any weight on it or cannot move it\n• it looks bent or out of shape, or there was a crack at the time of injury\n• it is numb, tingling, cold or blue\n• pain and swelling keep getting worse",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "nosebleed",
+    "title": "Nosebleed",
+    "keywords": [
+      "nosebleed",
+      "nose bleed",
+      "nose bleeding",
+      "nose",
+      "naak",
+      "naak se khoon",
+      "नाक",
+      "नाक से खून",
+      "ಮೂಗು"
+    ],
+    "text": "1. Sit down and lean forward. Do not tip the head back.\n2. Pinch the soft part of the nose, just above the nostrils, for 10 to 15 minutes without letting go. Breathe through the mouth.\n3. Spit out any blood instead of swallowing it.\n4. When it stops, avoid blowing the nose, lifting or bending down for the next few hours.\n\nGet medical help now if:\n• it is still bleeding after 20 minutes of pinching\n• the bleeding is very heavy, or the person is finding it hard to breathe\n• it started after a hit to the head\n• the person takes blood-thinning medicine",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  },
+  {
+    "id": "bruise",
+    "title": "Bruises and bumps (not on the head)",
+    "keywords": [
+      "bruise",
+      "bump",
+      "swelling",
+      "sujan",
+      "सूजन",
+      "ನೀಲಿ"
+    ],
+    "text": "1. Rest the injured part.\n2. Hold a cold pack wrapped in a cloth on it for up to 20 minutes.\n3. Raise the injured part if you can, to reduce swelling.\n\nGet medical help now if:\n• pain is very bad, or the person cannot move the part normally (it may be broken)\n• the bruise appeared without an injury, or the person takes blood-thinning medicine\n• the bump is on the head: use the 'Bump on the head' guide",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance",
+    "reviewed": false
+  },
+  {
+    "id": "splinter",
+    "title": "Splinters",
+    "keywords": [
+      "splinter",
+      "thorn",
+      "kaanta",
+      "कांटा",
+      "ಮುಳ್ಳು"
+    ],
+    "text": "1. Wash your hands and clean the area with soap and water.\n2. If part of the splinter sticks out, grip it with clean tweezers close to the skin and pull it out at the same angle it went in.\n3. Squeeze gently to let a little blood flow, then wash again and cover with a plaster.\n4. Do not dig deep into the skin to reach it.\n\nGet medical help now if:\n• it is deep, large, or made of glass or metal\n• it is under a nail, near the eye, or will not come out\n• the area becomes red, swollen, hot or full of pus",
+    "source": "Based on British Red Cross and St John Ambulance first aid guidance and NHS (UK) health guidance",
+    "reviewed": false
+  }
+]
