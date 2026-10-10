@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only the measurement exports are shareable (Settings → Export measurements). -->
+<!-- Shareable: the measurement exports (Settings → Export measurements) and this app's APK (SOS tab → Share this app). -->
 <paths>
     <files-path name="exports" path="exports/" />
+    <cache-path name="share" path="share/" />
 </paths>

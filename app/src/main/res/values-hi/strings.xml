@@ -253,4 +253,21 @@
     <string name="status_arrived">वे पहुँच गए हैं</string>
     <string name="status_on_the_way">वे रास्ते में हैं</string>
     <string name="status_arrived_body">वे आपके अलर्ट में दी गई जगह पर पहुँच गए हैं (75 मीटर के अंदर)। हो सके तो आवाज़ दें या हाथ हिलाएँ।</string>
+    <!-- Phones without the app (SOS tab, 10 Oct 2026) -->
+    <string name="noapp_title">जिन फ़ोन में यह ऐप नहीं है</string>
+    <string name="noapp_body">पास का कोई भी व्यक्ति अपनी ब्लूटूथ सूची खोलकर आपका SOS देख सकता है, ऐप के बिना भी।</string>
+    <string name="noapp_show">ब्लूटूथ सूची में मेरा SOS दिखाएँ</string>
+    <string name="noapp_showing">आपका फ़ोन इस नाम से दिखता है: %1$s</string>
+    <string name="noapp_visible_for">पास के फ़ोन को %1$d:%2$02d तक दिखेगा</string>
+    <string name="noapp_not_visible">अभी नहीं दिख रहा। फिर से दिखाएँ दबाएँ (हर बार 5 मिनट)।</string>
+    <string name="noapp_show_again">फिर से दिखाएँ</string>
+    <string name="noapp_stop">बंद करें और फ़ोन का नाम वापस करें</string>
+    <string name="noapp_bt_missing">इस फ़ोन में ब्लूटूथ नहीं है।</string>
+    <string name="noapp_bt_permission">पहले सेटिंग्स में इस ऐप को पास के डिवाइस की अनुमति दें।</string>
+    <string name="noapp_bt_off">पहले ब्लूटूथ चालू करें।</string>
+    <string name="noapp_bt_failed">ब्लूटूथ का नाम नहीं बदल सका।</string>
+    <string name="noapp_share">यह ऐप शेयर करें (इंटरनेट नहीं चाहिए)</string>
+    <string name="noapp_share_preparing">तैयार हो रहा है…</string>
+    <string name="noapp_share_title">Lifeline Mesh शेयर करें</string>
+    <string name="noapp_share_hint">Quick Share (तेज़) या ब्लूटूथ (धीमा, लगभग 70 MB) चुनें। उनके फ़ोन पर इस स्रोत से ऐप इंस्टॉल करने की अनुमति दें।</string>
 </resources>

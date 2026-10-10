@@ -253,4 +253,21 @@
     <string name="status_arrived">ಅವರು ಬಂದಿದ್ದಾರೆ</string>
     <string name="status_on_the_way">ಅವರು ದಾರಿಯಲ್ಲಿದ್ದಾರೆ</string>
     <string name="status_arrived_body">ನಿಮ್ಮ ಎಚ್ಚರಿಕೆಯಲ್ಲಿ ನೀಡಿದ ಸ್ಥಳಕ್ಕೆ ಅವರು ತಲುಪಿದ್ದಾರೆ (75 ಮೀ ಒಳಗೆ). ಸಾಧ್ಯವಾದರೆ ಕೂಗಿ ಅಥವಾ ಕೈ ಬೀಸಿ.</string>
+    <!-- Phones without the app (SOS tab, 10 Oct 2026) -->
+    <string name="noapp_title">ಈ ಆ್ಯಪ್ ಇಲ್ಲದ ಫೋನ್‌ಗಳು</string>
+    <string name="noapp_body">ಹತ್ತಿರದ ಯಾರಾದರೂ ತಮ್ಮ ಬ್ಲೂಟೂತ್ ಪಟ್ಟಿ ತೆರೆದರೆ, ಆ್ಯಪ್ ಇಲ್ಲದಿದ್ದರೂ ನಿಮ್ಮ SOS ನೋಡಬಹುದು.</string>
+    <string name="noapp_show">ಬ್ಲೂಟೂತ್ ಪಟ್ಟಿಯಲ್ಲಿ ನನ್ನ SOS ತೋರಿಸಿ</string>
+    <string name="noapp_showing">ನಿಮ್ಮ ಫೋನ್ ಈ ಹೆಸರಿನಲ್ಲಿ ಕಾಣುತ್ತದೆ: %1$s</string>
+    <string name="noapp_visible_for">ಹತ್ತಿರದ ಫೋನ್‌ಗಳಿಗೆ %1$d:%2$02d ವರೆಗೆ ಕಾಣುತ್ತದೆ</string>
+    <string name="noapp_not_visible">ಈಗ ಕಾಣುತ್ತಿಲ್ಲ. ಮತ್ತೆ ತೋರಿಸಿ ಒತ್ತಿ (ಪ್ರತಿ ಬಾರಿ 5 ನಿಮಿಷ).</string>
+    <string name="noapp_show_again">ಮತ್ತೆ ತೋರಿಸಿ</string>
+    <string name="noapp_stop">ನಿಲ್ಲಿಸಿ ಮತ್ತು ಫೋನ್ ಹೆಸರು ಮರಳಿ ಹಾಕಿ</string>
+    <string name="noapp_bt_missing">ಈ ಫೋನ್‌ನಲ್ಲಿ ಬ್ಲೂಟೂತ್ ಇಲ್ಲ.</string>
+    <string name="noapp_bt_permission">ಮೊದಲು ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಈ ಆ್ಯಪ್‌ಗೆ ಹತ್ತಿರದ ಸಾಧನಗಳ ಅನುಮತಿ ನೀಡಿ.</string>
+    <string name="noapp_bt_off">ಮೊದಲು ಬ್ಲೂಟೂತ್ ಆನ್ ಮಾಡಿ.</string>
+    <string name="noapp_bt_failed">ಬ್ಲೂಟೂತ್ ಹೆಸರು ಬದಲಾಯಿಸಲು ಆಗಲಿಲ್ಲ.</string>
+    <string name="noapp_share">ಈ ಆ್ಯಪ್ ಹಂಚಿಕೊಳ್ಳಿ (ಇಂಟರ್ನೆಟ್ ಬೇಡ)</string>
+    <string name="noapp_share_preparing">ಸಿದ್ಧವಾಗುತ್ತಿದೆ…</string>
+    <string name="noapp_share_title">Lifeline Mesh ಹಂಚಿಕೊಳ್ಳಿ</string>
+    <string name="noapp_share_hint">Quick Share (ವೇಗ) ಅಥವಾ ಬ್ಲೂಟೂತ್ (ನಿಧಾನ, ಸುಮಾರು 70 MB) ಆಯ್ಕೆಮಾಡಿ. ಅವರ ಫೋನ್‌ನಲ್ಲಿ ಈ ಮೂಲದಿಂದ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಲು ಅನುಮತಿಸಿ.</string>
 </resources>

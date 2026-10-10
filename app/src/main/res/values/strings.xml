@@ -263,4 +263,21 @@
     <string name="status_arrived">They are here</string>
     <string name="status_on_the_way">They are on the way</string>
     <string name="status_arrived_body">They reached the place your alert gave (within 75 m). Call out or wave if you can.</string>
+    <!-- Phones without the app (SOS tab, 10 Oct 2026) -->
+    <string name="noapp_title">Phones without this app</string>
+    <string name="noapp_body">Anyone nearby who opens their Bluetooth list can see your SOS, even without the app.</string>
+    <string name="noapp_show">Show my SOS in Bluetooth lists</string>
+    <string name="noapp_showing">Your phone shows as: %1$s</string>
+    <string name="noapp_visible_for">Visible to nearby phones for %1$d:%2$02d</string>
+    <string name="noapp_not_visible">Not visible right now. Tap Show again (5 minutes each time).</string>
+    <string name="noapp_show_again">Show again</string>
+    <string name="noapp_stop">Stop and restore my phone name</string>
+    <string name="noapp_bt_missing">This phone has no Bluetooth.</string>
+    <string name="noapp_bt_permission">Allow Nearby devices for this app in Settings first.</string>
+    <string name="noapp_bt_off">Turn on Bluetooth first.</string>
+    <string name="noapp_bt_failed">Could not change the Bluetooth name.</string>
+    <string name="noapp_share">Share this app (no internet needed)</string>
+    <string name="noapp_share_preparing">Preparing…</string>
+    <string name="noapp_share_title">Share Lifeline Mesh</string>
+    <string name="noapp_share_hint">Choose Quick Share (fast) or Bluetooth (slow, about 70 MB). On their phone, allow installing apps from this source.</string>
 </resources>

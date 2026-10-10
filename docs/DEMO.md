@@ -227,6 +227,24 @@ Walk-apart test (2 phones, simulation off, location on, outdoors, Mesh tab open 
 3. When the stationary phone shows the other as lost, walk back. The Mesh tab keeps the farthest distance measured.
 4. Repeat indoors, and with Wi-Fi off (Bluetooth only), and write the numbers in docs/MEASUREMENTS.md.
 
+## Phones without the app (added 10 Oct 2026, on request)
+
+A phone without the app cannot receive mesh messages, so the SOS tab offers two things instead (card "Phones without
+this app"):
+- Show my SOS in Bluetooth lists: the phone's Bluetooth name becomes e.g. "SOS · trapped+medical · 3 ppl · Asha"
+  (from my latest alert, at most 40 characters, English on purpose) and the system asks to make it visible. Android
+  caps that at 300 s per request (SDK 36.1 BluetoothAdapter docs), so the card counts down and offers Show again. Stop,
+  or I'm safe, puts the original name back (kept in SharedPreferences, so it survives the app closing). One-way: the
+  other person can only see the name. Checked on the iQOO 15: name "SOS · needs help · Piyush", scan mode
+  CONNECTABLE_DISCOVERABLE, still set after 30 s, Stop restored "iQOO 15".
+  NOT checked: with simulation off. Nearby Connections may rename the adapter while it advertises over Bluetooth, which
+  could overwrite the SOS name. Test: real mesh running, Show my SOS, then on a second phone open Bluetooth → pair new
+  device and look for the SOS name for the full 5 minutes.
+- Share this app: copies the installed APK (about 69 MB debug) and opens the share sheet. Quick Share is fast;
+  Bluetooth takes several minutes. The receiver must allow installing apps from that source. Checked on the iQOO 15:
+  share sheet with LifelineMesh.apk, Quick Share, iQOOshare, Bluetooth (nothing sent).
+- The card's Hindi and Kannada texts are machine-drafted: check them with a native speaker.
+
 ## Round trip on the scoreboard (fixed 10 Oct 2026)
 
 - Before: only the Mesh debug panel's "Send ping" measured a round trip, so the Mesh tab tile stayed "Not measured".
