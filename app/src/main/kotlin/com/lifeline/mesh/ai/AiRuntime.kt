@@ -204,7 +204,7 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
     /** A model answer that cites existing alerts; null = use the rule-based answer. */
     suspend fun ask(question: String, ranked: List<com.lifeline.mesh.triage.RankedAlert>): MeshAnswer? = nonEssential { e ->
         val r = e.generate(AskMesh.request(question, ranked))
-        (if (r.ok) AskMesh.validate(r.text, minOf(ranked.size, 25)) else null) to r
+        (if (r.ok) AskMesh.validate(r.text, minOf(ranked.size, 25), AskMesh.numbers(ranked)) else null) to r
     }
 
     /** Translation into [target]; null = keep the original. */

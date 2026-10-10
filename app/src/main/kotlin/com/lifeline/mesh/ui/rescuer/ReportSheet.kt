@@ -62,11 +62,14 @@ fun ReportSheet(onDismiss: () -> Unit) {
     fun send(t: ReportType) {
         if (sending) return
         sending = true
+        // The note as it is now: the button's click handler can outlive the composition that typed it (found on the
+        // iQOO 15, 11 Oct 2026: every report went out with an empty note).
+        val text = PacketCodec.trimToBytes(note.trim(), PacketCodec.MAX_REPORT_NOTE)
         scope.launch {
             val fix = (loc ?: location.best(repo.myFix.value)).fix
             repo.originate { h ->
                 Packet.Report(h, fix?.let { Geo.toE6(it.lat) } ?: 0, fix?.let { Geo.toE6(it.lon) } ?: 0,
-                    fix?.let { Geo.accuracyStep(it.accuracyM) } ?: Geo.ACCURACY_UNKNOWN, t, sentNote)
+                    fix?.let { Geo.accuracyStep(it.accuracyM) } ?: Geo.ACCURACY_UNKNOWN, t, text)
             }
             onDismiss()
         }

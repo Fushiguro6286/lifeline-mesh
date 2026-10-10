@@ -28,7 +28,8 @@ object AskMesh {
 
     fun request(question: String, ranked: List<RankedAlert>) = LlmRequest(
         feature = "ask",
-        system = "Answer using ONLY the numbered alerts below. Cite alerts like #1. If none match, reply \"$NO_MATCH\"\nAlerts:\n" +
+        system = "Answer in one or two plain sentences using ONLY the numbered alerts below. Cite alerts like #1. Do not " +
+            "copy the alert lines and do not add up or invent numbers. If none match, reply \"$NO_MATCH\"\nAlerts:\n" +
             ranked.take(25).joinToString("\n") { line(it) },
         user = question,
         maxTokens = LlmLimits.ASK_TOKENS,
@@ -37,14 +38,24 @@ object AskMesh {
 
     fun citations(text: String): List<Int> = Regex("#(\\d+)").findAll(text).map { it.groupValues[1].toInt() }.distinct().toList()
 
-    /** Accept only answers that cite, and cite nothing that does not exist. */
-    fun validate(answer: String, count: Int): MeshAnswer? {
+    /**
+     * Accept only answers that cite, and cite nothing that does not exist. Also (11 Oct 2026, seen on the iQOO 15) not
+     * a copy of the alert lines ("#2 trapped, medical | 2 people | …"), and no number that is not in the alerts
+     * ([allowed], from [numbers]): a total like "7 people trapped" is the rule answer's job, added up in Kotlin.
+     */
+    fun validate(answer: String, count: Int, allowed: Set<String>? = null): MeshAnswer? {
         val t = answer.trim()
         if (t.isBlank() || t.length > 800) return null
+        if (t.contains('|') || t.contains("note:")) return null
         val c = citations(t)
         if (c.isEmpty() || c.any { it !in 1..count }) return null
+        if (allowed != null && Regex("(?<![#\\d.])\\d+(\\.\\d+)?").findAll(t).any { it.value !in allowed }) return null
         return MeshAnswer(t, c, fromModel = true)
     }
+
+    /** Every number written in the alert lines the model was given (people, distances, ranks, report counts). */
+    fun numbers(ranked: List<RankedAlert>): Set<String> =
+        ranked.take(25).flatMap { r -> Regex("\\d+(\\.\\d+)?").findAll(line(r)).map { it.value }.toList() }.toSet()
 
     // ------------------------------------------------------------------ rule-based answers
 

@@ -57,7 +57,8 @@ fun SignInScreen(
     val canSubmit = selected != null && password.isNotEmpty() && !checking
     fun submit() {
         val id = selected ?: return
-        if (!canSubmit) return
+        // Live state, not the composition-time canSubmit: a click handler can outlive the composition it came from.
+        if (password.isEmpty() || checking) return
         checking = true
         scope.launch {
             wrong = !onSignIn(id, password)

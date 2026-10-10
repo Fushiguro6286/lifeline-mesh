@@ -142,7 +142,8 @@ fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String)
                 textStyle = Lifeline.type.body,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text(stringResource(R.string.detail_sent_to, minOf(a.count, 5)), style = Lifeline.type.caption, color = c.inkMuted)
+            val n = minOf(a.count, 5)
+            Text(androidx.compose.ui.res.pluralStringResource(R.plurals.detail_sent_to, n, n), style = Lifeline.type.caption, color = c.inkMuted)
             PrimaryButton(
                 stringResource(if (a.acked) R.string.detail_send_again else R.string.detail_send),
                 { onSend(eta, note) },

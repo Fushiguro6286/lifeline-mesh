@@ -152,7 +152,10 @@
     <string name="detail_note_hint">Optional note, e.g. Boat on the way</string>
     <string name="detail_send">Send help is coming</string>
     <string name="detail_send_again">Send again</string>
-    <string name="detail_sent_to">Goes to %d phones that reported this</string>
+    <plurals name="detail_sent_to">
+        <item quantity="one">Goes to the phone that reported this</item>
+        <item quantity="other">Goes to the %d phones that reported this</item>
+    </plurals>
     <string name="ago_now">just now</string>
     <string name="ago_min">%d min ago</string>
     <string name="ago_hour">%d h ago</string>

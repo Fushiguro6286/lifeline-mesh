@@ -87,6 +87,15 @@ class AskMeshFallbackTest {
         assertNull(AskMesh.validate("", 5))
     }
 
+    // Seen on the iQOO 15: the model copied a prompt line, and answered a count with one alert's number.
+    @Test fun copiedLinesAndMadeUpNumbersAreRejected() {
+        val allowed = AskMesh.numbers(alerts)
+        assertNull(AskMesh.validate("#1 trapped, medical | 5 people | 0.3 km | urgent", 5, allowed))
+        assertNull(AskMesh.validate("12 people are trapped in #1 and #3.", 5, allowed))   // 12 is not in the alerts
+        assertEquals(listOf(1, 3), AskMesh.validate("Help #1 first: 5 people are trapped there, then #3.", 5, allowed)!!.cites)
+        assertEquals(listOf(1), AskMesh.validate("Alert #1 is 0.3 km away.", 5, allowed)!!.cites)
+    }
+
     @Test fun promptHoldsOnlyNumberedAlerts() {
         val req = AskMesh.request("Who first?", alerts)
         assertTrue(req.system.contains("#1 trapped, medical | 5 people | 0.3 km | urgent | not acknowledged | note: \"Water rising, elderly man ill\""))
