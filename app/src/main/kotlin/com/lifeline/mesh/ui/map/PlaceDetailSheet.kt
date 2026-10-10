@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -143,9 +144,10 @@ private fun HeadingBlock(
         )
         !settings.role.isTeam -> Text(stringResource(R.string.place_heading_other), style = Lifeline.type.body, color = c.ink)
         else -> {
+            val res = LocalResources.current
             val needs = com.lifeline.mesh.packet.Need.fromMask(target?.needs ?: 0)
             val what = if (com.lifeline.mesh.packet.Need.PANIC in needs) stringResource(R.string.alert_panic)
-            else needs.joinToString(" · ") { context.getString(it.labelRes()) }
+            else needs.joinToString(" · ") { res.getString(it.labelRes()) }
             val people = target?.people?.takeIf { it > 0 }?.let { if (it == 1) stringResource(R.string.alert_one_person) else stringResource(R.string.alert_people, it) }
             Text(stringResource(R.string.place_heading, listOfNotNull(what.ifBlank { null }, people).joinToString(", ").ifBlank { "an alert" }),
                 style = Lifeline.type.bodyStrong, color = c.link)

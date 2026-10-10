@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -103,10 +104,10 @@ fun NeedIcons(a: MergedAlert) {
 
 @Composable
 fun needsText(a: MergedAlert): String {
-    val context = LocalContext.current
+    val res = LocalResources.current
     if (Need.PANIC in a.needs) return stringResource(R.string.alert_panic)
-    val ambulance = if (Need.AMBULANCE in a.needs) listOf(context.getString(R.string.need_ambulance)) else emptyList()
-    return (ambulance + Need.selectable.filter { it in a.needs }.map { context.getString(it.labelRes()) }).joinToString(" · ")
+    val ambulance = if (Need.AMBULANCE in a.needs) listOf(res.getString(R.string.need_ambulance)) else emptyList()
+    return (ambulance + Need.selectable.filter { it in a.needs }.map { res.getString(it.labelRes()) }).joinToString(" · ")
 }
 
 @Composable

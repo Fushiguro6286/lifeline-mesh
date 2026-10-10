@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -44,12 +45,12 @@ import com.lifeline.mesh.ui.theme.Space
 @Composable
 fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: () -> Unit, modifier: Modifier = Modifier, language: String = "en") {
     val c = Lifeline.colors
-    val context = LocalContext.current
+    val res = LocalResources.current
     val acked = alert.acked || ack != null
     val eta = ack?.eta ?: alert.ackEta
     val needs = Need.fromMask(alert.needs ?: 0)
     val what = if (Need.PANIC in needs) stringResource(R.string.status_panic)
-    else needs.filter { it != Need.PANIC }.joinToString(" · ") { n -> context.getString(n.labelRes()) }
+    else needs.filter { it != Need.PANIC }.joinToString(" · ") { n -> res.getString(n.labelRes()) }
 
     Column(
         modifier.fillMaxWidth()

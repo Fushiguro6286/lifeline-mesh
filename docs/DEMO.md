@@ -26,7 +26,7 @@ Living document. Updated at the end of every phase.
   in Kotlin (straight line × detour at an assumed speed, always labelled "estimate"), team views on the Rescue tab
   ("For you" chips), urgent ambulance requests (SOS tab and First aid) with an alarm on Ambulance phones, and the
   internet relay (server assigns each alert to the nearest online team of its type; phones poll every 15 s).
-- 176 unit tests pass.
+- 209 unit tests pass (25 suites, 10 Oct); debug build and lint clean of errors.
 - Verified on the iQOO 15 (10 Oct, by Claude over adb): mesh service runs as connectedDevice|location (types 0x18);
   in simulation, Kiran (ambulance) shows on Map/Rings for a "needs help" phone while Meena and Ravi stay hidden; as
   Ambulance, the Rescue tab opens on "For you (Ambulance)" with "About 4 min by road · estimate"; Ravi's simulated
