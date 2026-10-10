@@ -635,3 +635,26 @@ Relay gap finder (mesh/RelayGaps.kt; Mesh tab banner "N relay gaps in the mesh" 
   weak points on the simulated layout, articulation points with negative origins.
 - The on-device model does not phrase these yet: the sentences are fixed text from the computed numbers.
 
+## Where to go, and who goes where (added 10 Oct 2026, on request)
+
+Where to go (SOS tab card, Map tab green route; triage/Shelters.kt, ui/send/ShelterCard.kt):
+- Community reports "shelter open", "shelter full" and "water" within 100 m of each other are one place; the newest
+  report decides open or full. Of the 4 nearest open shelters, the one quickest to walk to wins, timed on the offline
+  map's roads at 4 km/h around reported blocked roads ("goes around 1 blocked road"). Full ones are skipped and counted.
+  The nearest water point is listed too. Rescue-team phones do not draw the route.
+- Simulation: the script now reports two shelters (Divya: "School hall open, 200 beds", about 550 m; Lakshmi: "Temple
+  hall open, 80 places", about 1.2 km) and a water tanker (Ravi). Mesh tab "Fill the nearest shelter": the school hall
+  is reported full, and every phone's card and route switch to the temple hall.
+- SheltersTest: merging and newest-decides, reopening, water kept apart, quickest beats nearest.
+
+Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/DispatchCard.kt):
+- Jobs a team already accepted stay with it and keep it busy (travel plus 15 min on scene). The other open alerts go,
+  most urgent first, to the team of the right type (ambulance for medical, fire service for fire, NDRF for trapped,
+  police for blocked roads; "Other team" for anything) that gets there soonest, counting its earlier jobs.
+  Straight-line estimates. No team of that type in reach: the nearest other team, and the card says so. Ties go to the
+  lower origin, so every team phone suggests the same split from the same reports and positions.
+- A job suggested for this phone has "Take it", which sends "help is coming" with that estimate.
+- DispatchTest: two medical jobs to two ambulances, a free far team beating a busy near one, urgency and team type,
+  accepted jobs kept, fallback to another type, no position, no teams, ties.
+- NOT checked on the phone yet.
+

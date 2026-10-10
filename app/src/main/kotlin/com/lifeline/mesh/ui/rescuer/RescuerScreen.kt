@@ -211,6 +211,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
             SituationReportCard(facts)
         }
         item { PlanCard(settings, ranked) }
+        item { DispatchCard(settings, ranked) }
         item { PrimaryButtonRow(onAsk) }
         item { SectionTitle(stringResource(R.string.rescue_alerts) + if (ranked.isEmpty()) "" else " · ${ranked.size}") }
         if (ranked.isEmpty()) {
