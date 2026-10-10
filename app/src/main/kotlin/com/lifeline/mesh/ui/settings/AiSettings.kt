@@ -57,6 +57,8 @@ fun AiSettingsCard(onBenchmarks: () -> Unit) {
     var progress by remember { mutableStateOf<Pair<String, Float>?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var why by rememberSaveable { mutableStateOf(false) }
+    // Remove needs a second tap: this card is also on the "How it works" screen shown on stage.
+    var confirmRemove by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) scope.launch {
@@ -135,7 +137,10 @@ fun AiSettingsCard(onBenchmarks: () -> Unit) {
                 })
             }
             sel?.chosenId?.let { id -> ai.catalog.firstOrNull { it.id == id } }?.let { m ->
-                SecondaryButton("Remove ${m.name}", { ai.remove(m); message = "Removed ${m.name}." })
+                SecondaryButton(if (confirmRemove) "Tap again to remove ${m.name}" else "Remove ${m.name}", {
+                    if (!confirmRemove) confirmRemove = true
+                    else { confirmRemove = false; ai.remove(m); message = "Removed ${m.name}." }
+                })
             }
             SecondaryButton("Benchmarks", onBenchmarks)
         }

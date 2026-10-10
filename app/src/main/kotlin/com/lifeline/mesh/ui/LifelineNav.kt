@@ -72,6 +72,8 @@ import kotlin.reflect.KClass
 @Serializable object GalleryRoute
 @Serializable object DebugRoute
 @Serializable object AskRoute
+@Serializable object BenchmarksRoute
+@Serializable object HowItWorksRoute
 @Serializable object FirstAidRoute
 
 private data class Tab(
@@ -121,6 +123,10 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
                     simulated = settings.simulationMode,
                     trailing = if (onTab) {
                         {
+                            // Demo mode: one tap from any tab to the measured "How it works" screen for judges.
+                            if (settings.demoMode) IconButton(onClick = { nav.navigate(HowItWorksRoute) { launchSingleTop = true } }) {
+                                Icon(painterResource(R.drawable.ic_speed), "How it works", tint = c.link)
+                            }
                             IconButton(onClick = { nav.navigate(SettingsRoute) { launchSingleTop = true } }) {
                                 Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.nav_settings), tint = c.ink)
                             }
@@ -155,12 +161,15 @@ fun MainScaffold(settings: Settings, repository: AppRepository) {
                     onPermissions = { nav.navigate(PermissionsRoute) },
                     onGallery = { nav.navigate(GalleryRoute) },
                     onDebug = { nav.navigate(DebugRoute) },
+                    onHowItWorks = { nav.navigate(HowItWorksRoute) },
                 )
             }
             composable<PermissionsRoute> {
                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.screen)) { PermissionsChecklist() }
             }
             composable<GalleryRoute> { ComponentGallery() }
+            composable<HowItWorksRoute> { com.lifeline.mesh.ui.settings.HowItWorksScreen(onBenchmarks = { nav.navigate(BenchmarksRoute) }) }
+            composable<BenchmarksRoute> { com.lifeline.mesh.ui.settings.BenchmarksScreen() }
             composable<AskRoute> { com.lifeline.mesh.ui.rescuer.AskMeshScreen() }
             composable<FirstAidRoute> { com.lifeline.mesh.ui.send.FirstAidScreen() }
         }
@@ -186,6 +195,8 @@ private fun SubScreenTitle(destination: androidx.navigation.NavDestination?, onB
         destination?.hasRoute(GalleryRoute::class) == true -> stringResource(R.string.settings_gallery)
         destination?.hasRoute(DebugRoute::class) == true -> stringResource(R.string.settings_debug)
         destination?.hasRoute(AskRoute::class) == true -> "Ask the mesh"
+        destination?.hasRoute(HowItWorksRoute::class) == true -> "How it works"
+        destination?.hasRoute(BenchmarksRoute::class) == true -> "Benchmarks"
         destination?.hasRoute(FirstAidRoute::class) == true -> stringResource(R.string.firstaid_title)
         else -> ""
     }

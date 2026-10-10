@@ -63,6 +63,7 @@ fun SettingsScreen(
     onPermissions: () -> Unit,
     onGallery: () -> Unit,
     onDebug: () -> Unit,
+    onHowItWorks: () -> Unit,
 ) {
     val c = Lifeline.colors
     val focus = LocalFocusManager.current
@@ -126,6 +127,9 @@ fun SettingsScreen(
             settings.simulationMode, repository::setSimulationMode)
         SwitchRow(R.drawable.ic_speed, stringResource(R.string.settings_demo), stringResource(R.string.settings_demo_body),
             settings.demoMode, repository::setDemoMode)
+        if (settings.demoMode) LinkRow(R.drawable.ic_speed, "How it works",
+            "For the presentation: the last alert step by step, the on-device AI model and why, GPU vs CPU, and the CSV export. " +
+                "Also one tap from the top bar while Demo mode is on.", onHowItWorks)
         SwitchRow(R.drawable.ic_volume_up, "Read aloud", "Reads the question on the review sheet and \"Help is coming\" replies out loud.",
             settings.readAloud, repository::setReadAloud)
 
