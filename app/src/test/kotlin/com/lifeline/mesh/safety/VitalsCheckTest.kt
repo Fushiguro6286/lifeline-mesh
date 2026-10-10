@@ -56,4 +56,27 @@ class VitalsCheckTest {
         assertEquals(true, VitalsCheck.outOfRange(VitalReading(BLOOD_PRESSURE, 120.0, now, 125.0)))
         assertEquals(false, VitalsCheck.outOfRange(VitalReading(OXYGEN, 95.0, now)))
     }
+
+    /** One reading a second, like a Bluetooth watch. */
+    private fun stream(kind: VitalReading.Kind, values: List<Double>, endAt: Long = now) =
+        values.mapIndexed { i, v -> VitalReading(kind, v, endAt - (values.size - 1 - i) * 1_000L) }
+
+    @Test fun liveHeartRateMustStayHighForThirtySeconds() {
+        assertNull(VitalsCheck.check(stream(HEART_RATE, List(10) { 160.0 }), now)) // 9 s: a spike, no alarm
+        assertNull(VitalsCheck.check(stream(HEART_RATE, List(20) { 160.0 } + 90.0 + List(20) { 160.0 }), now)) // broken run
+        assertEquals("Heart rate 160/min", VitalsCheck.check(stream(HEART_RATE, List(31) { 160.0 }), now)?.reason)
+    }
+
+    @Test fun liveOxygenMustStayLowForFifteenSecondsButASpotCheckCountsAtOnce() {
+        assertNull(VitalsCheck.check(stream(OXYGEN, List(20) { 97.0 } + List(5) { 86.0 }), now)) // 4 s low: probably motion
+        assertEquals("Blood oxygen 86%", VitalsCheck.check(stream(OXYGEN, List(20) { 97.0 } + List(16) { 86.0 }), now)?.reason)
+        assertEquals("Blood oxygen 86%", VitalsCheck.check(listOf(VitalReading(OXYGEN, 97.0, now - 20 * min), VitalReading(OXYGEN, 86.0, now)), now)?.reason)
+    }
+
+    @Test fun quietPeriodAfterAnAlarm() {
+        val r = stream(OXYGEN, List(30) { 85.0 })
+        val first = VitalsCheck.check(r, now)!!
+        // The service skips readings up to the alarm time plus QUIET_MS; the same low stream does not ring again.
+        assertNull(VitalsCheck.check(r, now, afterMs = first.readingAtMs + VitalsCheck.QUIET_MS))
+    }
 }

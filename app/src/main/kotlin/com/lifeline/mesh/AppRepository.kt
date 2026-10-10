@@ -62,6 +62,14 @@ class AppRepository(
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
     fun setFallDetection(on: Boolean) = scope.launch { settingsStore.setFallDetection(on) }
     fun setWatchVitals(on: Boolean) = scope.launch { settingsStore.setWatchVitals(on) }
+    /** Keep this Bluetooth watch connected (null = disconnect and forget). The mesh service does the connecting. */
+    fun setWatch(address: String?, name: String = "") = scope.launch { settingsStore.setWatch(address, name) }
+    /** The live Bluetooth link, written by the mesh service. */
+    val watchState = MutableStateFlow<com.lifeline.mesh.safety.WatchState>(com.lifeline.mesh.safety.WatchState.None)
+    /** Readings that arrived over Bluetooth in the last 30 minutes (memory only), oldest first. */
+    val liveVitals = MutableStateFlow<List<com.lifeline.mesh.safety.VitalReading>>(emptyList())
+    /** Simulated watch controls for the stage demo ("low_oxygen", "normal", "lose"); handled by the mesh service. */
+    val simWatchCommands = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 4)
     /** Watch vitals: when Health Connect was last read and how many readings came back (Settings shows it). */
     val lastVitalsCheck = MutableStateFlow<Pair<Long, Int>?>(null)
     /** Live weather from the server's last answer, and when it arrived here (wall ms). Memory only. */

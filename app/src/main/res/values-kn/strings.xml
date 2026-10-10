@@ -306,4 +306,35 @@
     <string name="health_ago">%1$d ನಿಮಿಷ ಹಿಂದೆ</string>
     <string name="health_alarm">ಅಲಾರಂ</string>
     <string name="health_alarm_body">ತುಂಬಾ ಅಸಹಜ ರೀಡಿಂಗ್‌ಗೆ 15 ಸೆಕೆಂಡ್ ಅಲಾರಂ, ನಂತರ ತುರ್ತು ಆಂಬ್ಯುಲೆನ್ಸ್ ವಿನಂತಿ. ಮಿತಿಗಳನ್ನು ಇನ್ನೂ ವೈದ್ಯರು ಪರಿಶೀಲಿಸಿಲ್ಲ.</string>
+    <!-- Bluetooth watch, live (10 Oct 2026) -->
+    <string name="watch_channel">ವಾಚ್ ಸಂಪರ್ಕ</string>
+    <string name="watch_lost_title">ವಾಚ್ ಸಂಪರ್ಕ ಕಳೆದುಹೋಯಿತು</string>
+    <string name="watch_lost_body">%1$s %2$s ಕ್ಕೆ ಸಂಪರ್ಕ ಕಡಿದುಕೊಂಡಿತು. ನಿಮ್ಮ ಆರೋಗ್ಯವನ್ನು ಈಗ ಗಮನಿಸಲಾಗುತ್ತಿಲ್ಲ. ಹತ್ತಿರ ಬಂದಾಗ ಫೋನ್ ಮತ್ತೆ ಸಂಪರ್ಕಿಸುತ್ತದೆ.</string>
+    <string name="watch_live_title">ವಾಚ್‌ನಿಂದ ಲೈವ್</string>
+    <string name="watch_connect">ಬ್ಲೂಟೂತ್ ವಾಚ್ ಸಂಪರ್ಕಿಸಿ</string>
+    <string name="watch_connect_body">ಪ್ರಮಾಣಿತ ಬ್ಲೂಟೂತ್ ಆರೋಗ್ಯ ಡೇಟಾ ಇರುವ ವಾಚ್, ಬ್ಯಾಂಡ್, ಫಿಂಗರ್ ಆಕ್ಸಿಮೀಟರ್ ಮತ್ತು ಬಿಪಿ ಯಂತ್ರಗಳಿಂದ ರಿಯಲ್ ಟೈಮ್ (ಹಲವು ವಾಚ್‌ಗಳಲ್ಲಿ ಹೃದಯ ಬಡಿತ ಬ್ರಾಡ್‌ಕಾಸ್ಟ್ ಆನ್ ಮಾಡಿ). Samsung, Apple ಮತ್ತು vivo ವಾಚ್‌ಗಳು: ಕೆಳಗಿನ Health Connect ಬಳಸಿ.</string>
+    <string name="watch_connecting">%1$s ಗೆ ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ…</string>
+    <string name="watch_connected">%1$s ನಿಂದ ಲೈವ್</string>
+    <string name="watch_lost">%1$s ಸಂಪರ್ಕ %2$s ಕ್ಕೆ ಕಳೆದುಹೋಯಿತು. ನಿಮ್ಮ ಆರೋಗ್ಯವನ್ನು ಈಗ ಗಮನಿಸಲಾಗುತ್ತಿಲ್ಲ. ಹತ್ತಿರ ಬಂದಾಗ ಮತ್ತೆ ಸಂಪರ್ಕಿಸುತ್ತದೆ.</string>
+    <string name="watch_no_data">%1$s ನಲ್ಲಿ ಪ್ರಮಾಣಿತ ಬ್ಲೂಟೂತ್ ಆರೋಗ್ಯ ಡೇಟಾ ಇಲ್ಲ. ವಾಚ್‌ನಲ್ಲಿ ಹೃದಯ ಬಡಿತ ಬ್ರಾಡ್‌ಕಾಸ್ಟ್ ಆನ್ ಮಾಡಿ, ಅಥವಾ Health Connect ಬಳಸಿ.</string>
+    <string name="watch_disconnect">ಸಂಪರ್ಕ ಕಡಿತಗೊಳಿಸಿ</string>
+    <string name="watch_now">ಈಗ</string>
+    <string name="watch_seconds_ago">%1$d ಸೆಕೆಂಡ್ ಹಿಂದೆ</string>
+    <string name="watch_waiting">ಮೊದಲ ರೀಡಿಂಗ್‌ಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ…</string>
+    <string name="watch_sim_low">ಕಡಿಮೆ ಆಮ್ಲಜನಕ ಅನುಕರಿಸಿ</string>
+    <string name="watch_sim_normal">ಸಾಮಾನ್ಯಕ್ಕೆ ಮರಳಿ</string>
+    <string name="watch_sim_lose">ವಾಚ್ ಕಳೆದುಹೋಗುವುದನ್ನು ಅನುಕರಿಸಿ</string>
+    <string name="watch_sim_note">ಅನುಕರಿಸಿದ ವಾಚ್: ಅಲಾರಂ ವರ್ಚುವಲ್ ಫೋನ್‌ಗಳಿಗೆ ಮಾತ್ರ ಹೋಗುತ್ತದೆ.</string>
+    <string name="watch_pick_title">ನಿಮ್ಮ ವಾಚ್ ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="watch_pick_scanning">ಹತ್ತಿರದ ವಾಚ್‌ಗಳನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ… ವಾಚ್ ಹತ್ತಿರ ಇಡಿ, ಬ್ಲೂಟೂತ್ ಮತ್ತು ಹೃದಯ ಬಡಿತ ಬ್ರಾಡ್‌ಕಾಸ್ಟ್ ಆನ್ ಇರಲಿ.</string>
+    <string name="watch_pick_none">ಇನ್ನೂ ಏನೂ ಸಿಕ್ಕಿಲ್ಲ.</string>
+    <string name="watch_pick_simulated">ಅನುಕರಿಸಿದ ವಾಚ್</string>
+    <string name="watch_pick_simulated_body">ಅಭ್ಯಾಸ ಮತ್ತು ಡೆಮೊಗಾಗಿ (ಸಿಮ್ಯುಲೇಶನ್ ಮೋಡ್ ಮಾತ್ರ). ಪ್ರತಿ ರೀಡಿಂಗ್‌ಗೆ ಅನುಕರಿಸಲಾಗಿದೆ ಎಂದು ಗುರುತು.</string>
+    <string name="watch_pick_off">ಮೊದಲು ಬ್ಲೂಟೂತ್ ಆನ್ ಮಾಡಿ.</string>
+    <string name="watch_pick_not_allowed">ಮೊದಲು ಈ ಆ್ಯಪ್‌ಗೆ ಹತ್ತಿರದ ಸಾಧನಗಳ ಅನುಮತಿ ನೀಡಿ (ಸೆಟ್ಟಿಂಗ್ಸ್ → ಅನುಮತಿಗಳು).</string>
+    <string name="watch_pick_no_bt">ಈ ಫೋನ್‌ನಲ್ಲಿ ಬ್ಲೂಟೂತ್ ಇಲ್ಲ.</string>
+    <string name="watch_kind_hr">ಹೃದಯ ಬಡಿತ</string>
+    <string name="watch_kind_oxygen">ಆಮ್ಲಜನಕ</string>
+    <string name="watch_kind_bp">ರಕ್ತದೊತ್ತಡ</string>
+    <string name="health_from_hc">Health Connect ನಿಂದ</string>
 </resources>

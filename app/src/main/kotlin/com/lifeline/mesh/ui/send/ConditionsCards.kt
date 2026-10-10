@@ -2,6 +2,11 @@ package com.lifeline.mesh.ui.send
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
+import com.lifeline.mesh.safety.WatchState
+import com.lifeline.mesh.safety.WatchScanner
+import com.lifeline.mesh.safety.SIMULATED_WATCH
+import com.lifeline.mesh.safety.FoundWatch
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -130,6 +135,8 @@ fun HealthCard(settings: Settings) {
     val now = System.currentTimeMillis()
 
     CardColumn(R.drawable.ic_health_and_safety, stringResource(R.string.health_title)) {
+        LiveWatchSection(settings)
+        Text(stringResource(R.string.health_from_hc), style = Lifeline.type.label, color = c.inkMuted, modifier = Modifier.padding(top = Space.s))
         when (status) {
             null -> Text(stringResource(R.string.health_checking), style = Lifeline.type.body, color = c.inkMuted)
             WatchVitals.Status.UNAVAILABLE -> Text(stringResource(R.string.health_unavailable), style = Lifeline.type.body, color = c.inkMuted)
@@ -140,32 +147,152 @@ fun HealthCard(settings: Settings) {
             }
             WatchVitals.Status.READY -> {
                 if (readings.isEmpty()) Text(stringResource(R.string.health_none), style = Lifeline.type.body, color = c.inkMuted)
-                listOf(
-                    VitalReading.Kind.OXYGEN to R.string.health_oxygen,
-                    VitalReading.Kind.HEART_RATE to R.string.health_heart,
-                    VitalReading.Kind.BLOOD_PRESSURE to R.string.health_pressure,
-                ).forEach { (kind, label) ->
-                    val r = readings.filter { it.kind == kind }.maxByOrNull { it.atMs } ?: return@forEach
-                    val value = when (kind) {
-                        VitalReading.Kind.OXYGEN -> "${r.value.roundToInt()} %"
-                        VitalReading.Kind.HEART_RATE -> "${r.value.roundToInt()} /min"
-                        VitalReading.Kind.BLOOD_PRESSURE -> "${r.value.roundToInt()}/${(r.value2 ?: 0.0).roundToInt()} mmHg"
-                    }
-                    val minutes = ((now - r.atMs) / 60_000).coerceAtLeast(0)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(stringResource(label), style = Lifeline.type.body, color = c.inkMuted)
-                        Text("$value · ${stringResource(R.string.health_ago, minutes)}", style = Lifeline.type.bodyStrong,
-                            color = if (VitalsCheck.outOfRange(r)) c.sos else c.ink)
-                    }
+                ReadingRows(readings) { r -> stringResource(R.string.health_ago, ((now - r.atMs) / 60_000).coerceAtLeast(0)) }
+            }
+        }
+        // The alarm covers both sources: the live Bluetooth stream and Health Connect.
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.health_alarm), style = Lifeline.type.bodyStrong, color = c.ink)
+                Text(stringResource(R.string.health_alarm_body), style = Lifeline.type.caption, color = c.inkMuted)
+            }
+            Switch(settings.watchVitals, { app.repository.setWatchVitals(it) })
+        }
+    }
+}
+
+/** The newest reading of each kind: label left, value and age right, red when outside the limits. */
+@Composable
+private fun ReadingRows(readings: List<VitalReading>, age: @Composable (VitalReading) -> String) {
+    val c = Lifeline.colors
+    listOf(
+        VitalReading.Kind.OXYGEN to R.string.health_oxygen,
+        VitalReading.Kind.HEART_RATE to R.string.health_heart,
+        VitalReading.Kind.BLOOD_PRESSURE to R.string.health_pressure,
+    ).forEach { (kind, label) ->
+        val r = readings.filter { it.kind == kind }.maxByOrNull { it.atMs } ?: return@forEach
+        val value = when (kind) {
+            VitalReading.Kind.OXYGEN -> "${r.value.roundToInt()} %"
+            VitalReading.Kind.HEART_RATE -> "${r.value.roundToInt()} /min"
+            VitalReading.Kind.BLOOD_PRESSURE -> "${r.value.roundToInt()}/${(r.value2 ?: 0.0).roundToInt()} mmHg"
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(stringResource(label), style = Lifeline.type.body, color = c.inkMuted)
+            Text("$value · ${age(r)}", style = Lifeline.type.bodyStrong, color = if (VitalsCheck.outOfRange(r)) c.sos else c.ink)
+        }
+    }
+}
+
+/**
+ * Live readings from a Bluetooth watch (10 Oct 2026): connect, the readings as they arrive (every second), and a clear
+ * red line when the link is lost ("not being watched"). In simulation mode the simulated watch is offered, with buttons
+ * to show low oxygen or to lose the link; its readings are labelled Simulated.
+ */
+@Composable
+private fun LiveWatchSection(settings: Settings) {
+    val c = Lifeline.colors
+    val app = LocalContext.current.applicationContext as LifelineApp
+    val repo = app.repository
+    val state by repo.watchState.collectAsStateWithLifecycle()
+    val live by repo.liveVitals.collectAsStateWithLifecycle()
+    var picking by remember { mutableStateOf(false) }
+    var lowOxygen by remember { mutableStateOf(false) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { delay(1_000); now = System.currentTimeMillis() } }
+    val simulated = when (val st = state) {
+        is WatchState.Connecting -> st.simulated; is WatchState.Connected -> st.simulated; is WatchState.Lost -> st.simulated; else -> false
+    }
+    val tag = if (simulated) " · ${stringResource(R.string.simulated_tag)}" else ""
+
+    Text(stringResource(R.string.watch_live_title) + tag, style = Lifeline.type.label, color = c.inkMuted)
+    when (val st = state) {
+        WatchState.None -> {
+            Text(stringResource(R.string.watch_connect_body), style = Lifeline.type.caption, color = c.inkMuted)
+            com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_connect), { picking = true }, Modifier.fillMaxWidth())
+        }
+        is WatchState.Connecting -> Text(stringResource(R.string.watch_connecting, st.name), style = Lifeline.type.body, color = c.ink)
+        is WatchState.NoHealthData -> {
+            Text(stringResource(R.string.watch_no_data, st.name), style = Lifeline.type.body, color = c.warn)
+            com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_disconnect), { repo.setWatch(null) }, Modifier.fillMaxWidth())
+        }
+        is WatchState.Lost -> {
+            Text(stringResource(R.string.watch_lost, st.name, clock(st.at)), style = Lifeline.type.bodyStrong, color = c.sos)
+            com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_disconnect), { repo.setWatch(null) }, Modifier.fillMaxWidth())
+        }
+        is WatchState.Connected -> {
+            Text(stringResource(R.string.watch_connected, st.name), style = Lifeline.type.bodyStrong, color = c.safe)
+            val recent = live.filter { it.atMs >= st.since - 60_000 }
+            if (recent.isEmpty()) Text(stringResource(R.string.watch_waiting), style = Lifeline.type.body, color = c.inkMuted)
+            ReadingRows(recent) { r ->
+                val s = ((now - r.atMs) / 1000).coerceAtLeast(0)
+                if (s <= 2) stringResource(R.string.watch_now) else stringResource(R.string.watch_seconds_ago, s.toInt())
+            }
+            if (st.simulated) {
+                Text(stringResource(R.string.watch_sim_note), style = Lifeline.type.caption, color = c.inkMuted)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    com.lifeline.mesh.ui.components.SecondaryButton(
+                        stringResource(if (lowOxygen) R.string.watch_sim_normal else R.string.watch_sim_low),
+                        { lowOxygen = !lowOxygen; repo.simWatchCommands.tryEmit(if (lowOxygen) "low_oxygen" else "normal") }, Modifier.weight(1f))
+                    com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_sim_lose),
+                        { repo.simWatchCommands.tryEmit("lose") }, Modifier.weight(1f))
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.health_alarm), style = Lifeline.type.bodyStrong, color = c.ink)
-                        Text(stringResource(R.string.health_alarm_body), style = Lifeline.type.caption, color = c.inkMuted)
+            }
+            com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_disconnect),
+                { lowOxygen = false; repo.setWatch(null) }, Modifier.fillMaxWidth())
+        }
+    }
+    if (picking) WatchPickerSheet(settings.simulationMode, onPick = { address, name -> picking = false; repo.setWatch(address, name) },
+        onDismiss = { picking = false })
+}
+
+/** Finds watches advertising standard health services (and offers the simulated watch in simulation mode). */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun WatchPickerSheet(simulation: Boolean, onPick: (String, String) -> Unit, onDismiss: () -> Unit) {
+    val c = Lifeline.colors
+    val context = LocalContext.current
+    val scanner = remember { WatchScanner(context) }
+    var found by remember { mutableStateOf<Map<String, FoundWatch>>(emptyMap()) }
+    val problem = remember { scanner.problem() }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        if (problem == null) scanner.start { w -> found = found + (w.address to w) }
+        onDispose { scanner.stop() }
+    }
+    val simulatedName = stringResource(R.string.watch_pick_simulated)
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.surface) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = Space.screen).padding(bottom = Space.xl),
+            verticalArrangement = Arrangement.spacedBy(Space.m)) {
+            Text(stringResource(R.string.watch_pick_title), style = Lifeline.type.title, color = c.ink)
+            if (simulation) PickRow(simulatedName + " · " + stringResource(R.string.simulated_tag),
+                stringResource(R.string.watch_pick_simulated_body)) { onPick(SIMULATED_WATCH, simulatedName) }
+            when (problem) {
+                WatchScanner.Problem.NO_BLUETOOTH -> Text(stringResource(R.string.watch_pick_no_bt), style = Lifeline.type.body, color = c.warn)
+                WatchScanner.Problem.NOT_ALLOWED -> Text(stringResource(R.string.watch_pick_not_allowed), style = Lifeline.type.body, color = c.warn)
+                WatchScanner.Problem.OFF -> Text(stringResource(R.string.watch_pick_off), style = Lifeline.type.body, color = c.warn)
+                null -> {
+                    Text(stringResource(R.string.watch_pick_scanning), style = Lifeline.type.caption, color = c.inkMuted)
+                    if (found.isEmpty()) Text(stringResource(R.string.watch_pick_none), style = Lifeline.type.body, color = c.inkMuted)
+                    val hr = stringResource(R.string.watch_kind_hr); val ox = stringResource(R.string.watch_kind_oxygen)
+                    val bp = stringResource(R.string.watch_kind_bp)
+                    found.values.sortedBy { it.name }.forEach { w ->
+                        val kinds = listOfNotNull(hr.takeIf { w.heartRate }, ox.takeIf { w.oxygen }, bp.takeIf { w.bloodPressure }).joinToString(", ")
+                        PickRow(w.name, kinds) { onPick(w.address, w.name) }
                     }
-                    Switch(settings.watchVitals, { app.repository.setWatchVitals(it) })
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PickRow(title: String, body: String, onClick: () -> Unit) {
+    val c = Lifeline.colors
+    Column(
+        Modifier.fillMaxWidth().background(c.bg, Shapes.card)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).padding(Space.l),
+        verticalArrangement = Arrangement.spacedBy(Space.xs),
+    ) {
+        Text(title, style = Lifeline.type.bodyStrong, color = c.ink)
+        if (body.isNotBlank()) Text(body, style = Lifeline.type.caption, color = c.inkMuted)
     }
 }

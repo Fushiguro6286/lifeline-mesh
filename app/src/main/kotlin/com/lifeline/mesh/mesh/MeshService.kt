@@ -74,6 +74,8 @@ class MeshService : Service() {
         private const val CHANNEL_AMBULANCE = "ambulance"
         private const val CHANNEL_FALL = "fall"
         private const val CHANNEL_WARNINGS = "warnings"
+        private const val CHANNEL_WATCH = "watch"
+        private const val NOTIF_WATCH = 6
         private const val NOTIF_WARNING = 5
         private const val NOTIF_AMBULANCE = 3
         private const val NOTIF_FALL = 4
@@ -193,22 +195,91 @@ class MeshService : Service() {
      */
     private fun watchVitals() {
         val vitals = com.lifeline.mesh.safety.WatchVitals(this)
+        val fromHealthConnect = kotlinx.coroutines.flow.MutableStateFlow<List<com.lifeline.mesh.safety.VitalReading>>(emptyList())
+        // Health Connect (delayed, many watches): read every minute while the alarm is on.
         scope.launch {
             repo.settings.filterNotNull().map { it.watchVitals }.distinctUntilChanged().collectLatest { on ->
-                if (!on) return@collectLatest
-                var handledUpTo = System.currentTimeMillis() - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS
+                if (!on) { fromHealthConnect.value = emptyList(); return@collectLatest }
                 while (true) {
                     if (vitals.status() == com.lifeline.mesh.safety.WatchVitals.Status.READY) {
                         val now = System.currentTimeMillis()
-                        val readings = vitals.read(now - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS)
-                        repo.lastVitalsCheck.value = now to readings.size
-                        com.lifeline.mesh.safety.VitalsCheck.check(readings, now, handledUpTo)?.let { a ->
-                            handledUpTo = a.readingAtMs
-                            Log.i(TAG, "watch vitals alarm: ${a.reason}")
-                            repo.startFallAlarm(test = false, vitals = a.reason)
-                        }
+                        fromHealthConnect.value = vitals.read(now - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS)
+                        repo.lastVitalsCheck.value = now to fromHealthConnect.value.size
                     }
                     delay(60_000)
+                }
+            }
+        }
+        // Check both sources every 2 s (the Bluetooth stream is real time). After an alarm, a quiet period.
+        scope.launch {
+            var handledUpTo = System.currentTimeMillis() - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS
+            while (true) {
+                delay(2_000)
+                if (repo.settings.value?.watchVitals != true) continue
+                val now = System.currentTimeMillis()
+                com.lifeline.mesh.safety.VitalsCheck.check(fromHealthConnect.value + repo.liveVitals.value, now, handledUpTo)?.let { a ->
+                    handledUpTo = a.readingAtMs + com.lifeline.mesh.safety.VitalsCheck.QUIET_MS
+                    Log.i(TAG, "watch vitals alarm: ${a.reason}")
+                    repo.startFallAlarm(test = false, vitals = a.reason)
+                }
+            }
+        }
+        watchOverBluetooth()
+    }
+
+    private var watchLink: com.lifeline.mesh.safety.WatchLink? = null
+
+    /**
+     * The live Bluetooth watch (10 Oct 2026): kept connected while the mesh runs, readings into repo.liveVitals as they
+     * arrive. When the link drops: a notification and vibration ("health is not being watched"), and the phone reconnects
+     * when the watch is back. The simulated watch exists only in simulation mode.
+     */
+    private fun watchOverBluetooth() {
+        val link = com.lifeline.mesh.safety.WatchLink(this, scope) { r ->
+            val now = System.currentTimeMillis()
+            repo.liveVitals.value = (repo.liveVitals.value + r)
+                .filter { now - it.atMs <= com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS }.takeLast(4_000)
+        }
+        watchLink = link
+        scope.launch {
+            repo.settings.filterNotNull().map { Triple(it.watchAddress, it.watchName, it.simulationMode) }.distinctUntilChanged()
+                .collect { (address, name, sim) ->
+                    val simulatedWatch = address == com.lifeline.mesh.safety.SIMULATED_WATCH
+                    if (simulatedWatch && !sim) { link.use(null, ""); repo.setWatch(null); return@collect } // never outside simulation
+                    if (!simulatedWatch && sim) { link.use(null, ""); return@collect } // a real watch waits until simulation ends
+                    if (address == null) repo.liveVitals.value = emptyList()
+                    link.use(address, name)
+                }
+        }
+        scope.launch {
+            var before: com.lifeline.mesh.safety.WatchState = com.lifeline.mesh.safety.WatchState.None
+            link.state.collect { st ->
+                repo.watchState.value = st
+                val nm = getSystemService(NotificationManager::class.java)
+                if (st is com.lifeline.mesh.safety.WatchState.Lost && before is com.lifeline.mesh.safety.WatchState.Connected) {
+                    Haptics.strong(this@MeshService)
+                    val at = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(st.at))
+                    val n = NotificationCompat.Builder(this@MeshService, CHANNEL_WATCH)
+                        .setSmallIcon(R.drawable.ic_health_and_safety)
+                        .setContentTitle(getString(R.string.watch_lost_title) + if (st.simulated) " · ${getString(R.string.simulated_tag)}" else "")
+                        .setContentText(getString(R.string.watch_lost_body, st.name, at))
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.watch_lost_body, st.name, at)))
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setCategory(NotificationCompat.CATEGORY_STATUS)
+                        .setContentIntent(openApp())
+                        .build()
+                    runCatching { nm.notify(NOTIF_WATCH, n) }
+                }
+                if (st is com.lifeline.mesh.safety.WatchState.Connected || st is com.lifeline.mesh.safety.WatchState.None) nm.cancel(NOTIF_WATCH)
+                before = st
+            }
+        }
+        scope.launch {
+            repo.simWatchCommands.collect { c ->
+                when (c) {
+                    "low_oxygen" -> link.simulateLowOxygen(true)
+                    "normal" -> link.simulateLowOxygen(false)
+                    "lose" -> link.simulateLoss()
                 }
             }
         }
@@ -275,6 +346,7 @@ class MeshService : Service() {
 
     override fun onDestroy() {
         fallSensor?.stop()
+        watchLink?.stop()
         alarm?.stop()
         stopSession()
         if (receiverRegistered) runCatching { unregisterReceiver(radioReceiver) }
@@ -652,6 +724,12 @@ class MeshService : Service() {
 
     private fun createChannels() {
         val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_WATCH, getString(R.string.watch_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+            }
+        )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_WARNINGS, getString(R.string.warning_channel), NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)

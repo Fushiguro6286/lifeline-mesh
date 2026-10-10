@@ -316,4 +316,35 @@
     <string name="health_ago">%1$d min ago</string>
     <string name="health_alarm">Alarm</string>
     <string name="health_alarm_body">A reading far outside normal rings for 15 s, then sends an urgent ambulance request. Limits not yet reviewed by a doctor.</string>
+    <!-- Bluetooth watch, live (10 Oct 2026) -->
+    <string name="watch_channel">Watch connection</string>
+    <string name="watch_lost_title">Watch connection lost</string>
+    <string name="watch_lost_body">%1$s disconnected at %2$s. Your health is not being watched. The phone reconnects when it is back in range.</string>
+    <string name="watch_live_title">Live from your watch</string>
+    <string name="watch_connect">Connect a Bluetooth watch</string>
+    <string name="watch_connect_body">Real time from watches, bands, finger oximeters and blood pressure cuffs with standard Bluetooth health data (on many watches: turn on heart rate broadcast). Samsung, Apple and vivo watches: use Health Connect below.</string>
+    <string name="watch_connecting">Connecting to %1$s…</string>
+    <string name="watch_connected">Live from %1$s</string>
+    <string name="watch_lost">Connection to %1$s lost at %2$s. Your health is not being watched. Reconnecting when it is back in range.</string>
+    <string name="watch_no_data">%1$s has no standard Bluetooth health data. Turn on heart rate broadcast in the watch, or use Health Connect.</string>
+    <string name="watch_disconnect">Disconnect</string>
+    <string name="watch_now">now</string>
+    <string name="watch_seconds_ago">%1$d s ago</string>
+    <string name="watch_waiting">Waiting for the first reading…</string>
+    <string name="watch_sim_low">Simulate low oxygen</string>
+    <string name="watch_sim_normal">Back to normal</string>
+    <string name="watch_sim_lose">Simulate losing the watch</string>
+    <string name="watch_sim_note">Simulated watch: an alarm reaches only the virtual phones.</string>
+    <string name="watch_pick_title">Choose your watch</string>
+    <string name="watch_pick_scanning">Looking for watches nearby… Keep the watch close, with Bluetooth and heart rate broadcast on.</string>
+    <string name="watch_pick_none">Nothing found yet.</string>
+    <string name="watch_pick_simulated">Simulated watch</string>
+    <string name="watch_pick_simulated_body">For rehearsal and the demo (simulation mode only). Every reading is labelled Simulated.</string>
+    <string name="watch_pick_off">Turn on Bluetooth first.</string>
+    <string name="watch_pick_not_allowed">Allow Nearby devices for this app first (Settings → Permissions).</string>
+    <string name="watch_pick_no_bt">This phone has no Bluetooth.</string>
+    <string name="watch_kind_hr">heart rate</string>
+    <string name="watch_kind_oxygen">oxygen</string>
+    <string name="watch_kind_bp">blood pressure</string>
+    <string name="health_from_hc">From Health Connect</string>
 </resources>

@@ -291,6 +291,29 @@ early (apps cannot), it runs out by itself.
   NOT checked: a real watch reading.
 - Left on the iQOO: Health Connect permissions granted, the Watch vitals alarm switch off.
 
+## Live Bluetooth watch (added 10 Oct 2026, on request)
+
+- SOS tab → Your health (watch) → Connect a Bluetooth watch: scans for devices advertising the standard Bluetooth health
+  services (Heart Rate 0x180D, Pulse Oximeter 0x1822, Blood Pressure 0x1810), keeps the chosen one connected while the
+  mesh runs and shows each reading as it arrives (heart rate about once a second). Decoders: BleVitals (tested).
+- Link lost: red "Connection to … lost at …. Your health is not being watched", a vibration and a notification; Android
+  reconnects by itself when the watch is back in range (autoConnect), and the notification clears. A first attempt that
+  fails stays "Connecting…" and keeps retrying (no false "lost").
+- The alarm switch covers both the live stream and Health Connect. Live rules: heart rate outside 40–150 for 30 s,
+  oxygen below 90 % for 15 s (a spot check still counts at once), then a 5-minute quiet period after any alarm, so one
+  bad minute rings once, not every second. VitalsCheckTest.
+- Most Samsung, Apple and vivo watches do not expose these services: they stay on Health Connect. Many sports watches
+  and bands do when "heart rate broadcast / sharing" is on.
+- Simulation mode: the picker offers "Simulated watch · Simulated" (only there; a real watch waits until simulation is
+  off). Buttons: Simulate low oxygen / Back to normal, Simulate losing the watch (20 s, then it reconnects).
+- Checked on the iQOO 15 (10 Oct): simulated watch live (98 %, 71/min, "now"); Simulate low oxygen → alarm "Your watch
+  read: Blood oxygen 86%" after ~15 s → no answer → "Medical · Ambulance needed" → Kiran (Ambulance) ETA 2 min, "They
+  are here"; Simulate losing the watch → red line + "Watch connection lost · Simulated" notification → back after 20 s,
+  notification cleared. Real device: a Galaxy Fit3 nearby advertised the heart rate service; the first connection
+  failed (status 62), the automatic retry connected and it streamed 98, 96, 141 /min live. Disconnected afterwards.
+  NOT checked: a pulse oximeter or blood pressure cuff; a real link loss and reconnect.
+- Left on the iQOO: no watch saved, alarm off, simulation on.
+
 ## Simulation mode with the internet on (added 10 Oct 2026, on request: stage demo)
 
 - In simulation mode the phone still polls the rescue server when online, but only for real-world, read-only things:

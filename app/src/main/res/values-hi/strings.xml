@@ -306,4 +306,35 @@
     <string name="health_ago">%1$d मिनट पहले</string>
     <string name="health_alarm">अलार्म</string>
     <string name="health_alarm_body">बहुत असामान्य रीडिंग पर 15 सेकंड अलार्म बजेगा, फिर तुरंत एम्बुलेंस का अनुरोध जाएगा। सीमाएँ अभी डॉक्टर ने नहीं जाँचीं।</string>
+    <!-- Bluetooth watch, live (10 Oct 2026) -->
+    <string name="watch_channel">घड़ी का कनेक्शन</string>
+    <string name="watch_lost_title">घड़ी का कनेक्शन टूट गया</string>
+    <string name="watch_lost_body">%1$s %2$s पर डिस्कनेक्ट हुई। आपकी सेहत पर अभी नज़र नहीं है। पास आने पर फ़ोन फिर से जुड़ जाएगा।</string>
+    <string name="watch_live_title">घड़ी से लाइव</string>
+    <string name="watch_connect">ब्लूटूथ घड़ी जोड़ें</string>
+    <string name="watch_connect_body">मानक ब्लूटूथ हेल्थ डेटा वाली घड़ियों, बैंड, फ़िंगर ऑक्सीमीटर और बीपी मशीन से रियल टाइम (कई घड़ियों में हार्ट रेट ब्रॉडकास्ट चालू करें)। Samsung, Apple और vivo घड़ियाँ: नीचे Health Connect इस्तेमाल करें।</string>
+    <string name="watch_connecting">%1$s से जुड़ रहे हैं…</string>
+    <string name="watch_connected">%1$s से लाइव</string>
+    <string name="watch_lost">%1$s से कनेक्शन %2$s पर टूटा। आपकी सेहत पर अभी नज़र नहीं है। पास आने पर फिर जुड़ेगा।</string>
+    <string name="watch_no_data">%1$s में मानक ब्लूटूथ हेल्थ डेटा नहीं है। घड़ी में हार्ट रेट ब्रॉडकास्ट चालू करें, या Health Connect इस्तेमाल करें।</string>
+    <string name="watch_disconnect">डिस्कनेक्ट करें</string>
+    <string name="watch_now">अभी</string>
+    <string name="watch_seconds_ago">%1$d सेकंड पहले</string>
+    <string name="watch_waiting">पहली रीडिंग का इंतज़ार…</string>
+    <string name="watch_sim_low">कम ऑक्सीजन सिम्युलेट करें</string>
+    <string name="watch_sim_normal">सामान्य करें</string>
+    <string name="watch_sim_lose">घड़ी खोना सिम्युलेट करें</string>
+    <string name="watch_sim_note">सिम्युलेटेड घड़ी: अलार्म सिर्फ़ वर्चुअल फ़ोन तक जाएगा।</string>
+    <string name="watch_pick_title">अपनी घड़ी चुनें</string>
+    <string name="watch_pick_scanning">पास की घड़ियाँ ढूँढ रहे हैं… घड़ी पास रखें, ब्लूटूथ और हार्ट रेट ब्रॉडकास्ट चालू रखें।</string>
+    <string name="watch_pick_none">अभी कुछ नहीं मिला।</string>
+    <string name="watch_pick_simulated">सिम्युलेटेड घड़ी</string>
+    <string name="watch_pick_simulated_body">अभ्यास और डेमो के लिए (सिर्फ़ सिम्युलेशन मोड)। हर रीडिंग पर सिम्युलेटेड लिखा होगा।</string>
+    <string name="watch_pick_off">पहले ब्लूटूथ चालू करें।</string>
+    <string name="watch_pick_not_allowed">पहले इस ऐप को पास के डिवाइस की अनुमति दें (सेटिंग्स → अनुमतियाँ)।</string>
+    <string name="watch_pick_no_bt">इस फ़ोन में ब्लूटूथ नहीं है।</string>
+    <string name="watch_kind_hr">धड़कन</string>
+    <string name="watch_kind_oxygen">ऑक्सीजन</string>
+    <string name="watch_kind_bp">ब्लड प्रेशर</string>
+    <string name="health_from_hc">Health Connect से</string>
 </resources>

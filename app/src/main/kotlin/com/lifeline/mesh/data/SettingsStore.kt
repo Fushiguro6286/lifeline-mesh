@@ -57,6 +57,9 @@ data class Settings(
     val fallDetection: Boolean = false,
     /** Watch vitals alarm from Health Connect while the mesh runs (off until the user turns it on). */
     val watchVitals: Boolean = false,
+    /** The Bluetooth watch to keep connected (address, or SIMULATED_WATCH in simulation mode); null = none. */
+    val watchAddress: String? = null,
+    val watchName: String = "",
 ) {
     val travel: com.lifeline.mesh.triage.Travel get() = travelChoice ?: com.lifeline.mesh.triage.Teams.defaultTravel(role.hello)
 
@@ -87,6 +90,8 @@ class SettingsStore(private val context: Context) {
         val ACTIVE_PROFILE = stringPreferencesKey("active_profile")
         val FALL_DETECTION = booleanPreferencesKey("fall_detection")
         val WATCH_VITALS = booleanPreferencesKey("watch_vitals")
+        val WATCH_ADDRESS = stringPreferencesKey("watch_address")
+        val WATCH_NAME = stringPreferencesKey("watch_name")
     }
 
     private val store get() = context.dataStore
@@ -126,6 +131,8 @@ class SettingsStore(private val context: Context) {
         profiles = Profiles.decode(p[Keys.PROFILES]).map { it.info },
         fallDetection = p[Keys.FALL_DETECTION] ?: false,
         watchVitals = p[Keys.WATCH_VITALS] ?: false,
+        watchAddress = p[Keys.WATCH_ADDRESS],
+        watchName = p[Keys.WATCH_NAME] ?: "",
     )
 
     suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16); it.saveActiveProfile() }
@@ -139,6 +146,10 @@ class SettingsStore(private val context: Context) {
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
     suspend fun setFallDetection(on: Boolean) = store.edit { it[Keys.FALL_DETECTION] = on }
     suspend fun setWatchVitals(on: Boolean) = store.edit { it[Keys.WATCH_VITALS] = on }
+    suspend fun setWatch(address: String?, name: String) = store.edit {
+        if (address == null) { it.remove(Keys.WATCH_ADDRESS); it.remove(Keys.WATCH_NAME) }
+        else { it[Keys.WATCH_ADDRESS] = address; it[Keys.WATCH_NAME] = name.take(40) }
+    }
     suspend fun setPhone(phone: String) = store.edit { it[Keys.PHONE] = phone.filter { c -> c.isDigit() || c == '+' }.take(16); it.saveActiveProfile() }
     suspend fun setTravel(travel: com.lifeline.mesh.triage.Travel) = store.edit { it[Keys.TRAVEL] = travel.name; it.saveActiveProfile() }
 
