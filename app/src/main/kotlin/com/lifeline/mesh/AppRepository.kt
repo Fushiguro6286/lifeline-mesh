@@ -131,7 +131,8 @@ class AppRepository(
 
     /** [vitals] = the watch reading that started it (watch vitals alarm); null = a fall. */
     fun startFallAlarm(test: Boolean, vitals: String? = null) {
-        fallAlarm.compareAndSet(null, com.lifeline.mesh.safety.FallAlarm(System.currentTimeMillis(), test, vitals))
+        val ok = fallAlarm.compareAndSet(null, com.lifeline.mesh.safety.FallAlarm(System.currentTimeMillis(), test, vitals))
+        if (!ok) android.util.Log.w("AppRepository", "alarm not started: another alarm is running (${fallAlarm.value})")
     }
 
     fun cancelFallAlarm() { fallAlarm.value = null }

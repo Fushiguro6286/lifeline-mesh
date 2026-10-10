@@ -171,6 +171,7 @@ class MeshService : Service() {
             repo.fallAlarm.collectLatest { a ->
                 val nm = getSystemService(NotificationManager::class.java)
                 if (a == null) { effects.stop(); nm.cancel(NOTIF_FALL); return@collectLatest }
+                Log.i(TAG, "alarm countdown started" + (a.vitals?.let { " (watch: $it)" } ?: " (fall)"))
                 effects.start()
                 try {
                     while (true) {
@@ -211,17 +212,26 @@ class MeshService : Service() {
                 }
             }
         }
-        // Check both sources every 2 s (the Bluetooth stream is real time). After an alarm, a quiet period.
+        // Check both sources every 2 s (the Bluetooth stream is real time). After an alarm, a quiet period for that kind of
+        // reading only: an oxygen alarm does not silence a heart rate alarm.
         scope.launch {
-            var handledUpTo = System.currentTimeMillis() - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS
+            val start = System.currentTimeMillis() - com.lifeline.mesh.safety.VitalsCheck.MAX_AGE_MS
+            val handledUpTo = com.lifeline.mesh.safety.VitalReading.Kind.entries.associateWith { start }.toMutableMap()
+            var checks = 0
             while (true) {
                 delay(2_000)
                 if (repo.settings.value?.watchVitals != true) continue
+                if (repo.fallAlarm.value != null) continue // one alarm at a time
                 val now = System.currentTimeMillis()
-                com.lifeline.mesh.safety.VitalsCheck.check(fromHealthConnect.value + repo.liveVitals.value, now, handledUpTo)?.let { a ->
-                    handledUpTo = a.readingAtMs + com.lifeline.mesh.safety.VitalsCheck.QUIET_MS
+                val all = fromHealthConnect.value + repo.liveVitals.value
+                if (++checks % 15 == 0) Log.d(TAG, "vitals check: ${all.size} readings, newest ${all.maxOfOrNull { it.atMs }?.let { (now - it) / 1000 }} s ago, " +
+                    "quiet until " + handledUpTo.entries.joinToString { (k, t) -> "$k ${((t - now) / 1000).coerceAtLeast(0)} s" })
+                for (kind in com.lifeline.mesh.safety.VitalReading.Kind.entries) {
+                    val a = com.lifeline.mesh.safety.VitalsCheck.check(all.filter { it.kind == kind }, now, handledUpTo.getValue(kind)) ?: continue
+                    handledUpTo[kind] = a.readingAtMs + com.lifeline.mesh.safety.VitalsCheck.QUIET_MS
                     Log.i(TAG, "watch vitals alarm: ${a.reason}")
                     repo.startFallAlarm(test = false, vitals = a.reason)
+                    break
                 }
             }
         }
@@ -300,8 +310,7 @@ class MeshService : Service() {
         scope.launch {
             repo.simWatchCommands.collect { c ->
                 when (c) {
-                    "low_oxygen" -> link.simulateLowOxygen(true)
-                    "normal" -> link.simulateLowOxygen(false)
+                    "low_oxygen", "high_heart", "normal" -> link.simulate(c)
                     "lose" -> link.simulateLoss()
                 }
             }

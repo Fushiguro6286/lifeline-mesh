@@ -354,4 +354,5 @@
         <item quantity="one">%d और चेतावनी दिखाएँ</item>
         <item quantity="other">%d और चेतावनियाँ दिखाएँ</item>
     </plurals>
+    <string name="watch_sim_high_heart">तेज़ धड़कन सिम्युलेट करें</string>
 </resources>

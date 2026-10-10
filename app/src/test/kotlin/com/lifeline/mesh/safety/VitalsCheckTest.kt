@@ -79,4 +79,12 @@ class VitalsCheckTest {
         // The service skips readings up to the alarm time plus QUIET_MS; the same low stream does not ring again.
         assertNull(VitalsCheck.check(r, now, afterMs = first.readingAtMs + VitalsCheck.QUIET_MS))
     }
+
+    @Test fun aLongHighStreamRingsAgainAfterTheQuietPeriod() {
+        // 15 minutes at 165 per minute, one reading a second; first alarm, then the quiet period, then it must ring again.
+        val r = stream(HEART_RATE, List(15 * 60) { 165.0 })
+        val first = VitalsCheck.check(r.filter { it.atMs <= now - 14 * min }, now - 14 * min)!!
+        val again = VitalsCheck.check(r, now, afterMs = first.readingAtMs + VitalsCheck.QUIET_MS)
+        assertEquals("Heart rate 165/min", again?.reason)
+    }
 }

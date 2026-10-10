@@ -364,4 +364,5 @@
         <item quantity="one">Show %d more warning</item>
         <item quantity="other">Show %d more warnings</item>
     </plurals>
+    <string name="watch_sim_high_heart">Simulate high heart rate</string>
 </resources>

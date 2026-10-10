@@ -109,7 +109,8 @@ class WatchLink(context: Context, private val scope: CoroutineScope, private val
     private val toEnable = ArrayDeque<BluetoothGattCharacteristic>()
 
     private var simJob: Job? = null
-    @Volatile private var simLowOxygen = false
+    /** Simulated watch mode: "normal", "low_oxygen" or "high_heart". */
+    @Volatile private var simMode = "normal"
     @Volatile private var simLinked = true
 
     /** Connects to [address] ([SIMULATED_WATCH] = the simulated watch); null = disconnect and forget. */
@@ -216,7 +217,7 @@ class WatchLink(context: Context, private val scope: CoroutineScope, private val
     // ------------------------------------------------------------------ simulated watch (simulation mode only)
 
     private fun startSimulated(name: String) {
-        simLowOxygen = false; simLinked = true
+        simMode = "normal"; simLinked = true
         _state.value = WatchState.Connecting(name, simulated = true)
         simJob = scope.launch {
             delay(1_500)
@@ -227,17 +228,21 @@ class WatchLink(context: Context, private val scope: CoroutineScope, private val
                 tick++
                 if (!simLinked) continue
                 val now = System.currentTimeMillis()
-                val hr = if (simLowOxygen) 108.0 + Random.nextInt(-3, 4) else 74.0 + Random.nextInt(-3, 4)
+                val hr = when (simMode) {
+                    "low_oxygen" -> 108.0 + Random.nextInt(-3, 4)
+                    "high_heart" -> 165.0 + Random.nextInt(-4, 5)
+                    else -> 74.0 + Random.nextInt(-3, 4)
+                }
                 onReading(VitalReading(VitalReading.Kind.HEART_RATE, hr, now))
                 // An oximeter streams every second; a calm watch reports oxygen every 5 s.
-                if (simLowOxygen) onReading(VitalReading(VitalReading.Kind.OXYGEN, 85.0 + Random.nextInt(0, 2), now))
+                if (simMode == "low_oxygen") onReading(VitalReading(VitalReading.Kind.OXYGEN, 85.0 + Random.nextInt(0, 2), now))
                 else if (tick % 5 == 0) onReading(VitalReading(VitalReading.Kind.OXYGEN, 97.0 + Random.nextInt(0, 2), now))
             }
         }
     }
 
-    /** Simulated watch: oxygen drops to about 85 % (true) or back to normal (false). */
-    fun simulateLowOxygen(on: Boolean) { if (wanted?.first == SIMULATED_WATCH) simLowOxygen = on }
+    /** Simulated watch: "low_oxygen" (about 85 %), "high_heart" (about 165 per minute) or "normal". */
+    fun simulate(mode: String) { if (wanted?.first == SIMULATED_WATCH) simMode = mode }
 
     /** Simulated watch: the link drops for 20 s, then comes back, like a real watch going out of range and returning. */
     fun simulateLoss() {

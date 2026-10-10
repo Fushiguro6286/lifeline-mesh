@@ -206,7 +206,7 @@ private fun LiveWatchSection(settings: Settings) {
     val state by repo.watchState.collectAsStateWithLifecycle()
     val live by repo.liveVitals.collectAsStateWithLifecycle()
     var picking by remember { mutableStateOf(false) }
-    var lowOxygen by remember { mutableStateOf(false) }
+    var simMode by remember { mutableStateOf("normal") }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(1_000); now = System.currentTimeMillis() } }
     val simulated = when (val st = state) {
@@ -241,16 +241,22 @@ private fun LiveWatchSection(settings: Settings) {
                 Text(stringResource(R.string.watch_real_in_sim), style = Lifeline.type.caption, color = c.warn)
             if (st.simulated) {
                 Text(stringResource(R.string.watch_sim_note), style = Lifeline.type.caption, color = c.inkMuted)
+                val pick = { mode: String -> simMode = mode; repo.simWatchCommands.tryEmit(mode) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    com.lifeline.mesh.ui.components.SecondaryButton(
-                        stringResource(if (lowOxygen) R.string.watch_sim_normal else R.string.watch_sim_low),
-                        { lowOxygen = !lowOxygen; repo.simWatchCommands.tryEmit(if (lowOxygen) "low_oxygen" else "normal") }, Modifier.weight(1f))
+                    com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_sim_low),
+                        { pick("low_oxygen") }, Modifier.weight(1f))
+                    com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_sim_high_heart),
+                        { pick("high_heart") }, Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    if (simMode != "normal") com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_sim_normal),
+                        { pick("normal") }, Modifier.weight(1f))
                     com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_sim_lose),
                         { repo.simWatchCommands.tryEmit("lose") }, Modifier.weight(1f))
                 }
             }
             com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.watch_disconnect),
-                { lowOxygen = false; repo.setWatch(null) }, Modifier.fillMaxWidth())
+                { simMode = "normal"; repo.setWatch(null) }, Modifier.fillMaxWidth())
         }
     }
     if (picking) WatchPickerSheet(settings.simulationMode, onPick = { address, name -> picking = false; repo.setWatch(address, name) },

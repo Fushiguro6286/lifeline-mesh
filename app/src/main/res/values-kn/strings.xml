@@ -354,4 +354,5 @@
         <item quantity="one">ಇನ್ನೂ %d ಎಚ್ಚರಿಕೆ ತೋರಿಸಿ</item>
         <item quantity="other">ಇನ್ನೂ %d ಎಚ್ಚರಿಕೆಗಳನ್ನು ತೋರಿಸಿ</item>
     </plurals>
+    <string name="watch_sim_high_heart">ಹೆಚ್ಚಿನ ಹೃದಯ ಬಡಿತ ಅನುಕರಿಸಿ</string>
 </resources>

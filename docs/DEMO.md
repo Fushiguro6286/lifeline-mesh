@@ -351,7 +351,15 @@ early (apps cannot), it runs out by itself.
   notification cleared. Real device: a Galaxy Fit3 nearby advertised the heart rate service; the first connection
   failed (status 62), the automatic retry connected and it streamed 98, 96, 141 /min live. Disconnected afterwards.
   NOT checked: a pulse oximeter or blood pressure cuff; a real link loss and reconnect.
-- Left on the iQOO: no watch saved, alarm off, simulation on.
+- Simulated watch buttons (10 Oct, on request): Simulate low oxygen (about 85 %), Simulate high heart rate (about 165 per
+  minute), Back to normal, Simulate losing the watch. The 5-minute quiet period after an alarm is per kind of reading, so
+  an oxygen alarm does not silence a heart rate alarm; only one alarm runs at a time.
+- Checked on the iQOO 15: low oxygen → alarm 22 s after the tap → no answer → "Medical · Ambulance needed" → Kiran
+  "ETA 5 min · their reply crossed 2 hops"; high heart rate → alarm after 30 s ("Heart rate 163/min") → request sent →
+  Kiran answered; still high after the quiet period → rang again (16:11). One earlier heart rate alarm was dismissed
+  without a request, probably through the remote-control app; it did not happen again with logging on (the service now
+  logs each check every 30 s, each countdown, and any alarm that could not start).
+- Left on the iQOO: simulated watch connected (normal), alarm on, simulation on.
 
 ## Simulation mode with the internet on (added 10 Oct 2026, on request: stage demo)
 
