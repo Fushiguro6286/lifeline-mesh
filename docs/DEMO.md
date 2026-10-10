@@ -783,3 +783,18 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
   drawn under markers (now on top).
 - ShelterNameTest: short names from report notes.
 
+## A vibration for every message (added 11 Oct 2026, on request)
+- Already vibrating before: "Help is coming" replies, SOS sent, ambulance requests, official warnings, watch lost,
+  fall and vitals alarms (alarm loop). The ongoing "Relaying alerts" notification stays silent (it updates all the time).
+- New channel "Messages from the mesh" (high importance, short double vibration, follows the phone's sound settings):
+  - The sender: "Your alert reached a rescue team · Kiran (Ambulance) has it, 2 hops away. Their reply comes next."
+  - Team phones: "Urgent alert" / "New alert" for each new alert of their kind (fire service: fire; ambulance:
+    medical, ambulance requests go to the alarm instead; NDRF: trapped; police: road blocked; other team: all; panic
+    SOS: every team), with needs, people, distance and hops, and the note.
+  - Team phones: "Meena is safe · They checked in safe, so that job is closed" when a person whose alert this phone
+    accepted checks in.
+- "Help is coming" and SOS-sent vibrations are marked as alarms on Android 13+, so a phone left on silent still buzzes.
+- In simulation the titles say Simulated; a team phone in simulation gets a message for each simulated incident of its
+  kind (about one a minute).
+- NOT checked on the phone yet (it was locked).
+

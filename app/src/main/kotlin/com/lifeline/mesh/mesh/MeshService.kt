@@ -75,6 +75,8 @@ class MeshService : Service() {
         private const val CHANNEL_FALL = "fall"
         private const val CHANNEL_WARNINGS = "warnings"
         private const val CHANNEL_WATCH = "watch"
+        /** Everything else the mesh tells this phone (11 Oct 2026): each message vibrates, by the phone's sound settings. */
+        private const val CHANNEL_MESSAGES = "messages"
         private const val NOTIF_WATCH = 6
         private const val NOTIF_WARNING = 5
         private const val NOTIF_AMBULANCE = 3
@@ -82,6 +84,10 @@ class MeshService : Service() {
         private const val ACTION_FALL_OK = "com.lifeline.mesh.FALL_OK"
         private const val NOTIF_MESH = 1
         private const val NOTIF_REPLY = 2
+        private const val NOTIF_RECEIPT = 7
+        private const val NOTIF_SAFE = 8
+        /** New alerts each get their own notification: this plus the low bits of the message ID. */
+        private const val NOTIF_ALERT_BASE = 1_000
         private const val ACTION_STOP = "com.lifeline.mesh.STOP_MESH"
         private const val KEEP_MS = 6 * 60 * 60 * 1000L
 
@@ -657,6 +663,23 @@ class MeshService : Service() {
                 val ambulance = packet.needs and com.lifeline.mesh.packet.Need.AMBULANCE.bit != 0 && role == com.lifeline.mesh.data.Role.AMBULANCE
                 val assigned = fromPeer == Router.INTERNET && role?.isTeam == true && repo.assignedToMe.remove(packet.header.messageId)
                 if (ambulance || assigned) scope.launch { ambulanceAlarm(packet, simulated, assignedOnly = !ambulance) }
+                // Every other team phone gets a message for a new alert of its kind (all kinds for "Other team").
+                else if (role?.isTeam == true) {
+                    val focus = com.lifeline.mesh.triage.Teams.focus(role.hello)
+                    val needs = com.lifeline.mesh.packet.Need.fromMask(packet.needs)
+                    if (focus == null || needs.any { it in focus } || com.lifeline.mesh.packet.Need.PANIC in needs) {
+                        newAlertMessage(packet, linkHops, simulated)
+                    }
+                }
+            }
+            // Someone whose alert this team phone accepted says they are safe: the job is closed.
+            if (packet is Packet.CheckIn && !mine && repo.settings.value?.role?.isTeam == true) {
+                val all = repo.packets.value
+                val theirAlerts = all.filter { it.type == com.lifeline.mesh.packet.PacketType.ALERT.code && it.origin == packet.header.origin }
+                    .mapTo(HashSet()) { it.id }
+                val accepted = all.any { it.type == com.lifeline.mesh.packet.PacketType.ACK.code && it.isMine && it.refId in theirAlerts }
+                if (accepted) message(NOTIF_SAFE, "${packet.name.ifBlank { teamName(packet.header.origin, null) }} is safe",
+                    "They checked in safe, so that job is closed. Your next job is on the Rescue tab.", simulated)
             }
             val now = System.currentTimeMillis()
             write {
@@ -694,6 +717,8 @@ class MeshService : Service() {
 
         override fun onTeamReceipt(refId: Long, team: Int, role: com.lifeline.mesh.packet.HelloRole, hops: Int) {
             write { db.packets().setTeamSeen(refId, role.code, hops) }
+            message(NOTIF_RECEIPT, "Your alert reached a rescue team",
+                "${teamName(team, role)} has it, ${if (hops == 1) "1 hop" else "$hops hops"} away. Their reply comes next.", simulated)
         }
 
         override fun onHandedOff(messageId: Long, peers: Int) {
@@ -821,6 +846,13 @@ class MeshService : Service() {
             }
         )
         nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_MESSAGES, "Messages from the mesh", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "New alerts for your team, \"reached a rescue team\", \"I'm safe\". Each one vibrates."
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 250, 150, 250)
+            }
+        )
+        nm.createNotificationChannel(
             NotificationChannel(CHANNEL_REPLIES, getString(R.string.notif_channel_replies), NotificationManager.IMPORTANCE_HIGH).apply {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 150, 300)
@@ -884,6 +916,45 @@ class MeshService : Service() {
         if (connected == lastConnected) return
         lastConnected = connected
         runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_MESH, meshNotification(connected, simulated)) }
+    }
+
+    /** A message notification on [CHANNEL_MESSAGES]: it vibrates (short double pulse) and opens the app. */
+    private fun message(id: Int, title: String, text: String, simulated: Boolean) {
+        val n = NotificationCompat.Builder(this, CHANNEL_MESSAGES)
+            .setSmallIcon(R.drawable.ic_health_and_safety)
+            .setContentTitle(if (simulated) "$title · ${getString(R.string.simulated_tag)}" else title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setVibrate(longArrayOf(0, 250, 150, 250))
+            .setAutoCancel(true)
+            .setContentIntent(openApp())
+            .build()
+        runCatching { getSystemService(NotificationManager::class.java).notify(id, n) }
+    }
+
+    /** A phone's name and team kind from what this phone has heard, e.g. "Kiran (Ambulance)". */
+    private fun teamName(origin: Int, role: com.lifeline.mesh.packet.HelloRole?): String {
+        val name = repo.positions.value[origin]?.name?.ifBlank { null }
+            ?: repo.topology.value.firstOrNull { it.origin == origin }?.name?.ifBlank { null }
+            ?: "%08x".format(origin).takeLast(4)
+        val kind = role?.takeIf { it.isTeam }?.let { getString(com.lifeline.mesh.ui.onboarding.teamLabel(it.code)) }
+        return if (kind != null) "$name ($kind)" else name
+    }
+
+    /** A team phone hears a new alert of its kind (the ambulance alarm handles ambulance requests itself). */
+    private fun newAlertMessage(a: Packet.Alert, linkHops: Int, simulated: Boolean) {
+        val needs = com.lifeline.mesh.packet.Need.fromMask(a.needs)
+        val what = com.lifeline.mesh.ai.SituationReport.needLabels(needs) +
+            if (a.people > 0) ", ${a.people} ${if (a.people == 1) "person" else "people"}" else ""
+        val fix = repo.myFix.value
+        val far = if (fix != null && (a.latE6 != 0 || a.lonE6 != 0)) {
+            " · " + com.lifeline.mesh.ui.rescuer.distanceText(com.lifeline.mesh.triage.GeoMath.distanceM(fix.lat, fix.lon, a.latE6 / 1e6, a.lonE6 / 1e6))
+        } else ""
+        val urgent = a.severity >= 3
+        message(NOTIF_ALERT_BASE + (a.header.messageId and 0xFFF).toInt(), if (urgent) "Urgent alert" else "New alert",
+            "$what$far · ${if (linkHops == 1) "1 hop" else "$linkHops hops"} away" + if (a.note.isNotBlank()) "\n“${a.note}”" else "", simulated)
     }
 
     private fun showReply(ack: Packet.Ack, simulated: Boolean) {

@@ -23,11 +23,16 @@ object Haptics {
         else v.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
-    /** Two long full-strength pulses: SOS sent, or a reply arrived. */
+    /**
+     * Two long full-strength pulses: SOS sent, or a reply arrived. Marked as an alarm (Android 13+) so a phone left on
+     * silent still buzzes for "Help is coming" (11 Oct 2026); before Android 13 the phone's own rules apply.
+     */
     fun strong(context: Context) {
         val v = vibrator(context) ?: return
         val timings = longArrayOf(0, 300, 150, 300)
         val amplitudes = intArrayOf(0, 255, 0, 255)
-        v.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+        val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+        if (Build.VERSION.SDK_INT >= 33) v.vibrate(effect, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_ALARM))
+        else v.vibrate(effect)
     }
 }
