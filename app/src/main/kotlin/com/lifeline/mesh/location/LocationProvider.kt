@@ -88,7 +88,15 @@ class LocationProvider(context: Context) {
     suspend fun best(live: GeoFix? = null): LocationChoice =
         QualityGate.chooseLocation(fresh(), lastKnown(), live, System.currentTimeMillis())
 
-    private fun Location.toFix() = GeoFix(latitude, longitude, if (hasAccuracy()) accuracy else null, time)
+    /**
+     * [GeoFix.timeMs] on this phone's wall clock: now minus the fix's age from the uptime clock. A GPS fix's own time is
+     * satellite time, which can differ from the phone's clock, so a fresh fix could look old or "in the future".
+     */
+    private fun Location.toFix(): GeoFix {
+        val ageMs = (android.os.SystemClock.elapsedRealtimeNanos() - elapsedRealtimeNanos) / 1_000_000L
+        val at = if (elapsedRealtimeNanos > 0 && ageMs >= 0) System.currentTimeMillis() - ageMs else time
+        return GeoFix(latitude, longitude, if (hasAccuracy()) accuracy else null, at)
+    }
 
     companion object {
         private const val TAG = "LocationProvider"

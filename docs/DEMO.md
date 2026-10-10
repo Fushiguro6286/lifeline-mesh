@@ -590,6 +590,18 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
   the team phone's mesh like other server packets and show "Heard … · via internet (sync server)". Online, Android's
   fix also uses Wi-Fi and cell help, so the position sent is usually the better one. server/test_positions.py and
   SyncFormatTest cover it.
-- NOT checked on a phone yet (the iQOO 15 was locked): the circles and snapping on screen, and a real position reaching a
-  team phone through the server.
+- Checked on the iQOO 15 (10 Oct 2026):
+  - Accuracy circle around my own dot on the map (zoomed in; at the usual zoom a 10-20 m circle hides under the markers).
+    Simulated Kiran (Ambulance): "Position accurate to about 20 m", not moved (parked at an incident, no road within
+    20 m). Simulated vehicles drive exactly on road points, so snapping only shows with real phones; RoadMapTest covers it.
+  - Indoors, the phone had no satellite fix for 14 hours (0 satellites); online, Android placed it from Wi-Fi and cell
+    at 16-41 m. Offline and indoors there would be no new fix at all: the SOS would use the last known position, marked
+    approximate. The SOS review chose a 12 m one-shot fix over the 16 m live one (the better one wins).
+  - Server path, simulation off, laptop server on the same Wi-Fi: a test alert ("TEST position relay, 1 person trapped")
+    was uploaded, then its Position (12.973503, 77.608533, 20 m: the 11 m fix rounded up to the 10 m step). A team's
+    feed request returned that exact Position packet (type 7, 35 bytes); a person in need's feed returned none. Closed
+    with "I'm safe"; simulation back on.
+  - Fixed after this check: a fix's time is now taken from the phone's uptime clock (now minus the fix's age), because a
+    GPS fix carries satellite time, which can differ from the phone's clock and make a fresh fix look old.
+- NOT checked yet: a team phone showing a position "via internet" on its map (needs a second phone).
 
