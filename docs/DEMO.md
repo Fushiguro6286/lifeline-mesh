@@ -570,3 +570,26 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
   answers.
 - NOT checked yet: on three real phones (needs C set to a team role).
 
+## More accurate positions, and the sender's position via the server (added 10 Oct 2026, on request)
+
+- FixFilter (location/FixFilter.kt): live GPS fixes are averaged while the phone stands still (fixes that agree
+  within their two accuracies, last 2 minutes, weighted by accuracy), a jump faster than 250 km/h is ignored unless
+  three in a row agree, and a worse fix does not replace a better one. The accuracy shown is never better than the best
+  single fix measured (plus how far the average sits from it). FixFilterTest: jitter of up to 8 m around a spot averages
+  to within 3 m; a slow walker is not dragged back; a real move is followed at once.
+- An SOS now uses the live filtered fix when it is under 30 s old and more accurate than the one-shot 8 s fix.
+- A phone sends a new Position as soon as its accuracy improves by 10 m or more (after 15 s), not only when it moves.
+- Maps: accuracy circles for me, live positions, help points and alerts (5 m to 2 km), on MapLibre and the Rings view.
+  Fire service, ambulance and police positions are drawn on the road they are on when a drivable road is within 25 m
+  and within their GPS accuracy; the detail sheet then says "Drawn on the road it is on: N m from its GPS position",
+  and the circle is never smaller than that move. Boats and people on foot are never moved. RoadMapTest checks snapping
+  on the real map.
+- Online: while my alert is open, each new Position packet also goes to the server (POST /api/positions, latest per
+  phone). Team phones polling /api/feed get the positions of phones with an alert in the last 6 hours, fresh within 10
+  minutes and within 25 km; people in need never receive anyone's position from the server. Received positions go into
+  the team phone's mesh like other server packets and show "Heard … · via internet (sync server)". Online, Android's
+  fix also uses Wi-Fi and cell help, so the position sent is usually the better one. server/test_positions.py and
+  SyncFormatTest cover it.
+- NOT checked on a phone yet (the iQOO 15 was locked): the circles and snapping on screen, and a real position reaching a
+  team phone through the server.
+

@@ -55,6 +55,21 @@ class RoadMapTest {
         assertTrue("a real detour: ${second.meters} vs ${first.meters}", second.meters > first.meters + 50)
     }
 
+    @Test fun aPositionBesideTheRoadSnapsOntoIt() {
+        val n = map.nearest(A_LAT, A_LON, mode = RoadMode.VEHICLE)
+        val (la, lo) = map.point(n)
+        // On the road already: stays put.
+        assertEquals(0.0, map.snap(la, lo, 25.0, RoadMode.VEHICLE)!!.third, 0.5)
+        // 15 m off a road point: moved at most 15 m, onto a road (snapping again moves it no further).
+        val off = la + 15 / 111_320.0
+        val s = map.snap(off, lo, 25.0, RoadMode.VEHICLE)!!
+        assertTrue("moved ${s.third} m", s.third <= 15.5)
+        assertEquals(s.third, GeoMath.distanceM(off, lo, s.first, s.second), 1.0)
+        assertEquals(0.0, map.snap(s.first, s.second, 25.0, RoadMode.VEHICLE)!!.third, 0.5)
+        // Nothing within the radius, or off the map: not moved.
+        assertNull(map.snap(12.5, 77.0, 25.0, RoadMode.VEHICLE))
+    }
+
     @Test fun offTheMapThereIsNoRoute() {
         assertNull(map.route(13.5, 78.5, B_LAT, B_LON, RoadMode.VEHICLE))
     }

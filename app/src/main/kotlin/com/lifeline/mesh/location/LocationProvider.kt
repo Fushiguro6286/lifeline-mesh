@@ -81,8 +81,12 @@ class LocationProvider(context: Context) {
         awaitClose { client.removeLocationUpdates(callback) }
     }
 
-    /** CLAUDE.md 9.2: fresh within 8 s and 50 m is exact, otherwise last known and approximate. */
-    suspend fun best(): LocationChoice = QualityGate.chooseLocation(fresh(), lastKnown())
+    /**
+     * CLAUDE.md 9.2: fresh within 8 s and 50 m is exact, otherwise last known and approximate. [live] = the mesh
+     * service's filtered fix (FixFilter): if it is recent and more accurate than the one-shot fix, it is used.
+     */
+    suspend fun best(live: GeoFix? = null): LocationChoice =
+        QualityGate.chooseLocation(fresh(), lastKnown(), live, System.currentTimeMillis())
 
     private fun Location.toFix() = GeoFix(latitude, longitude, if (hasAccuracy()) accuracy else null, time)
 

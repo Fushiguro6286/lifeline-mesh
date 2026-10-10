@@ -112,11 +112,16 @@ fun PlaceDetailSheet(
             if (place.at > 0) {
                 val heard = ago(context, now, place.at)
                 Text(
-                    if (place.hops != null) stringResource(R.string.place_heard_hops, heard, place.hops) else stringResource(R.string.place_heard, heard),
+                    when {
+                        place.viaInternet -> stringResource(R.string.place_heard_internet, heard)
+                        place.hops != null -> stringResource(R.string.place_heard_hops, heard, place.hops)
+                        else -> stringResource(R.string.place_heard, heard)
+                    },
                     style = Lifeline.type.body, color = c.inkMuted,
                 )
             }
             place.accuracyM?.let { Text(stringResource(R.string.place_accuracy, it), style = Lifeline.type.caption, color = c.inkMuted) }
+            place.snappedM?.let { Text(stringResource(R.string.place_snapped, it), style = Lifeline.type.caption, color = c.inkMuted) }
             if (role != null) Text(stringResource(R.string.place_live), style = Lifeline.type.caption, color = c.inkMuted)
             Text("%.5f, %.5f".format(place.lat, place.lon), style = Lifeline.type.caption, color = c.inkMuted)
         }

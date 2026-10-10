@@ -138,6 +138,8 @@ class AppRepository(
     val myFix = MutableStateFlow<com.lifeline.mesh.ai.GeoFix?>(null)
     /** Other phones' latest positions by origin, current session only (cleared when the mesh stops or the mode changes). */
     val positions = MutableStateFlow<Map<Int, com.lifeline.mesh.mesh.PeerPosition>>(emptyMap())
+    /** My latest Position packet as sent to the mesh, and when (wall ms): the uploader relays it while my alert is open. */
+    val myPosition = MutableStateFlow<Pair<ByteArray, Long>?>(null)
     /**
      * A running fall alarm (fall detected, or "Try the fall alarm"): the service counts down, rings and then sends a
      * panic SOS; the app shows the countdown with "I'm OK". Null = no alarm.
@@ -271,6 +273,22 @@ class AppRepository(
      * like a packet from a neighbor (deduplicated, stored, relayed into the local mesh, replies recognised); otherwise
      * it is stored directly, marked "internet". Never in simulation mode. True if it was new.
      */
+    /**
+     * A Position from the sync server (a team phone's feed: someone whose alert is open). Through the router when the
+     * mesh runs, so nearby phones get it too and a copy already heard over the mesh is dropped; otherwise straight
+     * onto the map. Marked "via internet" either way. Never in simulation.
+     */
+    fun receivePositionFromInternet(raw: ByteArray) {
+        if (settings.value?.simulationMode != false) return
+        val p = (PacketCodec.decode(raw) as? com.lifeline.mesh.packet.DecodeResult.Ok)?.packet as? Packet.Position ?: return
+        if (p.header.origin == settings.value?.originId) return
+        val r = router
+        if (r != null) { r.onReceived(Router.INTERNET, raw); return }
+        val pos = com.lifeline.mesh.mesh.PeerPosition(p.header.origin, p.name, p.role, p.latE6 / 1e6, p.lonE6 / 1e6,
+            com.lifeline.mesh.packet.Geo.accuracyMeters(p.accuracy), p.header.hops + 1, System.currentTimeMillis(), viaInternet = true)
+        positions.value = positions.value + (pos.origin to pos)
+    }
+
     fun receiveFromInternet(raw: ByteArray): Boolean {
         if (settings.value?.simulationMode != false) return false
         val p = (PacketCodec.decode(raw) as? com.lifeline.mesh.packet.DecodeResult.Ok)?.packet ?: return false

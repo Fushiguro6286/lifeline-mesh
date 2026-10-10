@@ -195,6 +195,8 @@
     <string name="place_heard">Heard %s</string>
     <string name="place_heard_hops">Heard %1$s · %2$d hops away</string>
     <string name="place_accuracy">Position accurate to about %d m</string>
+    <string name="place_heard_internet">Heard %s · via internet (sync server)</string>
+    <string name="place_snapped">Drawn on the road it is on: %d m from its GPS position.</string>
     <string name="place_live">Live position, updated while the phone is on the mesh.</string>
     <!-- Profile card in Settings -->
     <string name="settings_profile_signed_in">Signed in on this phone</string>

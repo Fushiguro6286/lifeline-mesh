@@ -70,6 +70,7 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -77,6 +78,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
 import java.io.File
 
 private enum class MapMode { MAP, RINGS }
@@ -96,6 +98,10 @@ data class Place(
     val at: Long = 0,
     val hops: Int? = null,
     val accuracyM: Int? = null,
+    /** A road vehicle drawn on the road it is on: metres it was moved from its GPS position (null = not moved). */
+    val snappedM: Int? = null,
+    /** A live position that came through the sync server, not the mesh. */
+    val viaInternet: Boolean = false,
 ) {
     /** Unique across kinds (a live position's id is an origin, a report's a message id). */
     val key: String get() = "$kind:$id"
@@ -129,8 +135,28 @@ fun routes(
 /** Live positions this phone may show (teams see everyone; others see only teams), as map places. */
 fun positionPlaces(all: Collection<com.lifeline.mesh.mesh.PeerPosition>, viewer: com.lifeline.mesh.packet.HelloRole, now: Long): List<Place> =
     com.lifeline.mesh.mesh.PositionBeacon.visible(all, viewer, now).map { p ->
-        Place(p.origin.toLong(), p.lat, p.lon, 10 + p.role.code, p.name, at = p.heardAt, hops = p.hops, accuracyM = p.accuracyM)
+        Place(p.origin.toLong(), p.lat, p.lon, 10 + p.role.code, p.name, at = p.heardAt, hops = p.hops.takeIf { !p.viaInternet },
+            accuracyM = p.accuracyM, viaInternet = p.viaInternet)
     }
+
+/** Fire service, ambulance and police drive: within [SNAP_MAX_M] (and their GPS accuracy) they are drawn on the road. */
+const val SNAP_MAX_M = 25.0
+
+/**
+ * Road vehicles' live positions moved onto the nearest drivable road (10 Oct 2026): GPS between buildings often puts a
+ * moving ambulance beside the road. Only if a road is within the fix's accuracy and [SNAP_MAX_M], so a vehicle parked
+ * off the road, or a poor fix, is left where GPS put it. Boats and people on foot are never moved.
+ */
+fun snapToRoads(places: List<Place>, roads: com.lifeline.mesh.routing.RoadMap?): List<Place> {
+    if (roads == null) return places
+    return places.map { pl ->
+        val role = if (pl.kind >= 13) com.lifeline.mesh.packet.HelloRole.fromCode(pl.kind - 10) else null
+        if (role == null || com.lifeline.mesh.triage.Teams.defaultTravel(role) != com.lifeline.mesh.triage.Travel.VEHICLE) return@map pl
+        val limit = minOf(SNAP_MAX_M, (pl.accuracyM ?: SNAP_MAX_M.toInt()).toDouble())
+        val s = roads.snap(pl.lat, pl.lon, limit, com.lifeline.mesh.routing.RoadMode.VEHICLE) ?: return@map pl
+        if (s.third < 1.0) pl else pl.copy(lat = s.first, lon = s.second, snappedM = Math.round(s.third).toInt())
+    }
+}
 
 /**
  * Map tab (DESIGN.md 8.5): the offline MapLibre map (venue PMTiles, local style) with alerts (size = people,
@@ -153,15 +179,15 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     LaunchedEffect(Unit) { while (true) { delay(30_000); now = System.currentTimeMillis() } }
 
     val ranked = remember(packets, me) { rankAlerts(packets, me, now) }
-    val places = remember(packets, positions, settings.role, now) {
-        places(packets, now) + positionPlaces(positions.values, settings.role.hello, System.currentTimeMillis())
+    val roads by repo.roads.collectAsStateWithLifecycle()
+    val places = remember(packets, positions, settings.role, now, roads) {
+        snapToRoads(places(packets, now) + positionPlaces(positions.values, settings.role.hello, System.currentTimeMillis()), roads)
     }
     // Where each responder is going (from their "help is coming" replies), and the lines this phone may draw.
     val done by repo.jobsDone.collectAsStateWithLifecycle()
     val headings = remember(packets, now, done) { com.lifeline.mesh.ui.rescuer.headingsFrom(packets, now, done) }
     val straightLines = remember(places, headings, packets, settings.role) { routes(places, headings, packets, settings.role.isTeam) }
     // Along the roads, around reported blockages; worked out in the background, only when someone moved about 25 m.
-    val roads by repo.roads.collectAsStateWithLifecycle()
     val blocks = remember(packets) { com.lifeline.mesh.ui.rescuer.blocksFrom(packets) }
     val routeKey = straightLines.map { listOf(Math.round(it.fromLat * 4000), Math.round(it.fromLon * 4000), it.toLat, it.toLon, it.travel) }
     val lines by produceState(straightLines, routeKey, roads, blocks) {
@@ -349,6 +375,7 @@ private fun LibreMap(
                         ).forEach { (kind, v) ->
                             st.addImage("place-$kind", MarkerBitmaps.square(context, v.first, c.surface.toArgb(), v.second.toArgb(), v.second.toArgb(), density))
                         }
+                        st.addSource(GeoJsonSource("accuracy"))
                         st.addSource(GeoJsonSource("routes"))
                         st.addSource(GeoJsonSource("places"))
                         st.addSource(GeoJsonSource("alerts"))
@@ -358,6 +385,12 @@ private fun LibreMap(
                             PropertyFactory.iconAllowOverlap(true),
                             PropertyFactory.iconIgnorePlacement(true),
                         )
+                        // GPS accuracy circles (10 Oct 2026), under everything else: the true spot is likely inside.
+                        st.addLayer(FillLayer("accuracy", "accuracy").withProperties(
+                            PropertyFactory.fillColor(Expression.toColor(Expression.get("color"))),
+                            PropertyFactory.fillOpacity(0.14f),
+                            PropertyFactory.fillOutlineColor(Expression.toColor(Expression.get("color"))),
+                        ))
                         // Responder → job lines, under every marker.
                         st.addLayer(LineLayer("routes", "routes").withProperties(
                             PropertyFactory.lineColor(c.link.toArgb()),
@@ -420,6 +453,13 @@ private fun LibreMap(
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.
     LaunchedEffect(style, ranked, places, routes, me) {
         val st = style ?: return@LaunchedEffect
+        st.getSourceAs<GeoJsonSource>("accuracy")?.setGeoJson(FeatureCollection.fromFeatures(
+            accuracyCircles(ranked, places, me, c).map { (pts, color) ->
+                Feature.fromGeometry(Polygon.fromLngLats(listOf(pts.map { (la, lo) -> Point.fromLngLat(lo, la) }))).apply {
+                    addStringProperty("color", "#%06X".format(0xFFFFFF and color.toArgb()))
+                }
+            }
+        ))
         st.getSourceAs<GeoJsonSource>("routes")?.setGeoJson(FeatureCollection.fromFeatures(routes.map { r ->
             Feature.fromGeometry(LineString.fromLngLats(r.points.map { (la, lo) -> Point.fromLngLat(lo, la) }))
         }))
@@ -447,5 +487,39 @@ private fun LibreMap(
             Feature.fromGeometry(Point.fromLngLat(it.lon, it.lat)).apply { addStringProperty("icon", "me") }
         })))
         map?.triggerRepaint()
+    }
+}
+
+/** Accuracy circles shown on the map only between these radii: smaller is a dot, larger would cover the map. */
+const val CIRCLE_MIN_M = 5
+const val CIRCLE_MAX_M = 2_000
+
+/** (centre, radius, color) for every position with a known accuracy: me, live positions, help points, alerts. */
+fun accuracySpots(
+    ranked: List<RankedAlert>, places: List<Place>, me: GeoFix?, c: LifelineColors,
+): List<Triple<Pair<Double, Double>, Int, androidx.compose.ui.graphics.Color>> = buildList {
+    me?.accuracyM?.let { add(Triple(me.lat to me.lon, it.toInt(), c.link)) }
+    places.forEach { p ->
+        // A snapped vehicle: centred where it is drawn, and never smaller than the distance it was moved.
+        val a = p.accuracyM ?: return@forEach
+        add(Triple(p.lat to p.lon, maxOf(a, p.snappedM ?: 0), if (p.kind == 11) c.sos else if (p.kind >= 13) c.link else c.inkMuted))
+    }
+    ranked.forEach { r ->
+        val pos = r.alert.position ?: return@forEach
+        val a = pos.accuracyM ?: return@forEach
+        add(Triple(pos.lat!! to pos.lon!!, a, if (r.alert.acked) c.inkMuted else c.severity(r.alert.severity)))
+    }
+}.filter { it.second in CIRCLE_MIN_M..CIRCLE_MAX_M }
+
+/** The same as polygons for MapLibre (48 points around). */
+fun accuracyCircles(ranked: List<RankedAlert>, places: List<Place>, me: GeoFix?, c: LifelineColors) =
+    accuracySpots(ranked, places, me, c).map { (centre, r, color) -> circlePoints(centre.first, centre.second, r.toDouble()) to color }
+
+fun circlePoints(lat: Double, lon: Double, radiusM: Double, steps: Int = 48): List<Pair<Double, Double>> {
+    val dLat = radiusM / 110_540.0
+    val dLon = radiusM / (111_320.0 * kotlin.math.cos(Math.toRadians(lat)))
+    return (0..steps).map { i ->
+        val a = 2 * Math.PI * i / steps
+        lat + dLat * kotlin.math.sin(a) to lon + dLon * kotlin.math.cos(a)
     }
 }

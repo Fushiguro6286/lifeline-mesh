@@ -47,6 +47,18 @@ class QualityGateTest {
         assertTrue(none.approximate)
     }
 
+    @Test fun aRecentLiveFixWinsWhenMoreAccurate() {
+        val live = GeoFix(12.9701, 77.5901, 6f, 10_000)
+        // Live fix 5 s old and better than the one-shot fix: used, exact.
+        assertEquals(LocationChoice(live, approximate = false), QualityGate.chooseLocation(good, last, live, nowMs = 15_000))
+        // Too old (over 30 s): the one-shot fix as before.
+        assertEquals(LocationChoice(good, approximate = false), QualityGate.chooseLocation(good, last, live, nowMs = 45_000))
+        // No fresh fix within 8 s, but a good recent live one: exact, not approximate.
+        assertEquals(LocationChoice(live, approximate = false), QualityGate.chooseLocation(null, last, live, nowMs = 15_000))
+        // A worse live fix does not replace a better one-shot fix.
+        assertEquals(LocationChoice(good, approximate = false), QualityGate.chooseLocation(good, last, live.copy(accuracyM = 40f), nowMs = 15_000))
+    }
+
     @Test fun exactlyFiftyMetresIsGoodEnough() {
         assertFalse(QualityGate.chooseLocation(GeoFix(0.0, 0.0, 50f, 0), null).approximate)
     }

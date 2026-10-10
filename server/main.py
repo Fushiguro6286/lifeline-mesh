@@ -67,6 +67,15 @@ class PacketIn(BaseModel):
     contactPhone: Optional[str] = Field(default=None, max_length=16)
 
 
+class PositionIn(BaseModel):
+    """The latest Position packet of a phone whose alert is open (10 Oct 2026): for nearby teams, via the feed."""
+    origin: str = Field(pattern=HEX8)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    accuracyM: Optional[int] = Field(default=None, ge=0, le=2540)
+    raw: str = Field(max_length=200)
+
+
 COLUMNS = [
     "id", "type", "origin", "hops", "sentAt", "receivedAt", "lat", "lon", "accuracyM", "needs", "severity",
     "people", "note", "refId", "etaMinutes", "reportType", "name", "uploadedBy", "raw", "contactPhone",
@@ -77,6 +86,7 @@ ONLINE_MS = 2 * 60_000      # a team is online if it polled in the last 2 minute
 ASSIGN_RADIUS_M = 50_000    # never assign an alert to a team further than this
 FEED_RADIUS_M = 25_000      # team phones receive alerts within this distance (and alerts with no position)
 FEED_WINDOW_MS = 6 * 3_600_000
+POSITION_SHOW_MS = 10 * 60_000  # as PositionBeacon.SHOW_MS on the phone: an older position is wrong, not late
 
 
 def team_for(needs: list[str]) -> Optional[int]:
@@ -120,6 +130,11 @@ def init() -> None:
         conn.execute(
             """CREATE TABLE IF NOT EXISTS teams (
                 origin TEXT PRIMARY KEY, role INTEGER NOT NULL, name TEXT, lat REAL, lon REAL, seenAt INTEGER NOT NULL)"""
+        )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS positions (
+                origin TEXT PRIMARY KEY, raw TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT NULL, accuracyM INTEGER,
+                storedAt INTEGER NOT NULL)"""
         )
         conn.execute(
             """CREATE TABLE IF NOT EXISTS assignments (
@@ -190,6 +205,33 @@ def post_packets(packets: list[PacketIn]) -> dict:
     return {"stored": stored, "duplicates": duplicates}
 
 
+@app.post("/api/positions")
+def post_position(p: PositionIn) -> dict:
+    """A phone with an open alert sends its newest position; only the latest per phone is kept."""
+    now = int(time.time() * 1000)
+    with closing(db()) as conn, conn:
+        conn.execute(
+            "INSERT INTO positions VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(origin) DO UPDATE SET raw = excluded.raw, "
+            "lat = excluded.lat, lon = excluded.lon, accuracyM = excluded.accuracyM, storedAt = excluded.storedAt",
+            (p.origin, p.raw, p.lat, p.lon, p.accuracyM, now),
+        )
+    return {"stored": 1}
+
+
+def team_positions(conn: sqlite3.Connection, origin: str, lat: Optional[float], lon: Optional[float], since: int, now: int) -> list:
+    """Positions a team phone may receive: of phones that sent an alert in the feed window, fresh, and near it."""
+    out = []
+    for r in conn.execute(
+        """SELECT p.origin, p.raw, p.lat, p.lon FROM positions p
+           WHERE p.storedAt > ? AND p.storedAt >= ? AND p.origin != ?
+           AND EXISTS (SELECT 1 FROM packets a WHERE a.type = 'alert' AND a.origin = p.origin AND a.storedAt >= ?)""",
+        (since, now - POSITION_SHOW_MS, origin, now - FEED_WINDOW_MS),
+    ):
+        if lat is None or lon is None or distance_m(lat, lon, r["lat"], r["lon"]) <= FEED_RADIUS_M:
+            out.append({"id": r["origin"], "raw": r["raw"]})
+    return out
+
+
 @app.get("/api/feed")
 def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[float] = None, name: str = "",
          since: int = 0, wlat: Optional[float] = None, wlon: Optional[float] = None) -> dict:
@@ -213,6 +255,9 @@ def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[
                 near = r["lat"] is None or lat is None or lon is None or distance_m(lat, lon, r["lat"], r["lon"]) <= FEED_RADIUS_M
                 if near or r["id"] in assigned:
                     out.append({"id": r["id"], "raw": r["raw"], "assigned": r["id"] in assigned})
+            positions = team_positions(conn, origin, lat, lon, since, now)
+        else:
+            positions = []
         for r in conn.execute(
             """SELECT k.id, k.raw FROM packets k JOIN packets a ON a.id = k.refId
                WHERE k.type = 'ack' AND k.raw IS NOT NULL AND a.origin = ? AND k.storedAt > ?""",
@@ -221,7 +266,7 @@ def feed(origin: str, role: int = 1, lat: Optional[float] = None, lon: Optional[
             out.append({"id": r["id"], "raw": r["raw"], "assigned": False})
         warnings = [warning_json(w) for w in ow.active(conn, now // 1000)]
     # Live weather for the coarse position the phone sent (0.1 degree), and forecast dangers for that cell.
-    result = {"now": now, "packets": out, "warnings": warnings}
+    result = {"now": now, "packets": out, "warnings": warnings, "positions": positions}
     if wlat is not None and wlon is not None and -90 <= wlat <= 90 and -180 <= wlon <= 180:
         try:
             summary, forecast = weather.for_position(wlat, wlon)

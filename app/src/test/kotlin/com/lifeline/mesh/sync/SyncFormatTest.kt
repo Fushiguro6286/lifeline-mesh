@@ -56,6 +56,33 @@ class SyncFormatTest {
         assertTrue("\"name\":\"Asha\"" in s)
     }
 
+    @Test fun anOpenAlertOfMineIsNeededToSendMyPosition() {
+        val now = 10 * 3_600_000L
+        fun mine(type: PacketType, at: Long, id: Long) = entity(type, id).copy(isMine = true, receivedAt = at)
+        val alert = mine(PacketType.ALERT, now - 60_000, 1)
+        assertTrue(SyncFormat.hasOpenAlert(listOf(alert), now))
+        // "I'm safe" after it closes it; a new alert after that opens one again.
+        val safe = mine(PacketType.CHECK_IN, now - 30_000, 2)
+        assertFalse(SyncFormat.hasOpenAlert(listOf(alert, safe), now))
+        assertTrue(SyncFormat.hasOpenAlert(listOf(alert, safe, mine(PacketType.ALERT, now - 10_000, 3)), now))
+        // Older than 6 hours, someone else's, or simulated: no.
+        assertFalse(SyncFormat.hasOpenAlert(listOf(mine(PacketType.ALERT, now - 7 * 3_600_000L, 4)), now))
+        assertFalse(SyncFormat.hasOpenAlert(listOf(alert.copy(isMine = false)), now))
+        assertFalse(SyncFormat.hasOpenAlert(listOf(alert.copy(simulated = true)), now))
+    }
+
+    @Test fun positionUploadCarriesThePacketAsSent() {
+        val h = com.lifeline.mesh.packet.Header(77L, 0x3fa1beef, 5, 0, 1_000)
+        val raw = com.lifeline.mesh.packet.PacketCodec.encode(
+            com.lifeline.mesh.packet.Packet.Position(h, 12_971_600, 77_594_600, 1, com.lifeline.mesh.packet.HelloRole.NEEDS_HELP, "Asha"))
+        val u = SyncFormat.positionUpload(raw)!!
+        assertEquals("3fa1beef", u.origin)
+        assertEquals(12.9716, u.lat, 1e-9)
+        assertEquals(10, u.accuracyM)
+        assertEquals(raw.toList(), java.util.Base64.getDecoder().decode(u.raw).toList())
+        assertNull(SyncFormat.positionUpload(byteArrayOf(1, 2, 3)))
+    }
+
     @Test fun urlRules() {
         assertEquals("http://192.168.1.5:8000", SyncFormat.normalizeUrl(" 192.168.1.5:8000/ "))
         assertEquals("https://example.org", SyncFormat.normalizeUrl("https://example.org"))

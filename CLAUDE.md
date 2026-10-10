@@ -204,6 +204,7 @@ Every 10 s each phone broadcasts a Hello (TTL 2) with its direct neighbors. Ever
 
 ### 7.6 Sync
 When `ConnectivityManager` reports validated internet, `ServerUploader` posts unsent alerts, check-ins, reports and acks to `POST {server}/api/packets` as JSON, marks them uploaded, and broadcasts nothing extra. Server URL is set in Settings.
+Positions (10 Oct 2026, my request): while one of my alerts is open (not followed by my own "I'm safe"), each new Position packet my phone sends to the mesh also goes to `POST {server}/api/positions` (latest per phone kept). Team phones get them in `/api/feed` (only for phones with an alert in the last 6 h, fresh within 10 min, within 25 km) and show them marked "via internet". Online, the phone's GPS fix also uses Wi-Fi and cell help, so it is usually the more accurate one. Live fixes pass through `FixFilter` (averaged while still, jumps ignored, accuracy never claimed better than measured); maps draw accuracy circles and put road vehicles on the road they are on (within 25 m and their accuracy).
 
 ---
 

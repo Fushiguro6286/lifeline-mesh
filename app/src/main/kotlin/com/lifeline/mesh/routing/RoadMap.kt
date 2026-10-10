@@ -65,6 +65,31 @@ class RoadMap private constructor(
     }
 
     /**
+     * The nearest point on a road [mode] can use, if one is within [maxM] metres (10 Oct 2026: a road vehicle's GPS
+     * position is drawn on the road it is on, not in the building beside it). Returns (lat, lon, metres moved) or null.
+     */
+    fun snap(la: Double, lo: Double, maxM: Double, mode: RoadMode): Triple<Double, Double, Double>? {
+        val kx = 111_320.0 * kotlin.math.cos(Math.toRadians(la)); val ky = 110_540.0
+        val box = maxM / 100_000.0 + 0.003 // segments can be long: look at nodes up to about 330 m beyond the radius
+        var best: Triple<Double, Double, Double>? = null
+        for (u in lat.indices) {
+            if (kotlin.math.abs(lat[u] - la) > box || kotlin.math.abs(lon[u] - lo) > box) continue
+            for (e in edgeStart[u] until edgeStart[u + 1]) {
+                if (speedMs(edgeKind[e], mode) == null) continue
+                val v = edgeTo[e]
+                val ax = (lon[u] - lo) * kx; val ay = (lat[u] - la) * ky
+                val dx = (lon[v] - lon[u]) * kx; val dy = (lat[v] - lat[u]) * ky
+                val len2 = dx * dx + dy * dy
+                val t = if (len2 == 0.0) 0.0 else (-(ax * dx + ay * dy) / len2).coerceIn(0.0, 1.0)
+                val px = ax + dx * t; val py = ay + dy * t
+                val d = kotlin.math.hypot(px, py)
+                if (d <= maxM && (best == null || d < best.third)) best = Triple(la + py / ky, lo + px / kx, d)
+            }
+        }
+        return best
+    }
+
+    /**
      * Fastest route from ([fromLat], [fromLon]) to ([toLat], [toLon]) for [mode], avoiding [blocks]. Null if either end
      * is more than 300 m from a road or no road path exists. The short walks or drives to and from the nearest road
      * points are added as straight lines.

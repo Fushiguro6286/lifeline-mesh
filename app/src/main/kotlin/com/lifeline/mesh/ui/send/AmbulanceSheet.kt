@@ -84,7 +84,7 @@ fun AmbulanceSheet(onDismiss: () -> Unit, onSent: (Long) -> Unit = {}) {
     var note by rememberSaveable { mutableStateOf("") }
     var loc by remember { mutableStateOf<SendViewModel.Loc>(SendViewModel.Loc.Finding) }
     var sending by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { loc = SendViewModel.Loc.Ready(location.best()) }
+    LaunchedEffect(Unit) { loc = SendViewModel.Loc.Ready(location.best(repo.myFix.value)) }
     val sentNote = PacketCodec.trimToBytes(note.trim(), PacketCodec.MAX_ALERT_NOTE)
 
     ModalBottomSheet(
@@ -118,7 +118,7 @@ fun AmbulanceSheet(onDismiss: () -> Unit, onSent: (Long) -> Unit = {}) {
                     if (!sending) {
                         sending = true
                         scope.launch {
-                            val choice = (loc as? SendViewModel.Loc.Ready)?.choice ?: location.best()
+                            val choice = (loc as? SendViewModel.Loc.Ready)?.choice ?: location.best(repo.myFix.value)
                             val draft = com.lifeline.mesh.ai.AlertDraft(setOf(Need.MEDICAL, Need.AMBULANCE), people, 3, sentNote)
                             val p = repo.originate { h -> SendViewModel.alertPacket(h, draft, choice) }
                             com.lifeline.mesh.ui.components.Haptics.strong(context)

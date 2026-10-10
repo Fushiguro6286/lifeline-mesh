@@ -56,14 +56,14 @@ fun ReportSheet(onDismiss: () -> Unit) {
     var note by rememberSaveable { mutableStateOf("") }
     var loc by remember { mutableStateOf<LocationChoice?>(null) }
     var sending by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { loc = location.best() }
+    LaunchedEffect(Unit) { loc = location.best(repo.myFix.value) }
 
     val sentNote = PacketCodec.trimToBytes(note.trim(), PacketCodec.MAX_REPORT_NOTE)
     fun send(t: ReportType) {
         if (sending) return
         sending = true
         scope.launch {
-            val fix = (loc ?: location.best()).fix
+            val fix = (loc ?: location.best(repo.myFix.value)).fix
             repo.originate { h ->
                 Packet.Report(h, fix?.let { Geo.toE6(it.lat) } ?: 0, fix?.let { Geo.toE6(it.lon) } ?: 0,
                     fix?.let { Geo.accuracyStep(it.accuracyM) } ?: Geo.ACCURACY_UNKNOWN, t, sentNote)

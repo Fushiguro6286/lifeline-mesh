@@ -136,7 +136,7 @@ class SendViewModel(app: Application) : AndroidViewModel(app) {
             askIfBlocked()
         } else askIfBlocked()
         locJob.cancel()
-        val job = viewModelScope.async { location.best() }
+        val job = viewModelScope.async { location.best(repo.myFix.value) }
         locJob = job
         viewModelScope.launch {
             val c = runCatching { job.await() }.getOrNull() ?: return@launch
@@ -189,7 +189,7 @@ class SendViewModel(app: Application) : AndroidViewModel(app) {
     /** Panic SOS: no speech, no gate. Last known position at once; a fresh fix only if there is none. */
     fun sendPanic() {
         viewModelScope.launch {
-            val choice = location.lastKnown()?.let { LocationChoice(it, approximate = true) } ?: location.best()
+            val choice = location.lastKnown()?.let { LocationChoice(it, approximate = true) } ?: location.best(repo.myFix.value)
             val p = repo.originate { h -> alertPacket(h, QualityGate.panicDraft(), choice) }
             _statusFor.value = p.header.messageId
         }

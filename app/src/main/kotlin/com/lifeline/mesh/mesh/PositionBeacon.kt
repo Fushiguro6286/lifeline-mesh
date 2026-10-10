@@ -15,26 +15,33 @@ data class PeerPosition(
     val hops: Int,
     /** Wall-clock ms when it arrived here. */
     val heardAt: Long,
+    /** Came through the sync server (an online phone with an open alert), not the mesh: [hops] means nothing then. */
+    val viaInternet: Boolean = false,
 )
 
 /**
  * When to send my Position (Phase 10): at once for the first fix, then every [MOVING_MS] while I have moved at least
- * [MOVE_M], and every [HEARTBEAT_MS] anyway so a still phone does not vanish from others' maps. Pure; [due] is
- * checked every few seconds by the service.
+ * [MOVE_M], and every [HEARTBEAT_MS] anyway so a still phone does not vanish from others' maps. Also (10 Oct 2026)
+ * after [IMPROVED_MS] when the fix became at least [IMPROVED_M] more accurate, so others get the better position
+ * soon. Pure; [due] is checked every few seconds by the service.
  */
 object PositionBeacon {
     const val MOVING_MS = 30_000L
     const val HEARTBEAT_MS = 120_000L
     const val MOVE_M = 25.0
+    const val IMPROVED_MS = 15_000L
+    /** One step of the packet's 10 m accuracy field. */
+    const val IMPROVED_M = 10f
     /** Positions older than this are no longer shown. */
     const val SHOW_MS = 10 * 60_000L
 
-    data class Sent(val lat: Double, val lon: Double, val atMs: Long)
+    data class Sent(val lat: Double, val lon: Double, val atMs: Long, val accuracyM: Float? = null)
 
-    fun due(last: Sent?, lat: Double, lon: Double, now: Long): Boolean {
+    fun due(last: Sent?, lat: Double, lon: Double, now: Long, accuracyM: Float? = null): Boolean {
         if (last == null) return true
         val age = now - last.atMs
         if (age >= HEARTBEAT_MS) return true
+        if (age >= IMPROVED_MS && accuracyM != null && (last.accuracyM == null || accuracyM <= last.accuracyM - IMPROVED_M)) return true
         return age >= MOVING_MS && GeoMath.distanceM(last.lat, last.lon, lat, lon) >= MOVE_M
     }
 

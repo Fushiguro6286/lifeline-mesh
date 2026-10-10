@@ -109,6 +109,7 @@ class ServerUploader(
                 delay(POLL_MS)
                 val s = settings.value ?: continue
                 if (!_state.value.internet && wifi == null) continue
+                if (!s.simulationMode) uploadPosition(s)
                 since = poll(s, since) ?: since
             }
         }
@@ -194,6 +195,11 @@ class ServerUploader(
                 if (p.assigned) p.id.toULongOrNull(16)?.toLong()?.let { repo.assignedToMe.add(it) }
                 if (repo.receiveFromInternet(bytes)) injected++
             }
+            // Live positions of people whose alert is open (teams only; the server sends them to no one else).
+            if (!sim && s.role.isTeam) for (p in feed.positions) {
+                val bytes = runCatching { java.util.Base64.getDecoder().decode(p.raw) }.getOrNull() ?: continue
+                repo.receivePositionFromInternet(bytes)
+            }
             // Official warnings: into the mesh like any packet (duplicates are dropped by message ID).
             for (w in feed.warnings) {
                 // In simulation the weather is simulated too: the real forecast check would contradict it.
@@ -211,10 +217,26 @@ class ServerUploader(
         }
     }
 
+    @Volatile private var positionSentAt = 0L
+
+    /**
+     * While my own alert is open, my newest Position packet (the one the mesh got, from the filtered GPS fix; online
+     * the phone's fix also uses Wi-Fi and cell help, so it is usually better) goes to the server, for nearby teams the
+     * mesh cannot reach. Each new packet once; nothing when no alert of mine is open.
+     */
+    private suspend fun uploadPosition(s: Settings) {
+        val (raw, at) = repo.myPosition.value ?: return
+        if (at <= positionSentAt) return
+        if (!SyncFormat.hasOpenAlert(repo.packets.value, System.currentTimeMillis())) return
+        val body = SyncFormat.positionUpload(raw) ?: return
+        val err = withContext(Dispatchers.IO) { post(s.serverUrl, SyncFormat.json.encodeToString(body), "/api/positions") }
+        if (err == null) positionSentAt = at else Log.w(TAG, "position upload: $err")
+    }
+
     /** Null on success, otherwise a plain sentence for Settings. */
-    private fun post(serverUrl: String, body: String): String? {
+    private fun post(serverUrl: String, body: String, path: String = "/api/packets"): String? {
         val base = SyncFormat.normalizeUrl(serverUrl) ?: return "The server address is not valid."
-        val url = try { URL("$base/api/packets") } catch (e: MalformedURLException) { return "The server address is not valid." }
+        val url = try { URL("$base$path") } catch (e: MalformedURLException) { return "The server address is not valid." }
         val net = if (SyncFormat.isLocalHost(url.host)) wifi else null
         val conn = (net?.openConnection(url) ?: url.openConnection()) as HttpURLConnection
         return try {
@@ -304,7 +326,13 @@ data class FeedWeather(
 data class FeedResponse(
     val now: Long, val packets: List<FeedPacket> = emptyList(), val warnings: List<FeedWarning> = emptyList(),
     val weather: FeedWeather? = null,
+    /** Teams: Position packets of nearby phones whose alert is open (id = their origin). */
+    val positions: List<FeedPacket> = emptyList(),
 )
+
+/** POST /api/positions (server/main.py PositionIn). */
+@Serializable
+data class PositionUpload(val origin: String, val lat: Double, val lon: Double, val accuracyM: Int? = null, val raw: String)
 
 /** Pure mapping and URL rules (unit-tested). */
 object SyncFormat {
@@ -335,6 +363,24 @@ object SyncFormat {
             com.lifeline.mesh.packet.Warnings.ORIGIN, com.lifeline.mesh.packet.PacketCodec.TTL_DEFAULT, 0, clamp(w.sent))
         return com.lifeline.mesh.packet.Packet.Warning(header, com.lifeline.mesh.packet.Warnings.level(w.severity), w.drill,
             clamp(w.expires), w.event, w.headline, forecast = w.forecast)
+    }
+
+    /**
+     * True while one of my alerts is open: sent in the last [activeMs] and not followed by my own "I'm safe" check-in
+     * (the same rule that closes it on the rescuers' phones).
+     */
+    fun hasOpenAlert(packets: List<PacketEntity>, now: Long, activeMs: Long = com.lifeline.mesh.ui.rescuer.ACTIVE_MS): Boolean {
+        val mine = packets.filter { it.isMine && !it.simulated }
+        val lastSafe = mine.filter { it.type == PacketType.CHECK_IN.code }.maxOfOrNull { it.receivedAt } ?: Long.MIN_VALUE
+        return mine.any { it.type == PacketType.ALERT.code && now - it.receivedAt < activeMs && it.receivedAt > lastSafe }
+    }
+
+    /** My Position packet as the server takes it; null if the bytes are not a Position. */
+    fun positionUpload(raw: ByteArray): PositionUpload? {
+        val p = (com.lifeline.mesh.packet.PacketCodec.decode(raw) as? com.lifeline.mesh.packet.DecodeResult.Ok)?.packet
+            as? com.lifeline.mesh.packet.Packet.Position ?: return null
+        return PositionUpload(hex32(p.header.origin), p.latE6 / 1e6, p.lonE6 / 1e6,
+            com.lifeline.mesh.packet.Geo.accuracyMeters(p.accuracy), java.util.Base64.getEncoder().encodeToString(raw))
     }
 
     fun hex64(v: Long) = "%016x".format(v)

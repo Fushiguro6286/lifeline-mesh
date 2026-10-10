@@ -19,6 +19,11 @@ class PositionBeaconTest {
         assertTrue(PositionBeacon.due(sent, lat + 100 * m, lon, 30_000))        // moved 100 m, 30 s
         assertFalse(PositionBeacon.due(sent, lat + 10 * m, lon, 60_000))        // 10 m is GPS jitter
         assertTrue(PositionBeacon.due(sent, lat, lon, 120_000))                 // heartbeat
+        // A clearly better fix goes out after 15 s, even without moving; a small gain waits.
+        val rough = PositionBeacon.Sent(lat, lon, 0, accuracyM = 40f)
+        assertFalse(PositionBeacon.due(rough, lat, lon, 14_000, accuracyM = 8f))
+        assertTrue(PositionBeacon.due(rough, lat, lon, 15_000, accuracyM = 8f))
+        assertFalse(PositionBeacon.due(rough, lat, lon, 60_000, accuracyM = 35f))
     }
 
     @Test fun visibilityFollowsTeamsRuleAndAge() {

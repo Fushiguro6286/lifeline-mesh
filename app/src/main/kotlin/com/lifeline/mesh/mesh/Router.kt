@@ -222,9 +222,8 @@ class Router(
     }
 
     /** My live position (Phase 10); the role and name come from the settings the service applied. */
-    fun sendPosition(latE6: Int, lonE6: Int, accuracy: Int) {
+    fun sendPosition(latE6: Int, lonE6: Int, accuracy: Int): ByteArray =
         originate(Packet.Position(newHeader(), latE6, lonE6, accuracy, role, displayName))
-    }
 
     fun sendHello() {
         val hello = synchronized(lock) {

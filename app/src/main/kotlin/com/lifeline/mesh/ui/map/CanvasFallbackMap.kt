@@ -109,6 +109,15 @@ fun CanvasFallbackMap(
         val n = measurer.measure("N", TextStyle(fontFamily = type.label.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = c.ink))
         drawText(n, topLeft = Offset(center.x - n.size.width / 2, center.y - radius - n.size.height - 4.dp.toPx()))
 
+        // GPS accuracy circles, under everything (10 Oct 2026). Skipped when smaller than a few pixels.
+        for ((centre, r, color) in accuracySpots(ranked, places, me, c)) {
+            val px = r * pxPerM
+            if (px < 4.dp.toPx()) continue
+            val o = at(plot(centre.first, centre.second))
+            drawCircle(color.copy(alpha = 0.12f), px, o)
+            drawCircle(color.copy(alpha = 0.45f), px, o, style = Stroke(1.dp.toPx()))
+        }
+
         // Responder → job lines (dashed), under every marker.
         val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 7.dp.toPx()))
         for (r in routes) {

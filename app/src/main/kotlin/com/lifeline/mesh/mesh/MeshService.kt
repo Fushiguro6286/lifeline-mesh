@@ -469,16 +469,22 @@ class MeshService : Service() {
         }
         // Live position (Phase 10): GPS fixes into the repository; my Position beacon when PositionBeacon says so.
         // In simulation the virtual phones are around the venue, so "me" is there too unless GPS knows better.
-        s.launch { com.lifeline.mesh.location.LocationProvider(this@MeshService).updates().collect { repo.myFix.value = it } }
+        // Raw fixes go through FixFilter: averaged while still, jumps ignored (10 Oct 2026).
+        s.launch {
+            val filter = com.lifeline.mesh.location.FixFilter()
+            com.lifeline.mesh.location.LocationProvider(this@MeshService).updates().collect { repo.myFix.value = filter.add(it) }
+        }
         s.launch {
             var last: PositionBeacon.Sent? = null
             while (isActive) {
                 val fix = repo.myFix.value ?: simulation?.let { com.lifeline.mesh.ai.GeoFix(it.centerLat, it.centerLon, 50f, 0) }
                 val now = SystemClock.elapsedRealtime()
-                if (fix != null && PositionBeacon.due(last, fix.lat, fix.lon, now)) {
-                    router.sendPosition(com.lifeline.mesh.packet.Geo.toE6(fix.lat), com.lifeline.mesh.packet.Geo.toE6(fix.lon),
+                if (fix != null && PositionBeacon.due(last, fix.lat, fix.lon, now, fix.accuracyM)) {
+                    val raw = router.sendPosition(com.lifeline.mesh.packet.Geo.toE6(fix.lat), com.lifeline.mesh.packet.Geo.toE6(fix.lon),
                         com.lifeline.mesh.packet.Geo.accuracyStep(fix.accuracyM))
-                    last = PositionBeacon.Sent(fix.lat, fix.lon, now)
+                    last = PositionBeacon.Sent(fix.lat, fix.lon, now, fix.accuracyM)
+                    // Kept for the internet relay: while my alert is open, the uploader sends it to the server too.
+                    if (!simulated) repo.myPosition.value = raw to System.currentTimeMillis()
                 }
                 delay(5_000)
             }
@@ -616,14 +622,16 @@ class MeshService : Service() {
         override fun onPacket(packet: Packet, raw: ByteArray, fromPeer: String?, linkHops: Int, mine: Boolean) {
             if (packet is Packet.Position) {
                 if (!mine) {
+                    val internet = fromPeer == Router.INTERNET
                     val p = PeerPosition(
                         origin = packet.header.origin, name = packet.name, role = packet.role,
                         lat = packet.latE6 / 1e6, lon = packet.lonE6 / 1e6,
                         accuracyM = com.lifeline.mesh.packet.Geo.accuracyMeters(packet.accuracy),
-                        hops = linkHops, heardAt = System.currentTimeMillis(),
+                        hops = linkHops, heardAt = System.currentTimeMillis(), viaInternet = internet,
                     )
                     repo.positions.value = repo.positions.value + (p.origin to p)
-                    recordLinkRange(p, linkHops)
+                    // A position from the server says nothing about the radio link between us.
+                    if (!internet) recordLinkRange(p, linkHops)
                 }
                 return
             }
