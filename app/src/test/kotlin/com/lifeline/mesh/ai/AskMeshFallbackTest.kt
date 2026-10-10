@@ -116,6 +116,8 @@ class SituationReportTest {
         assertEquals(3, SituationReport.validate(good, f)!!.size)
         assertNull(SituationReport.validate(good.replace("16 people", "17 people"), f)) // invented number
         assertNull(SituationReport.validate("3 active alerts.\nOnly two lines.", f))
+        // Seen on the iQOO 15: numbers written as words cannot be checked, so the computed lines are shown instead.
+        assertNull(SituationReport.validate(good.replace("2 urgent", "two urgent"), f))
         assertEquals("3 active alerts.", SituationReport.validate("- 3 active alerts.\n- 2 urgent.\n- 2 open.\n- extra", f)!!.first())
     }
 

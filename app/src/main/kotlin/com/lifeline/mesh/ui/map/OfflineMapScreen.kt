@@ -101,8 +101,15 @@ data class Place(
     val key: String get() = "$kind:$id"
 }
 
-/** A dashed line from a responder to the alert it is heading to. [toMe]: that alert is mine. */
-data class Route(val fromLat: Double, val fromLon: Double, val toLat: Double, val toLon: Double, val toMe: Boolean)
+/**
+ * A dashed line from a responder to the alert it is heading to. [toMe]: that alert is mine. [points]: the way it is
+ * drawn, along the roads once the route is known (straight from start to end until then); [travel]: how they move.
+ */
+data class Route(
+    val fromLat: Double, val fromLon: Double, val toLat: Double, val toLon: Double, val toMe: Boolean,
+    val travel: com.lifeline.mesh.triage.Travel = com.lifeline.mesh.triage.Travel.VEHICLE,
+    val points: List<Pair<Double, Double>> = listOf(fromLat to fromLon, toLat to toLon),
+)
 
 /**
  * Lines for every visible responder with a known job. Teams see every line; anyone else only lines to their own
@@ -115,7 +122,8 @@ fun routes(
     val lat = h.lat ?: return@mapNotNull null
     val lon = h.lon ?: return@mapNotNull null
     val toMe = packets.firstOrNull { it.id == h.alertId }?.isMine == true
-    if (!viewerIsTeam && !toMe) null else Route(pl.lat, pl.lon, lat, lon, toMe)
+    val role = com.lifeline.mesh.packet.HelloRole.fromCode(pl.kind - 10) ?: com.lifeline.mesh.packet.HelloRole.VOLUNTEER
+    if (!viewerIsTeam && !toMe) null else Route(pl.lat, pl.lon, lat, lon, toMe, com.lifeline.mesh.triage.Teams.defaultTravel(role))
 }
 
 /** Live positions this phone may show (teams see everyone; others see only teams), as map places. */
@@ -151,7 +159,19 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     // Where each responder is going (from their "help is coming" replies), and the lines this phone may draw.
     val done by repo.jobsDone.collectAsStateWithLifecycle()
     val headings = remember(packets, now, done) { com.lifeline.mesh.ui.rescuer.headingsFrom(packets, now, done) }
-    val lines = remember(places, headings, packets, settings.role) { routes(places, headings, packets, settings.role.isTeam) }
+    val straightLines = remember(places, headings, packets, settings.role) { routes(places, headings, packets, settings.role.isTeam) }
+    // Along the roads, around reported blockages; worked out in the background, only when someone moved about 25 m.
+    val roads by repo.roads.collectAsStateWithLifecycle()
+    val blocks = remember(packets) { com.lifeline.mesh.ui.rescuer.blocksFrom(packets) }
+    val routeKey = straightLines.map { listOf(Math.round(it.fromLat * 4000), Math.round(it.fromLon * 4000), it.toLat, it.toLon, it.travel) }
+    val lines by produceState(straightLines, routeKey, roads, blocks) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            straightLines.map { r ->
+                val p = com.lifeline.mesh.routing.RoutePlanner.plan(roads, r.fromLat to r.fromLon, emptyList(), r.toLat to r.toLon, r.travel, blocks)
+                r.copy(points = p.points)
+            }
+        }
+    }
     val archive by produceState<Result<File?>?>(null) { value = Result.success(MapAssets.prepare(context)) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
@@ -384,10 +404,15 @@ private fun LibreMap(
                 .take(2).forEach { add(LatLng(it.lat, it.lon)) }
         }.filter { MapAssets.contains(it.latitude, it.longitude) }
         if (points.isEmpty()) return@LaunchedEffect
+        // The map can be short (landscape): padding larger than the map makes the fit fail and leaves the camera off the
+        // map (seen on the iQOO 15). Wait for the view's size, and keep the padding to a quarter of its shorter side.
+        var tries = 0
+        while ((mapView.width == 0 || mapView.height == 0) && tries++ < 40) kotlinx.coroutines.delay(50)
+        if (mapView.width == 0 || mapView.height == 0) return@LaunchedEffect
         framed = true
+        val pad = minOf((64 * density).toInt(), minOf(mapView.width, mapView.height) / 4)
         val update = if (points.size == 1) org.maplibre.android.camera.CameraUpdateFactory.newLatLng(points[0])
-        else org.maplibre.android.camera.CameraUpdateFactory.newLatLngBounds(
-            LatLngBounds.Builder().includes(points).build(), (64 * density).toInt())
+        else org.maplibre.android.camera.CameraUpdateFactory.newLatLngBounds(LatLngBounds.Builder().includes(points).build(), pad)
         m.animateCamera(update)
         if (m.cameraPosition.zoom > 16.0) m.animateCamera(org.maplibre.android.camera.CameraUpdateFactory.zoomTo(16.0))
     }
@@ -396,7 +421,7 @@ private fun LibreMap(
     LaunchedEffect(style, ranked, places, routes, me) {
         val st = style ?: return@LaunchedEffect
         st.getSourceAs<GeoJsonSource>("routes")?.setGeoJson(FeatureCollection.fromFeatures(routes.map { r ->
-            Feature.fromGeometry(LineString.fromLngLats(listOf(Point.fromLngLat(r.fromLon, r.fromLat), Point.fromLngLat(r.toLon, r.toLat))))
+            Feature.fromGeometry(LineString.fromLngLats(r.points.map { (la, lo) -> Point.fromLngLat(lo, la) }))
         }))
         val alerts = ranked.mapNotNull { r ->
             val p = r.alert.position ?: return@mapNotNull null

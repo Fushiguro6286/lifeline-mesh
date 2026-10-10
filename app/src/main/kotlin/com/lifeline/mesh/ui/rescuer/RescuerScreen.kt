@@ -103,6 +103,21 @@ fun rankAlerts(packets: List<PacketEntity>, me: GeoFix?, now: Long): List<Ranked
     )
 }
 
+/**
+ * Places reported blocked in the last 6 hours: "Road blocked" community reports and alerts that say the road is
+ * blocked. Routes keep 40 m away from each.
+ */
+fun blocksFrom(packets: List<PacketEntity>, now: Long = System.currentTimeMillis()): List<com.lifeline.mesh.routing.Block> =
+    packets.filter { p ->
+        now - p.receivedAt < ACTIVE_MS && (
+            (p.type == PacketType.REPORT.code && p.reportType == com.lifeline.mesh.packet.ReportType.ROAD_BLOCKED.code) ||
+                (p.type == PacketType.ALERT.code && (p.needs ?: 0) and Need.ROAD_BLOCKED.bit != 0))
+    }.mapNotNull { p ->
+        val r = p.toReport()
+        val la = r.lat ?: return@mapNotNull null; val lo = r.lon ?: return@mapNotNull null
+        com.lifeline.mesh.routing.Block(la, lo)
+    }.distinct()
+
 /** "I'm safe" check-ins stored here, as (origin, time). */
 fun checkInsOf(packets: List<PacketEntity>): List<Pair<Int, Long>> =
     packets.filter { it.type == PacketType.CHECK_IN.code }.map { it.origin to it.receivedAt }
@@ -186,6 +201,7 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
             val facts = remember(ranked, checkIns) { com.lifeline.mesh.ai.SituationReport.facts(ranked, checkIns.size, ::distanceText) }
             SituationReportCard(facts)
         }
+        item { PlanCard(settings, ranked) }
         item { PrimaryButtonRow(onAsk) }
         item { SectionTitle(stringResource(R.string.rescue_alerts) + if (ranked.isEmpty()) "" else " · ${ranked.size}") }
         if (ranked.isEmpty()) {

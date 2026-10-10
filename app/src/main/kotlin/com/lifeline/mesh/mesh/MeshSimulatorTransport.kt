@@ -130,6 +130,10 @@ class MeshSimulation(
     val centerLat: Double = LAT,
     val centerLon: Double = LON,
     latencyMs: Long = 120L,
+    /** The offline road network (null until loaded): teams drive along roads when it is there. */
+    private val roads: () -> com.lifeline.mesh.routing.RoadMap? = { null },
+    /** Places reported blocked right now: teams' routes go around them, and change when a new one is reported. */
+    private val blocks: () -> List<com.lifeline.mesh.routing.Block> = { emptyList() },
 ) {
     /** A virtual phone: name, role, where it stands (metres north/east of the venue centre), battery, origin. */
     data class Spec(val name: String, val role: HelloRole, val northM: Double, val eastM: Double, val battery: Int, val origin: Int)
@@ -194,6 +198,11 @@ class MeshSimulation(
     /** A rescue a team has taken on: where to go, whose alert it was, how urgent, and when it was accepted. */
     private data class Task(val alertId: Long, val origin: Int, val lat: Double, val lon: Double, val severity: Int, val acceptedAt: Long) {
         fun asHeading(responder: Int) = com.lifeline.mesh.triage.Heading(responder, alertId, lat, lon, 0, acceptedAt, severity)
+        /** The way there (road points, or a straight line), the blockages it was planned around, and progress along it. */
+        @Volatile var path: List<Pair<Double, Double>>? = null
+        @Volatile var pathBlocks: List<com.lifeline.mesh.routing.Block>? = null
+        @Volatile var planning = false
+        var next = 1
     }
 
     private inner class Phone(val spec: Spec) : RouterListener {
@@ -225,9 +234,12 @@ class MeshSimulation(
                 val known = packet.latE6 != 0 || packet.lonE6 != 0
                 val travel = com.lifeline.mesh.triage.Teams.defaultTravel(spec.role)
                 // Through every open job at least as urgent as this one, then here.
-                val ahead = queue().filter { it.severity >= packet.severity }.map { it.asHeading(spec.origin) }
-                val eta = if (!known) 20 else com.lifeline.mesh.triage.Responders.routeEta(
-                    lat, lon, ahead, packet.latE6 / 1e6, packet.lonE6 / 1e6, travel).second
+                val ahead = queue().filter { it.severity >= packet.severity }.map { it.lat to it.lon }
+                // By road where the map has roads, around reported blockages (in the background: A* is not for the UI thread).
+                val eta = if (!known) 20 else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    com.lifeline.mesh.routing.RoutePlanner.plan(roads(), lat to lon, ahead, packet.latE6 / 1e6 to packet.lonE6 / 1e6,
+                        travel, blocks()).minutes
+                }
                 router.originate(Packet.Ack(router.newHeader(), packet.header.messageId, eta.coerceIn(1, 255), onTheWay(spec.role)))
                 if (known) tasks.add(Task(packet.header.messageId, packet.header.origin, packet.latE6 / 1e6, packet.lonE6 / 1e6,
                     packet.severity, clock()))
@@ -235,25 +247,42 @@ class MeshSimulation(
         }
 
         /**
-         * A team drives towards its most urgent task at time-lapse speed (a new urgent one makes it turn); on arrival the
-         * person checks in safe.
+         * A team drives towards its most urgent task at time-lapse speed (a new urgent one makes it turn), along the roads
+         * of the offline map, around reported blockages (a new blockage makes it plan again from where it is); on arrival
+         * the person checks in safe.
          */
         fun tick(now: Long) {
             var moved = false
             val t = queue().firstOrNull()
             if (t != null && now >= restUntil && mesh.isUp(name)) {
-                val d = com.lifeline.mesh.triage.GeoMath.distanceM(lat, lon, t.lat, t.lon)
-                val step = com.lifeline.mesh.triage.Teams.defaultTravel(spec.role).kmh / 3.6 * (TICK_MS / 1000.0) * TIME_LAPSE
-                if (d <= step) {
-                    lat = t.lat; lon = t.lon
-                    tasks.remove(t)
-                    restUntil = now + 10_000 // on the scene for a moment before the next job
-                    phones.values.firstOrNull { it.spec.origin == t.origin }?.let { p -> scope.launch { delay(3_000); p.checkIn() } }
-                } else {
-                    val f = step / d
-                    lat += (t.lat - lat) * f; lon += (t.lon - lon) * f
+                val travel = com.lifeline.mesh.triage.Teams.defaultTravel(spec.role)
+                val b = blocks()
+                // Plan (or plan again) in the background; keep going on the old path meanwhile.
+                if ((t.path == null || t.pathBlocks != b) && !t.planning) {
+                    t.planning = true
+                    val fromLat = lat; val fromLon = lon
+                    scope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                        val p = com.lifeline.mesh.routing.RoutePlanner.plan(roads(), fromLat to fromLon, emptyList(), t.lat to t.lon, travel, b)
+                        t.path = p.points; t.next = 1; t.pathBlocks = b; t.planning = false
+                    }
                 }
-                moved = true
+                var stepLeft = travel.kmh / 3.6 * (TICK_MS / 1000.0) * TIME_LAPSE
+                val path = t.path
+                if (path != null) {
+                    while (stepLeft > 0 && t.next < path.size) {
+                        val (tLat, tLon) = path[t.next]
+                        val d = com.lifeline.mesh.triage.GeoMath.distanceM(lat, lon, tLat, tLon)
+                        if (d <= stepLeft) { lat = tLat; lon = tLon; stepLeft -= d; t.next++ }
+                        else { val f = stepLeft / d; lat += (tLat - lat) * f; lon += (tLon - lon) * f; stepLeft = 0.0 }
+                    }
+                    moved = true
+                    if (t.next >= path.size && t.pathBlocks == b) {
+                        lat = t.lat; lon = t.lon
+                        tasks.remove(t)
+                        restUntil = now + 10_000 // on the scene for a moment before the next job
+                        phones.values.firstOrNull { it.spec.origin == t.origin }?.let { p -> scope.launch { delay(3_000); p.checkIn() } }
+                    }
+                }
             }
             // Moving teams report every tick; everyone else every 20 s (real phones: 30 s moving, 2 min still).
             if (mesh.isUp(name) && (moved || now - lastPositionAt >= 20_000)) {

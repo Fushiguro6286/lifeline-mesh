@@ -100,8 +100,10 @@ object SituationReport {
         if (lines.size < 3) return null
         val three = lines.take(3)
         if (three.any { it.length > 200 || it.contains('{') }) return null
-        val used = three.flatMap { line -> Regex("\\d+").findAll(line).map { it.value }.toList() }
+        val used = three.flatMap { line -> Regex("\\p{Nd}+").findAll(line).map { it.value }.toList() }
         if (used.any { it !in f.numbers }) return null
+        // A number written as a word ("Two people") cannot be checked against the facts, so it is not accepted.
+        if (three.any { WeatherLine.NUMBER_WORDS.containsMatchIn(it) }) return null
         return three
     }
 }

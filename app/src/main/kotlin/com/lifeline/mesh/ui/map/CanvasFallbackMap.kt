@@ -112,7 +112,9 @@ fun CanvasFallbackMap(
         // Responder → job lines (dashed), under every marker.
         val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 7.dp.toPx()))
         for (r in routes) {
-            drawLine(c.link, at(plot(r.fromLat, r.fromLon)), at(plot(r.toLat, r.toLon)), strokeWidth = 3.dp.toPx(), pathEffect = dash)
+            val path = androidx.compose.ui.graphics.Path()
+            r.points.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
+            drawPath(path, c.link, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), pathEffect = dash))
         }
 
         // Help points: squares; check-ins: small green dots; live positions: teams as teal squares, people as rings.

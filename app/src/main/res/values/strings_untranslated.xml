@@ -173,6 +173,12 @@
     <!-- Phase 10: travel-time estimates (Rescue tab, English like the rest of it) -->
     <string name="eta_estimate">About %1$d min %2$s · estimate</string>
     <string name="eta_basis">Your estimate: %1$d min %2$s (straight line × %3$s at %4$d km/h).</string>
+    <string name="eta_estimate_road">About %1$d min %2$s · %3$s km on the map\'s roads · estimate</string>
+    <string name="eta_basis_road">Your estimate: %1$d min, %2$s km along the offline map\'s roads at assumed emergency speeds.</string>
+    <plurals name="eta_avoided">
+        <item quantity="one">Goes around %d reported blocked road.</item>
+        <item quantity="other">Goes around %d reported blocked roads.</item>
+    </plurals>
     <plurals name="eta_jobs_first">
         <item quantity="one">Includes your %d more urgent or earlier job first.</item>
         <item quantity="other">Includes your %d more urgent or earlier jobs first.</item>

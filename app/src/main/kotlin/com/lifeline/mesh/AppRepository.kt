@@ -49,6 +49,21 @@ class AppRepository(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    /**
+     * The road network of the bundled offline map, for travel estimates and routes (10 Oct 2026). Null until it has
+     * loaded (a few seconds after start, in the background) or if the map could not be read: estimates then use
+     * straight lines.
+     */
+    val roads = MutableStateFlow<com.lifeline.mesh.routing.RoadMap?>(null)
+
+    fun loadRoads(read: () -> ByteArray) = scope.launch {
+        val t = System.currentTimeMillis()
+        roads.value = runCatching { com.lifeline.mesh.routing.RoadMap.fromPmtiles(read()) }
+            .onFailure { android.util.Log.w("AppRepository", "road map not loaded", it) }
+            .onSuccess { android.util.Log.i("AppRepository", "road map: ${it.nodes} points in ${System.currentTimeMillis() - t} ms") }
+            .getOrNull()
+    }
+
     /** Null until the settings file has been read once. */
     val settings: StateFlow<Settings?> =
         settingsStore.settings.stateIn(scope, SharingStarted.Eagerly, null)

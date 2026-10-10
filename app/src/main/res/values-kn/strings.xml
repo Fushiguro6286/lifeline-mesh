@@ -355,4 +355,9 @@
         <item quantity="other">ಇನ್ನೂ %d ಎಚ್ಚರಿಕೆಗಳನ್ನು ತೋರಿಸಿ</item>
     </plurals>
     <string name="watch_sim_high_heart">ಹೆಚ್ಚಿನ ಹೃದಯ ಬಡಿತ ಅನುಕರಿಸಿ</string>
+    <string name="status_live_note_road">ಅವರ ಸ್ಥಳದಿಂದ ರಸ್ತೆಗಳ ಮೂಲಕ ಲೈವ್ ಅಂದಾಜು, ಅವರು ಚಲಿಸಿದಂತೆ ಬದಲಾಗುತ್ತದೆ.</string>
+    <plurals name="status_avoided">
+        <item quantity="one">ಅವರ ಮಾರ್ಗ %d ಮುಚ್ಚಿದ ರಸ್ತೆಯನ್ನು ತಪ್ಪಿಸುತ್ತದೆ.</item>
+        <item quantity="other">ಅವರ ಮಾರ್ಗ %d ಮುಚ್ಚಿದ ರಸ್ತೆಗಳನ್ನು ತಪ್ಪಿಸುತ್ತದೆ.</item>
+    </plurals>
 </resources>

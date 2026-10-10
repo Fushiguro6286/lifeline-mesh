@@ -65,6 +65,24 @@ object Responders {
     }
 
     /**
+     * Jobs at about the same place count once (a rescuer who reaches one has reached the other): when a team answers an
+     * emergency two phones reported, it sends one reply per report. Keeps the first of each place, in order; jobs within
+     * [radiusM] (the merge radius) of [except] (where this route ends) are dropped too.
+     */
+    fun distinctStops(jobs: List<Heading>, except: Pair<Double, Double>? = null, radiusM: Double = Merger.RADIUS_M): List<Heading> {
+        val out = ArrayList<Heading>()
+        for (j in jobs) {
+            val la = j.lat; val lo = j.lon
+            if (la != null && lo != null) {
+                if (except != null && GeoMath.distanceM(la, lo, except.first, except.second) <= radiusM) continue
+                if (out.any { o -> o.lat != null && o.lon != null && GeoMath.distanceM(la, lo, o.lat, o.lon) <= radiusM }) continue
+            }
+            out += j
+        }
+        return out
+    }
+
+    /**
      * Straight-line route for a responder at ([fromLat], [fromLon]) that first does [stops] in order, then goes to
      * ([toLat], [toLon]): total metres and minutes at [travel]'s speed. Stops without a position are skipped (no leg
      * can be measured to them), so the estimate then only covers the known legs.

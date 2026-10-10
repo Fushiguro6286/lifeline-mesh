@@ -183,6 +183,15 @@ class AiRuntime(private val context: Context, private val database: AppDatabase)
         }
     }
 
+    /** The rescue plan explained in at most two sentences, validated against its numbers; null = the computed text. */
+    suspend fun plan(stops: List<PlanStop>): String? {
+        if (!canUse("en")) return null
+        return nonEssential { e ->
+            val r = e.generate(PlanLine.request(stops))
+            (if (r.ok) PlanLine.validate(r.text, stops) else null) to r
+        }
+    }
+
     /** A model answer that cites existing alerts; null = use the rule-based answer. */
     suspend fun ask(question: String, ranked: List<com.lifeline.mesh.triage.RankedAlert>): MeshAnswer? = nonEssential { e ->
         val r = e.generate(AskMesh.request(question, ranked))

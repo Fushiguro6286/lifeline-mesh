@@ -112,8 +112,11 @@ fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String)
             Text(stringResource(R.string.detail_eta), style = Lifeline.type.label, color = c.inkMuted, modifier = Modifier.padding(top = Space.s))
             estimate?.let { e ->
                 val t = e.travel
-                Text(stringResource(R.string.eta_basis, e.minutes, t.label, t.detour.toString(), t.kmh.toInt()),
+                Text(if (e.byRoad) stringResource(R.string.eta_basis_road, e.minutes, "%.1f".format(e.meters / 1000))
+                    else stringResource(R.string.eta_basis, e.minutes, t.label, t.detour.toString(), t.kmh.toInt()),
                     style = Lifeline.type.caption, color = c.inkMuted)
+                if (e.avoided > 0) Text(pluralStringResource(R.plurals.eta_avoided, e.avoided, e.avoided),
+                    style = Lifeline.type.caption, color = c.warn)
                 if (e.jobsFirst > 0) Text(pluralStringResource(R.plurals.eta_jobs_first, e.jobsFirst, e.jobsFirst),
                     style = Lifeline.type.caption, color = c.inkMuted)
             }

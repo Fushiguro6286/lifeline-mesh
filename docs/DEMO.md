@@ -315,6 +315,30 @@ early (apps cannot), it runs out by itself.
 - Warning banner: one per kind of event (newest) and at most two, with "Show N more", so a storm does not push the SOS
   button off the screen (seen in the test: four stacked warnings).
 
+## Road routes, urgent first, and blocked roads (added 10 Oct 2026, on request)
+
+- Offline road routing (routing/RoadMap.kt): the roads layer of the bundled map (central Bengaluru) becomes a road
+  graph at start-up (4 s on the iQOO 15, in the background); junctions the drawing simplification dropped are rebuilt,
+  so 99 % of the roads connect. A* finds the fastest route for a vehicle (no footpaths) or on foot; boats stay
+  straight-line. Speeds are assumptions (highway 40, major 30, minor 20 km/h), shown as estimates. RoadMapTest uses the
+  real map: MG Road to Cubbon Park 2,023 m / 5 min by road (1,313 m straight).
+- Blocked roads: "Road blocked" community reports and alerts that say the road is blocked (last 6 h) are avoided by
+  40 m. A blockage within 100 m of where a leg starts or ends is not avoided (help has to get there).
+- Where it is used: the rescuer's card ("About 5 min by road · 1.8 km on the map's roads · estimate", "Goes around 1
+  reported blocked road"), the Acknowledge sheet, the sender's live ETA ("Live estimate along the roads…", "Their route
+  goes around …"), map lines (along roads; checked on the iQOO 15: vehicle lines 25 to 123 road points, the NDRF boat
+  straight), and the simulated teams, which drive along the roads and plan again when a new blockage is reported.
+- Order: most urgent first, then the job accepted first (Responders.queues) — fixed rules, the same on every phone, so a
+  sender's ETA matches what the team does. "Your plan" on a team's Rescue tab lists the jobs in that order with minutes
+  per leg and arrival, blocked roads avoided, and one or two sentences from the on-device model ("Written on device",
+  every number checked, numbers written as words rejected; the computed text otherwise). Two replies for one emergency
+  (one per report) count as one stop. Checked on the iQOO 15 as Ambulance: "Your plan · 1 · Urgent · trapped, medical,
+  2 people · 4 min · reached after about 4 min" (that test showed the same job twice; fixed and unit-tested since).
+- Also fixed: the situation report now rejects numbers written as words too (seen: "Two people require…"), and the
+  map no longer opens blank after a rotation (the camera fit used more padding than a short landscape map has).
+- NOT checked on the phone: a simulated team visibly detouring around a blockage (unit-tested on the real map), and the
+  plan card with two different jobs after the duplicate fix.
+
 ## Simulated weather (added 10 Oct 2026, on request)
 
 - Simulation on: the SOS weather card shows a storm story instead of the real weather, labelled "Simulated weather":

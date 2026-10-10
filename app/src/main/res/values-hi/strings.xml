@@ -355,4 +355,9 @@
         <item quantity="other">%d और चेतावनियाँ दिखाएँ</item>
     </plurals>
     <string name="watch_sim_high_heart">तेज़ धड़कन सिम्युलेट करें</string>
+    <string name="status_live_note_road">उनकी जगह से सड़कों के रास्ते लाइव अनुमान, उनके चलने के साथ बदलता है।</string>
+    <plurals name="status_avoided">
+        <item quantity="one">उनका रास्ता %d बंद बताई गई सड़क से बचकर जाता है।</item>
+        <item quantity="other">उनका रास्ता %d बंद बताई गई सड़कों से बचकर जाता है।</item>
+    </plurals>
 </resources>

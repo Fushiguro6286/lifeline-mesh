@@ -129,4 +129,16 @@ class RespondersTest {
         val unknown = Heading(7, 3L, null, null, 10, now, severity = 3)
         assertEquals(1_000.0, Responders.routeEta(12.970, 77.590, listOf(unknown), 12.970 + km, 77.590, Travel.VEHICLE).first, 5.0)
     }
+
+    @Test fun twoRepliesForOneEmergencyAreOneStop() {
+        val m = 1 / 111_195.0
+        val jobs = listOf(
+            Heading(7, 1L, 12.970, 77.590, 5, now, 3),
+            Heading(7, 2L, 12.970 + 30 * m, 77.590, 5, now, 3),   // the other report of the same place
+            Heading(7, 3L, 12.980, 77.600, 5, now, 2),
+        )
+        assertEquals(listOf(1L, 3L), Responders.distinctStops(jobs).map { it.alertId })
+        // Going to the place of job 3 itself: only job 1 is "first".
+        assertEquals(listOf(1L), Responders.distinctStops(jobs, except = 12.980 to 77.600).map { it.alertId })
+    }
 }

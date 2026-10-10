@@ -5,19 +5,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.BeforeClass
 import org.junit.Test
-import java.io.File
 
 /** Uses the real bundled map (central Bengaluru), so the routes are on real roads. */
 class RoadMapTest {
     companion object {
-        lateinit var map: RoadMap
-        @BeforeClass @JvmStatic fun load() {
-            val t = System.currentTimeMillis()
-            map = RoadMap.fromPmtiles(File("src/main/assets/map/venue.pmtiles").readBytes())
-            println("road graph: ${map.nodes} nodes, ${map.edges} edges in ${System.currentTimeMillis() - t} ms")
-        }
+        val map: RoadMap get() = TestRoads.map
         // MG Road metro area to Cubbon Park (Bengaluru), about 1.3 km apart in a straight line.
         const val A_LAT = 12.9756; const val A_LON = 77.6050
         const val B_LAT = 12.9763; const val B_LON = 77.5929
@@ -77,5 +70,15 @@ class RoadMapTest {
         // A car does not start on a footpath: the nearest road point for a vehicle has a road it can drive.
         val car = map.nearest(A_LAT, A_LON, mode = RoadMode.VEHICLE)
         assertTrue(map.edgesOf(car).any { it.second != "path" })
+    }
+}
+
+/** The real bundled map's road graph, built once per test run and shared by the routing tests. */
+object TestRoads {
+    val map: RoadMap by lazy {
+        val t = System.currentTimeMillis()
+        RoadMap.fromPmtiles(java.io.File("src/main/assets/map/venue.pmtiles").readBytes()).also {
+            println("road graph: ${it.nodes} nodes, ${it.edges} edges in ${System.currentTimeMillis() - t} ms")
+        }
     }
 }

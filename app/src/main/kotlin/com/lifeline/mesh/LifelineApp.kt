@@ -16,6 +16,7 @@ class LifelineApp : Application() {
     override fun onCreate() {
         super.onCreate()
         uploader.start()
+        repository.loadRoads { assets.open("map/venue.pmtiles").use { it.readBytes() } }
     }
 
     override fun onTrimMemory(level: Int) {

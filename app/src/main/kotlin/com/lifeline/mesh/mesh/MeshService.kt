@@ -404,7 +404,8 @@ class MeshService : Service() {
         // The drill happens around this phone (its fix now, or the last known one), so the demo looks right anywhere.
         val center = if (simulated) repo.myFix.value ?: com.lifeline.mesh.location.LocationProvider(this).lastKnown() else null
         val simulation = if (simulated) MeshSimulation(s, SystemClock::elapsedRealtime, wall,
-            centerLat = center?.lat ?: MeshSimulation.LAT, centerLon = center?.lon ?: MeshSimulation.LON) else null
+            centerLat = center?.lat ?: MeshSimulation.LAT, centerLon = center?.lon ?: MeshSimulation.LON,
+            roads = { repo.roads.value }, blocks = { com.lifeline.mesh.ui.rescuer.blocksFrom(repo.packets.value) }) else null
         val nearby = if (simulated) null else NearbyTransport(this, s, endpointName(settings)) { err ->
             radioError = err
             refreshHealth()

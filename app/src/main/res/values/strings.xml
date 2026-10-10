@@ -365,4 +365,9 @@
         <item quantity="other">Show %d more warnings</item>
     </plurals>
     <string name="watch_sim_high_heart">Simulate high heart rate</string>
+    <string name="status_live_note_road">Live estimate along the roads from their position, updated as they move.</string>
+    <plurals name="status_avoided">
+        <item quantity="one">Their route goes around %d reported blocked road.</item>
+        <item quantity="other">Their route goes around %d reported blocked roads.</item>
+    </plurals>
 </resources>

@@ -121,7 +121,10 @@ fun peopleText(a: MergedAlert): String = when (a.people) {
 }
 
 /** My travel-time estimate for an alert: minutes, how I travel, and how many of my open jobs I do before it. */
-data class MyEta(val minutes: Int, val travel: com.lifeline.mesh.triage.Travel, val jobsFirst: Int)
+data class MyEta(
+    val minutes: Int, val travel: com.lifeline.mesh.triage.Travel, val jobsFirst: Int,
+    val byRoad: Boolean = false, val meters: Double = 0.0, val avoided: Int = 0,
+)
 
 /**
  * My estimate for this alert (Phase 10), or null when I need help myself or either position is unknown. If I have
@@ -140,19 +143,35 @@ fun myEstimate(r: RankedAlert): MyEta? {
     val d = r.distanceM ?: return null
     val now = System.currentTimeMillis()
     val queue = remember(packets, done) { queuesFrom(packets, now, done, mine = true).values.firstOrNull().orEmpty() }
-    val ahead = com.lifeline.mesh.triage.Responders.ahead(queue, r.alert.id, r.alert.severity)
-        .filter { it.alertId !in r.alert.reports.map { rep -> rep.id } }
+    val pos = r.alert.position?.let { p -> p.lat?.let { la -> p.lon?.let { lo -> la to lo } } }
+    val ahead = com.lifeline.mesh.triage.Responders.distinctStops(
+        com.lifeline.mesh.triage.Responders.ahead(queue, r.alert.id, r.alert.severity).filter { it.alertId !in r.alert.reports.map { rep -> rep.id } },
+        except = pos)
     val me = fix; val to = r.alert.position
-    if (ahead.isEmpty() || me == null || to?.lat == null || to.lon == null) return MyEta(com.lifeline.mesh.triage.Teams.etaMinutes(d, s.travel), s.travel, 0)
-    val (_, m) = com.lifeline.mesh.triage.Responders.routeEta(me.lat, me.lon, ahead, to.lat, to.lon, s.travel)
-    return MyEta(m, s.travel, ahead.size)
+    val straight = MyEta(com.lifeline.mesh.triage.Teams.etaMinutes(d, s.travel), s.travel, 0, meters = d * s.travel.detour)
+    if (me == null || to?.lat == null || to.lon == null) return straight
+    // By road through my more urgent (or earlier) jobs, in the background; the straight-line estimate until then.
+    val roads by repo.roads.collectAsStateWithLifecycle()
+    val blocks = remember(packets) { blocksFrom(packets) }
+    val eta by androidx.compose.runtime.produceState(straight, r.alert.id, Math.round(me.lat * 4000), Math.round(me.lon * 4000),
+        ahead.map { it.alertId }, roads, blocks, s.travel) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val p = com.lifeline.mesh.routing.RoutePlanner.plan(roads, me.lat to me.lon,
+                ahead.mapNotNull { h -> h.lat?.let { la -> h.lon?.let { lo -> la to lo } } }, to.lat to to.lon, s.travel, blocks)
+            MyEta(p.minutes, s.travel, ahead.size, p.byRoad, p.meters, p.avoidedBlocks)
+        }
+    }
+    return eta
 }
 
 /** "About 7 min by road · estimate": straight-line distance × detour at an assumed speed, computed in Kotlin. */
 @Composable
 private fun EtaLine(r: RankedAlert) {
     val e = myEstimate(r) ?: return
-    Text(stringResource(R.string.eta_estimate, e.minutes, e.travel.label), style = Lifeline.type.body, color = Lifeline.colors.link)
+    Text(if (e.byRoad) stringResource(R.string.eta_estimate_road, e.minutes, e.travel.label, "%.1f".format(e.meters / 1000))
+        else stringResource(R.string.eta_estimate, e.minutes, e.travel.label), style = Lifeline.type.body, color = Lifeline.colors.link)
+    if (e.avoided > 0) Text(pluralStringResource(R.plurals.eta_avoided, e.avoided, e.avoided),
+        style = Lifeline.type.caption, color = Lifeline.colors.warn)
     if (e.jobsFirst > 0) Text(pluralStringResource(R.plurals.eta_jobs_first, e.jobsFirst, e.jobsFirst),
         style = Lifeline.type.caption, color = Lifeline.colors.inkMuted)
 }

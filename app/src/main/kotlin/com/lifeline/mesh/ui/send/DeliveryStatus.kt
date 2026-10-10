@@ -118,14 +118,29 @@ private fun HelpEta(alert: PacketEntity, ack: PacketEntity?, promised: Int?) {
     val arrived = replies.firstOrNull { (it.origin to alert.id) in done }
     // Where help is going: the position my alert carried, else where I am now.
     val dest = alert.takeIf { (it.lat ?: 0.0) != 0.0 || (it.lon ?: 0.0) != 0.0 }?.let { it.lat!! to it.lon!! } ?: me?.let { it.lat to it.lon }
-    val live = if (dest == null) null else replies.mapNotNull { r ->
+    val roads by repo.roads.collectAsStateWithLifecycle()
+    val blocks = remember(packets) { com.lifeline.mesh.ui.rescuer.blocksFrom(packets) }
+    // Who is coming and from where (rounded to about 25 m, so a route is recomputed only when they really moved).
+    val inputs = if (dest == null) emptyList() else replies.mapNotNull { r ->
         val pos = positions[r.origin]?.takeIf { now - it.heardAt < com.lifeline.mesh.mesh.PositionBeacon.SHOW_MS } ?: return@mapNotNull null
         // More urgent (or earlier) jobs come first: the route goes through each of them, then here.
-        val ahead = queues[r.origin]?.let { com.lifeline.mesh.triage.Responders.ahead(it, alert.id, alert.severity ?: 0) }.orEmpty()
-        val (d, m) = com.lifeline.mesh.triage.Responders.routeEta(pos.lat, pos.lon, ahead, dest.first, dest.second,
-            com.lifeline.mesh.triage.Teams.defaultTravel(pos.role))
-        LiveEta(pos, d, m, ahead.isNotEmpty())
-    }.minByOrNull { it.minutes }
+        val ahead = queues[r.origin]?.let {
+            com.lifeline.mesh.triage.Responders.distinctStops(com.lifeline.mesh.triage.Responders.ahead(it, alert.id, alert.severity ?: 0), except = dest)
+        }.orEmpty()
+        Triple(pos, ahead, Math.round(pos.lat * 4000) to Math.round(pos.lon * 4000))
+    }
+    val liveState = androidx.compose.runtime.produceState<LiveEta?>(null, inputs.map { Triple(it.first.origin, it.second.map { h -> h.alertId }, it.third) },
+        dest, roads, blocks) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            inputs.map { (pos, ahead, _) ->
+                val p = com.lifeline.mesh.routing.RoutePlanner.plan(roads, pos.lat to pos.lon,
+                    ahead.mapNotNull { h -> h.lat?.let { la -> h.lon?.let { lo -> la to lo } } }, dest!!,
+                    com.lifeline.mesh.triage.Teams.defaultTravel(pos.role), blocks)
+                LiveEta(pos, p.meters, p.minutes, ahead.isNotEmpty(), p.byRoad, p.avoidedBlocks)
+            }.minByOrNull { it.minutes }
+        }
+    }
+    val live = liveState.value
     val first = ack ?: replies.minByOrNull { it.receivedAt }
     val left = if (promised != null && first != null) com.lifeline.mesh.triage.Responders.promisedLeft(promised, first.receivedAt, now) else promised
 
@@ -148,7 +163,9 @@ private fun HelpEta(alert: PacketEntity, ack: PacketEntity?, promised: Int?) {
         Text(stringResource(R.string.status_live_who, who, com.lifeline.mesh.ui.rescuer.distanceText(live.distanceM)),
             style = Lifeline.type.bodyStrong, color = c.link)
         if (live.via) Text(stringResource(R.string.status_via_other), style = Lifeline.type.body, color = c.ink)
-        Text(stringResource(R.string.status_live_note), style = Lifeline.type.caption, color = c.inkMuted)
+        Text(stringResource(if (live.byRoad) R.string.status_live_note_road else R.string.status_live_note), style = Lifeline.type.caption, color = c.inkMuted)
+        if (live.avoided > 0) Text(pluralStringResource(R.plurals.status_avoided, live.avoided, live.avoided),
+            style = Lifeline.type.caption, color = c.warn)
         if (promised != null && left != null) Text(stringResource(R.string.status_promised, promised, left), style = Lifeline.type.caption, color = c.inkMuted)
     } else if (left != null) {
         Text(stringResource(R.string.status_eta, left), style = Lifeline.type.display, color = c.ink)
@@ -156,7 +173,10 @@ private fun HelpEta(alert: PacketEntity, ack: PacketEntity?, promised: Int?) {
     }
 }
 
-private data class LiveEta(val who: com.lifeline.mesh.mesh.PeerPosition, val distanceM: Double, val minutes: Int, val via: Boolean)
+private data class LiveEta(
+    val who: com.lifeline.mesh.mesh.PeerPosition, val distanceM: Double, val minutes: Int, val via: Boolean,
+    val byRoad: Boolean = false, val avoided: Int = 0,
+)
 
 /**
  * The nearest rescue team I can see on the mesh (Phase 10), with its live distance and a travel-time estimate at that

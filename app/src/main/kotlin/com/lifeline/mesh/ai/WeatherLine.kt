@@ -30,7 +30,7 @@ data class WeatherFacts(
  * sentence is shown. English only for now: in Hindi or Kannada the card shows the translated computed text.
  */
 object WeatherLine {
-    private val NUMBER_WORDS = Regex(
+    internal val NUMBER_WORDS = Regex(
         "\\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|" +
             "eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|dozen)\\b",
         RegexOption.IGNORE_CASE,
