@@ -798,3 +798,16 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
   kind (about one a minute).
 - NOT checked on the phone yet (it was locked).
 
+## Find someone (added 11 Oct 2026, on request: a feature for the judges)
+- SOS tab card: type a name; the phone searches what it has heard in the last 6 hours (check-ins with names, alerts,
+  replies, hellos and positions) and answers in plain sentences, newest first, at most 4:
+  "Ravi checked in safe 5 min ago, 1 hop away." / "Meena asked for help 2 min ago: trapped, medical, 4 people, 2 hops
+  away. Kiran (Ambulance) said help is coming." / "Asha's phone was last heard 3 min ago, 3 hops away. No alert and no
+  check-in from them." Nothing found: "may be out of reach of the mesh, or their phone may not have the app".
+- Safe vs needs help: whichever is newer of their last check-in and their last alert. Rescue teams also see distance and
+  direction ("1.2 km NE of you"); other phones only the status (Phase 10 privacy rule).
+- No new packet: check-ins and alerts flood the mesh already. Computed text only, no model.
+- Stage use: in simulation, type "Ravi" (he checks in safe in the script) or "Meena" (her alert, and who answered).
+- FindPersonTest: search (any case, every word, too short), status rules, the sentences.
+- NOT checked on the phone yet (it was locked).
+

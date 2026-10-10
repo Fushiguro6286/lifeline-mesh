@@ -288,6 +288,7 @@ fun SendScreen(settings: Settings, onFirstAid: () -> Unit = {}, vm: SendViewMode
             vm.checkIn(settings.displayName)
             BluetoothSosBeacon(context).stop() // safe: the phone's own Bluetooth name comes back
         })
+        FindCard(settings)
         NoAppCard(com.lifeline.mesh.mesh.BluetoothSos.name(
             com.lifeline.mesh.packet.Need.fromMask(latestMine?.needs ?: 0), latestMine?.people ?: 0, settings.displayName))
         FirstAidLink(onFirstAid)
