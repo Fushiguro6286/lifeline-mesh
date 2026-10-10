@@ -370,6 +370,7 @@ class MeshService : Service() {
         repo.neighborOrigins.value = emptyMap()
         repo.waiting.value = 0
         repo.positions.value = emptyMap()
+        repo.jobsDone.value = emptySet()
         scope.launch(dbWrites) { repo.database.topology().clear() }
         lastConnected = -1
     }

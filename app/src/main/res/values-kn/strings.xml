@@ -242,4 +242,14 @@
     <string name="fall_send_now">ಈಗಲೇ SOS ಕಳುಹಿಸಿ</string>
     <string name="fall_test">ಬೀಳುವಿಕೆ ಎಚ್ಚರಿಕೆಯ ಪರೀಕ್ಷೆ</string>
     <string name="fall_channel">ಬೀಳುವಿಕೆ ಎಚ್ಚರಿಕೆ</string>
+    <!-- Live ETA for the sender -->
+    <string name="status_live_min">ಸುಮಾರು %d ನಿಮಿಷ</string>
+    <string name="status_live_who">%1$s %2$s ದೂರದಲ್ಲಿದೆ</string>
+    <string name="status_live_note">ಅವರ ಸ್ಥಳದಿಂದ ಲೈವ್ ಅಂದಾಜು, ಅವರು ಚಲಿಸಿದಂತೆ ಬದಲಾಗುತ್ತದೆ (ನೇರ ದೂರ, ಅವರ ಸಾಮಾನ್ಯ ವೇಗದಲ್ಲಿ).</string>
+    <string name="status_via_other">ದಾರಿಯಲ್ಲಿ ಅವರು ಮೊದಲು ಬೇರೊಬ್ಬರಿಗೆ ಸಹಾಯ ಮಾಡುತ್ತಿದ್ದಾರೆ.</string>
+    <string name="status_promised">ಅವರು %1$d ನಿಮಿಷ ಎಂದಿದ್ದರು · ಅದರಲ್ಲಿ %2$d ನಿಮಿಷ ಉಳಿದಿದೆ</string>
+    <string name="status_promised_only">ಅವರು ಹೇಳಿದ %d ನಿಮಿಷದಿಂದ ಎಣಿಕೆ. ಅವರ ಲೈವ್ ಸ್ಥಳ ಇನ್ನೂ ತಿಳಿದಿಲ್ಲ.</string>
+    <string name="status_volunteer">ಒಬ್ಬ ಸ್ವಯಂಸೇವಕ</string>
+    <string name="status_arrived">ಅವರು ಬಂದಿದ್ದಾರೆ</string>
+    <string name="status_arrived_body">ನಿಮ್ಮ ಎಚ್ಚರಿಕೆಯಲ್ಲಿ ನೀಡಿದ ಸ್ಥಳಕ್ಕೆ ಅವರು ತಲುಪಿದ್ದಾರೆ (75 ಮೀ ಒಳಗೆ). ಸಾಧ್ಯವಾದರೆ ಕೂಗಿ ಅಥವಾ ಕೈ ಬೀಸಿ.</string>
 </resources>

@@ -70,10 +70,12 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.io.File
 
@@ -97,6 +99,23 @@ data class Place(
 ) {
     /** Unique across kinds (a live position's id is an origin, a report's a message id). */
     val key: String get() = "$kind:$id"
+}
+
+/** A dashed line from a responder to the alert it is heading to. [toMe]: that alert is mine. */
+data class Route(val fromLat: Double, val fromLon: Double, val toLat: Double, val toLon: Double, val toMe: Boolean)
+
+/**
+ * Lines for every visible responder with a known job. Teams see every line; anyone else only lines to their own
+ * alerts, so another person's position is never drawn for them (Phase 10 visibility rule).
+ */
+fun routes(
+    places: List<Place>, headings: Map<Int, com.lifeline.mesh.triage.Heading>, packets: List<PacketEntity>, viewerIsTeam: Boolean,
+): List<Route> = places.filter { it.kind >= 11 }.mapNotNull { pl ->
+    val h = headings[pl.id.toInt()] ?: return@mapNotNull null
+    val lat = h.lat ?: return@mapNotNull null
+    val lon = h.lon ?: return@mapNotNull null
+    val toMe = packets.firstOrNull { it.id == h.alertId }?.isMine == true
+    if (!viewerIsTeam && !toMe) null else Route(pl.lat, pl.lon, lat, lon, toMe)
 }
 
 /** Live positions this phone may show (teams see everyone; others see only teams), as map places. */
@@ -129,6 +148,10 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     val places = remember(packets, positions, settings.role, now) {
         places(packets, now) + positionPlaces(positions.values, settings.role.hello, System.currentTimeMillis())
     }
+    // Where each responder is going (from their "help is coming" replies), and the lines this phone may draw.
+    val done by repo.jobsDone.collectAsStateWithLifecycle()
+    val headings = remember(packets, now, done) { com.lifeline.mesh.ui.rescuer.headingsFrom(packets, now, done) }
+    val lines = remember(places, headings, packets, settings.role) { routes(places, headings, packets, settings.role.isTeam) }
     val archive by produceState<Result<File?>?>(null) { value = Result.success(MapAssets.prepare(context)) }
     var failed by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(MapMode.MAP) }
@@ -149,7 +172,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize()) {
             if (mode == MapMode.MAP && mapUsable) {
                 key(c.isNight) {
-                    LibreMap(file!!, c, ranked, places, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
+                    LibreMap(file!!, c, ranked, places, lines, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, onFail = { failed = true })
                 }
                 Text(
                     stringResource(R.string.map_attribution), style = Lifeline.type.caption, color = c.ink,
@@ -158,7 +181,7 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
                 )
                 if (me != null && !MapAssets.contains(me!!.lat, me!!.lon)) Banner(stringResource(R.string.map_outside), Modifier.align(Alignment.TopCenter))
             } else {
-                CanvasFallbackMap(ranked, places, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, modifier = Modifier.fillMaxSize())
+                CanvasFallbackMap(ranked, places, me, onAlertTap = { open = it }, onPlaceTap = { openPlace = it }, routes = lines, modifier = Modifier.fillMaxSize())
                 if (mode == MapMode.MAP && note != null) Banner(note, Modifier.align(Alignment.TopCenter))
             }
             val unplaced = ranked.count { it.alert.position == null }
@@ -171,7 +194,11 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     openPlace?.let { key ->
         val p = places.firstOrNull { it.key == key }
         if (p == null) openPlace = null
-        else PlaceDetailSheet(p, me, settings, onDismiss = { openPlace = null })
+        else {
+            val h = if (p.kind >= 11) headings[p.id.toInt()] else null
+            PlaceDetailSheet(p, me, settings, heading = h, target = h?.let { hh -> packets.firstOrNull { it.id == hh.alertId } },
+                onDismiss = { openPlace = null })
+        }
     }
 
     open?.let { id ->
@@ -232,6 +259,7 @@ private fun LibreMap(
     c: LifelineColors,
     ranked: List<RankedAlert>,
     places: List<Place>,
+    routes: List<Route>,
     me: GeoFix?,
     onAlertTap: (Long) -> Unit,
     onPlaceTap: (String) -> Unit,
@@ -297,6 +325,7 @@ private fun LibreMap(
                         ).forEach { (kind, v) ->
                             st.addImage("place-$kind", MarkerBitmaps.square(context, v.first, c.surface.toArgb(), v.second.toArgb(), v.second.toArgb(), density))
                         }
+                        st.addSource(GeoJsonSource("routes"))
                         st.addSource(GeoJsonSource("places"))
                         st.addSource(GeoJsonSource("alerts"))
                         st.addSource(GeoJsonSource("me"))
@@ -305,6 +334,13 @@ private fun LibreMap(
                             PropertyFactory.iconAllowOverlap(true),
                             PropertyFactory.iconIgnorePlacement(true),
                         )
+                        // Responder → job lines, under every marker.
+                        st.addLayer(LineLayer("routes", "routes").withProperties(
+                            PropertyFactory.lineColor(c.link.toArgb()),
+                            PropertyFactory.lineWidth(3f),
+                            PropertyFactory.lineOpacity(0.85f),
+                            PropertyFactory.lineDasharray(arrayOf(2f, 1.5f)),
+                        ))
                         st.addLayer(SymbolLayer("places", "places").withProperties(*icon.toTypedArray()))
                         st.addLayer(SymbolLayer("alerts", "alerts").withProperties(*(icon + PropertyFactory.symbolSortKey(Expression.get("order"))).toTypedArray()))
                         st.addLayer(SymbolLayer("me", "me").withProperties(*icon.toTypedArray()))
@@ -353,8 +389,11 @@ private fun LibreMap(
     }
 
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.
-    LaunchedEffect(style, ranked, places, me) {
+    LaunchedEffect(style, ranked, places, routes, me) {
         val st = style ?: return@LaunchedEffect
+        st.getSourceAs<GeoJsonSource>("routes")?.setGeoJson(FeatureCollection.fromFeatures(routes.map { r ->
+            Feature.fromGeometry(LineString.fromLngLats(listOf(Point.fromLngLat(r.fromLon, r.fromLat), Point.fromLngLat(r.toLon, r.toLat))))
+        }))
         val alerts = ranked.mapNotNull { r ->
             val p = r.alert.position ?: return@mapNotNull null
             val name = "alert-${r.rank}-${r.alert.severity}-${r.alert.people.coerceIn(0, 20)}-${if (r.alert.acked) 1 else 0}"

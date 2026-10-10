@@ -110,6 +110,8 @@
     <string name="rescue_checkins">Check-ins</string>
     <string name="rescue_checkins_empty">Nobody has checked in yet.</string>
     <string name="rescue_checkin_row">%1$s is safe</string>
+    <string name="rescue_checkin_you">%1$s is safe · you</string>
+    <string name="rescue_checkin_you_body">Your check-in, sent from this phone. Rescue teams see it the same way.</string>
     <string name="rescue_reports">Community reports</string>
     <string name="rescue_reports_empty">No community reports yet.</string>
     <string name="report_1">Road blocked</string>
@@ -187,4 +189,13 @@
     <string name="settings_profile_set_password">Set password</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_body">Opens the sign-in screen, where you can pick another profile or create one. Alerts and replies stay on this phone.</string>
+    <!-- Where a responder is going (map) -->
+    <string name="place_heading">Heading to: %s</string>
+    <string name="place_heading_eta">%1$s from there · about %2$d min %3$s (estimate)</string>
+    <string name="place_heading_nopos">That alert has no position, so no distance.</string>
+    <string name="place_heading_you">On the way to you · about %d min (estimate)</string>
+    <string name="place_heading_you_nopos">On the way to you</string>
+    <string name="place_heading_other">On the way to help someone else.</string>
+    <string name="place_heading_none">No job right now: no \"help is coming\" from them yet.</string>
+    <string name="place_heading_said">Their reply: ETA %1$d min, %2$s</string>
 </resources>

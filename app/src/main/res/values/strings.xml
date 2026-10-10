@@ -252,4 +252,14 @@
     <string name="fall_send_now">Send SOS now</string>
     <string name="fall_test">Test of the fall alarm</string>
     <string name="fall_channel">Fall alarm</string>
+    <!-- Live ETA for the sender -->
+    <string name="status_live_min">About %d min</string>
+    <string name="status_live_who">%1$s is %2$s away</string>
+    <string name="status_live_note">Live estimate from their position, updated as they move (straight line at their usual speed).</string>
+    <string name="status_via_other">They are helping someone else on the way first.</string>
+    <string name="status_promised">They said %1$d min · %2$d min left of that</string>
+    <string name="status_promised_only">Counting down from the %d min they said. Their live position is not known yet.</string>
+    <string name="status_volunteer">A volunteer</string>
+    <string name="status_arrived">They are here</string>
+    <string name="status_arrived_body">They reached the place your alert gave (within 75 m). Call out or wave if you can.</string>
 </resources>

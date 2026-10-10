@@ -123,6 +123,23 @@ class AppRepository(
         fallAlarm.value?.let { a -> fallAlarm.value = a.copy(startedAt = System.currentTimeMillis() - com.lifeline.mesh.safety.FallAlarm.COUNTDOWN_MS) }
     }
 
+    /**
+     * Jobs responders have reached: (responder origin, alert id). Checked whenever positions or packets change, so a team
+     * that arrived and moved on to its next job is shown heading to that one. Current mesh session only, like positions.
+     */
+    val jobsDone = MutableStateFlow<Set<Pair<Int, Long>>>(emptySet())
+
+    init {
+        scope.launch {
+            kotlinx.coroutines.flow.combine(positions, packets) { pos, pk -> pos to pk }.collect { (pos, pk) ->
+                if (pos.isEmpty()) return@collect
+                val hs = com.lifeline.mesh.ui.rescuer.headingsFrom(pk, System.currentTimeMillis(), jobsDone.value)
+                val now = com.lifeline.mesh.triage.Responders.arrivals(hs, pos.mapValues { (_, p) -> p.lat to p.lon })
+                if (!jobsDone.value.containsAll(now)) jobsDone.value = jobsDone.value + now
+            }
+        }
+    }
+
     /** The user pressed Stop; don't auto-start the mesh again until they press Start or reopen the app. */
     @Volatile var userStoppedMesh = false
 

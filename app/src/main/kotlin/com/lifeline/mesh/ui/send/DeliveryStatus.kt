@@ -10,6 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -56,13 +61,13 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
     ) {
         if (acked) {
             Text(stringResource(R.string.status_help_coming), style = Lifeline.type.headline, color = c.safe, modifier = Modifier.semantics { heading() })
-            eta?.let { Text(stringResource(R.string.status_eta, it), style = Lifeline.type.display, color = c.ink) }
+            HelpEta(alert, ack, eta)
             ack?.note?.takeIf { it.isNotBlank() }?.let { com.lifeline.mesh.ui.components.TranslatableNote(it, language, auto = true) }
         } else {
             Text(stringResource(R.string.status_title), style = Lifeline.type.title, color = c.ink, modifier = Modifier.semantics { heading() })
         }
         if (what.isNotBlank()) Text(if (acked) stringResource(R.string.status_your_alert, what) else what, style = Lifeline.type.label, color = c.inkMuted)
-        NearestTeam()
+        if (!acked) NearestTeam()
 
         val passed = alert.handedTo > 0
         StatusTimeline(
@@ -84,6 +89,64 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
         SecondaryButton(stringResource(R.string.status_send_another), onSendAnother, Modifier.fillMaxWidth())
     }
 }
+
+/**
+ * When help is coming: a live estimate from the position of the team (or volunteer) that replied, updated as their
+ * Position packets arrive, to where my alert said I am. If they are finishing another job first, the route goes via
+ * that job. Without their position: the ETA they gave, counted down from when it arrived. Every number is computed in
+ * Kotlin and labelled as an estimate.
+ */
+@Composable
+private fun HelpEta(alert: PacketEntity, ack: PacketEntity?, promised: Int?) {
+    val c = Lifeline.colors
+    val repo = (LocalContext.current.applicationContext as com.lifeline.mesh.LifelineApp).repository
+    val packets by repo.packets.collectAsStateWithLifecycle()
+    val positions by repo.positions.collectAsStateWithLifecycle()
+    val me by repo.myFix.collectAsStateWithLifecycle()
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { delay(10_000); now = System.currentTimeMillis() } }
+
+    val replies = packets.filter { it.type == com.lifeline.mesh.packet.PacketType.ACK.code && it.refId == alert.id && !it.isMine }
+    val done by repo.jobsDone.collectAsStateWithLifecycle()
+    val headings = remember(packets, now, done) { com.lifeline.mesh.ui.rescuer.headingsFrom(packets, now, done) }
+    val arrived = replies.firstOrNull { (it.origin to alert.id) in done }
+    // Where help is going: the position my alert carried, else where I am now.
+    val dest = alert.takeIf { (it.lat ?: 0.0) != 0.0 || (it.lon ?: 0.0) != 0.0 }?.let { it.lat!! to it.lon!! } ?: me?.let { it.lat to it.lon }
+    val live = if (dest == null) null else replies.mapNotNull { r ->
+        val pos = positions[r.origin]?.takeIf { now - it.heardAt < com.lifeline.mesh.mesh.PositionBeacon.SHOW_MS } ?: return@mapNotNull null
+        val job = headings[r.origin]?.takeIf { it.alertId != alert.id && it.lat != null && it.lon != null }
+        val (d, m) = com.lifeline.mesh.triage.Responders.liveEta(pos.lat, pos.lon, dest.first, dest.second, pos.role,
+            via = job?.let { it.lat!! to it.lon!! })
+        LiveEta(pos, d, m, job != null)
+    }.minByOrNull { it.minutes }
+    val first = ack ?: replies.minByOrNull { it.receivedAt }
+    val left = if (promised != null && first != null) com.lifeline.mesh.triage.Responders.promisedLeft(promised, first.receivedAt, now) else promised
+
+    if (arrived != null) {
+        // They reached the place my alert gave.
+        val pos = positions[arrived.origin]
+        val who = pos?.let { p -> (if (p.role.isTeam) stringResource(com.lifeline.mesh.ui.onboarding.teamLabel(p.role.code))
+            else stringResource(R.string.status_volunteer)) + if (p.name.isNotBlank()) " (${p.name})" else "" }
+        Text(stringResource(R.string.status_arrived), style = Lifeline.type.display, color = c.safe)
+        who?.let { Text(it, style = Lifeline.type.bodyStrong, color = c.link) }
+        Text(stringResource(R.string.status_arrived_body), style = Lifeline.type.caption, color = c.inkMuted)
+    } else if (live != null) {
+        Text(stringResource(R.string.status_live_min, live.minutes), style = Lifeline.type.display, color = c.ink)
+        val role = live.who.role
+        val who = (if (role.isTeam) stringResource(com.lifeline.mesh.ui.onboarding.teamLabel(role.code)) else stringResource(R.string.status_volunteer)) +
+            if (live.who.name.isNotBlank()) " (${live.who.name})" else ""
+        Text(stringResource(R.string.status_live_who, who, com.lifeline.mesh.ui.rescuer.distanceText(live.distanceM)),
+            style = Lifeline.type.bodyStrong, color = c.link)
+        if (live.via) Text(stringResource(R.string.status_via_other), style = Lifeline.type.body, color = c.ink)
+        Text(stringResource(R.string.status_live_note), style = Lifeline.type.caption, color = c.inkMuted)
+        if (promised != null && left != null) Text(stringResource(R.string.status_promised, promised, left), style = Lifeline.type.caption, color = c.inkMuted)
+    } else if (left != null) {
+        Text(stringResource(R.string.status_eta, left), style = Lifeline.type.display, color = c.ink)
+        if (first != null && promised != null) Text(stringResource(R.string.status_promised_only, promised), style = Lifeline.type.caption, color = c.inkMuted)
+    }
+}
+
+private data class LiveEta(val who: com.lifeline.mesh.mesh.PeerPosition, val distanceM: Double, val minutes: Int, val via: Boolean)
 
 /**
  * The nearest rescue team I can see on the mesh (Phase 10), with its live distance and a travel-time estimate at that

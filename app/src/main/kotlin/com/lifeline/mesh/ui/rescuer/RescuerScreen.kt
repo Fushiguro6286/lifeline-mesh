@@ -96,6 +96,17 @@ fun rankAlerts(packets: List<PacketEntity>, me: GeoFix?, now: Long): List<Ranked
     me?.lat, me?.lon,
 )
 
+/** Each responder's current job from the "help is coming" replies stored here (map lines, the sender's live ETA). */
+fun headingsFrom(packets: List<PacketEntity>, now: Long, done: Set<Pair<Int, Long>> = emptySet()): Map<Int, com.lifeline.mesh.triage.Heading> {
+    val acks = packets.filter { it.type == PacketType.ACK.code && !it.isMine && it.refId != null }
+        .map { com.lifeline.mesh.triage.AckSeen(it.origin, it.refId!!, it.eta ?: 0, it.receivedAt) }
+    if (acks.isEmpty()) return emptyMap()
+    val alerts = packets.filter { it.type == PacketType.ALERT.code }
+        .associate { p -> p.id to p.toReport().let { r -> com.lifeline.mesh.triage.AlertSpot(p.origin, r.lat, r.lon) } }
+    val checkIns = packets.filter { it.type == PacketType.CHECK_IN.code }.map { it.origin to it.receivedAt }
+    return com.lifeline.mesh.triage.Responders.headings(acks, alerts, checkIns, now, done)
+}
+
 /** Packet row → triage input. Lat/lon 0/0 means "no position" (the sender had no fix). */
 fun PacketEntity.toReport(): AlertReport {
     val known = lat != null && lon != null && !(lat == 0.0 && lon == 0.0)
@@ -129,6 +140,8 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
         active.filter { it.type == PacketType.CHECK_IN.code && !it.isMine }.groupBy { it.origin }.map { (_, l) -> l.maxBy { it.receivedAt } }
             .sortedByDescending { it.receivedAt }
     }
+    // My own "I'm safe" shows at the top of the list, so the sender can see exactly what rescuers see.
+    val myCheckIn = remember(active) { active.filter { it.type == PacketType.CHECK_IN.code && it.isMine }.maxByOrNull { it.receivedAt } }
     val reports = remember(active) { active.filter { it.type == PacketType.REPORT.code }.sortedByDescending { it.receivedAt } }
     var open by rememberSaveable { mutableStateOf<Long?>(null) }
     var reporting by rememberSaveable { mutableStateOf(false) }
@@ -167,7 +180,14 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
         }
 
         item { SectionTitle(stringResource(R.string.rescue_checkins)) }
-        if (checkIns.isEmpty()) item { Muted(stringResource(R.string.rescue_checkins_empty)) }
+        if (checkIns.isEmpty() && myCheckIn == null) item { Muted(stringResource(R.string.rescue_checkins_empty)) }
+        myCheckIn?.let { p ->
+            item(key = "c-mine") {
+                PlaceRow(R.drawable.ic_verified_user, c.safe,
+                    stringResource(R.string.rescue_checkin_you, p.name?.ifBlank { null } ?: hex4(p.origin)),
+                    stringResource(R.string.rescue_checkin_you_body), now, p.receivedAt)
+            }
+        }
         items(checkIns, key = { "c${it.id}" }) { p ->
             PlaceRow(R.drawable.ic_verified_user, c.safe, stringResource(R.string.rescue_checkin_row, p.name?.ifBlank { null } ?: hex4(p.origin)),
                 placeText(context, me, p), now, p.receivedAt)

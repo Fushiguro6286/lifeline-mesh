@@ -242,4 +242,14 @@
     <string name="fall_send_now">अभी SOS भेजें</string>
     <string name="fall_test">गिरने के अलार्म की जाँच</string>
     <string name="fall_channel">गिरने का अलार्म</string>
+    <!-- Live ETA for the sender -->
+    <string name="status_live_min">लगभग %d मिनट</string>
+    <string name="status_live_who">%1$s %2$s दूर है</string>
+    <string name="status_live_note">उनकी जगह से लाइव अनुमान, उनके चलने के साथ बदलता है (सीधी दूरी, उनकी आम रफ़्तार पर)।</string>
+    <string name="status_via_other">रास्ते में वे पहले किसी और की मदद कर रहे हैं।</string>
+    <string name="status_promised">उन्होंने %1$d मिनट कहा था · उसमें से %2$d मिनट बाकी</string>
+    <string name="status_promised_only">उनके बताए %d मिनट से उल्टी गिनती। उनकी लाइव जगह अभी पता नहीं है।</string>
+    <string name="status_volunteer">एक स्वयंसेवक</string>
+    <string name="status_arrived">वे पहुँच गए हैं</string>
+    <string name="status_arrived_body">वे आपके अलर्ट में दी गई जगह पर पहुँच गए हैं (75 मीटर के अंदर)। हो सके तो आवाज़ दें या हाथ हिलाएँ।</string>
 </resources>

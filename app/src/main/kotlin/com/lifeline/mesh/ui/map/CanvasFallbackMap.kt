@@ -45,6 +45,7 @@ fun CanvasFallbackMap(
     me: GeoFix?,
     onAlertTap: (Long) -> Unit,
     onPlaceTap: (String) -> Unit = {},
+    routes: List<Route> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val onPlace by rememberUpdatedState(onPlaceTap)
@@ -107,6 +108,12 @@ fun CanvasFallbackMap(
         }
         val n = measurer.measure("N", TextStyle(fontFamily = type.label.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = c.ink))
         drawText(n, topLeft = Offset(center.x - n.size.width / 2, center.y - radius - n.size.height - 4.dp.toPx()))
+
+        // Responder → job lines (dashed), under every marker.
+        val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 7.dp.toPx()))
+        for (r in routes) {
+            drawLine(c.link, at(plot(r.fromLat, r.fromLon)), at(plot(r.toLat, r.toLon)), strokeWidth = 3.dp.toPx(), pathEffect = dash)
+        }
 
         // Help points: squares; check-ins: small green dots; live positions: teams as teal squares, people as rings.
         for ((pl, p) in placePlots) {

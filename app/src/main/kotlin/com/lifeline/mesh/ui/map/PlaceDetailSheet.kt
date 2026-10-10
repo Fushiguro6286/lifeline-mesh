@@ -26,6 +26,7 @@ import com.lifeline.mesh.data.Settings
 import com.lifeline.mesh.packet.HelloRole
 import com.lifeline.mesh.triage.GeoMath
 import com.lifeline.mesh.triage.Teams
+import com.lifeline.mesh.ui.components.labelRes
 import com.lifeline.mesh.ui.onboarding.teamLabel
 import com.lifeline.mesh.ui.rescuer.ago
 import com.lifeline.mesh.ui.rescuer.distanceText
@@ -40,7 +41,15 @@ import com.lifeline.mesh.ui.theme.Space
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaceDetailSheet(place: Place, me: GeoFix?, settings: Settings, onDismiss: () -> Unit) {
+fun PlaceDetailSheet(
+    place: Place,
+    me: GeoFix?,
+    settings: Settings,
+    onDismiss: () -> Unit,
+    /** For a responder's live position: its current job and that alert, if known. */
+    heading: com.lifeline.mesh.triage.Heading? = null,
+    target: com.lifeline.mesh.data.PacketEntity? = null,
+) {
     val c = Lifeline.colors
     val context = LocalContext.current
     val now = System.currentTimeMillis()
@@ -83,6 +92,8 @@ fun PlaceDetailSheet(place: Place, me: GeoFix?, settings: Settings, onDismiss: (
                 val dir = GeoMath.compass(GeoMath.bearingDeg(me!!.lat, me.lon, place.lat, place.lon))
                 Text(stringResource(R.string.place_distance, distanceText(d), dir), style = Lifeline.type.body, color = c.ink)
                 when {
+                    // Its job is shown below instead.
+                    heading != null -> Unit
                     // A team on its way to someone like me: at its usual speed.
                     role != null && role.isTeam && !settings.role.isTeam ->
                         Text(stringResource(R.string.place_reach_you, Teams.etaMinutes(d, Teams.defaultTravel(role))),
@@ -95,6 +106,8 @@ fun PlaceDetailSheet(place: Place, me: GeoFix?, settings: Settings, onDismiss: (
                 }
             } ?: Text(stringResource(R.string.place_no_me), style = Lifeline.type.body, color = c.inkMuted)
 
+            if (role != null && role != HelloRole.NEEDS_HELP) HeadingBlock(place, role, heading, target, settings, now)
+
             if (place.at > 0) {
                 val heard = ago(context, now, place.at)
                 Text(
@@ -106,6 +119,47 @@ fun PlaceDetailSheet(place: Place, me: GeoFix?, settings: Settings, onDismiss: (
             if (role != null) Text(stringResource(R.string.place_live), style = Lifeline.type.caption, color = c.inkMuted)
             Text("%.5f, %.5f".format(place.lat, place.lon), style = Lifeline.type.caption, color = c.inkMuted)
         }
+    }
+}
+
+/**
+ * Where a team or volunteer is going: from its "help is coming" replies (oldest open job first). Teams see the job and
+ * its distance; anyone else sees only whether it is coming to them, never another person's alert.
+ */
+@Composable
+private fun HeadingBlock(
+    place: Place, role: HelloRole, heading: com.lifeline.mesh.triage.Heading?, target: com.lifeline.mesh.data.PacketEntity?,
+    settings: Settings, now: Long,
+) {
+    val c = Lifeline.colors
+    val context = LocalContext.current
+    val toMe = target?.isMine == true
+    val live = heading?.lat?.let { lat -> heading.lon?.let { lon -> com.lifeline.mesh.triage.Responders.liveEta(place.lat, place.lon, lat, lon, role) } }
+    when {
+        heading == null -> Text(stringResource(R.string.place_heading_none), style = Lifeline.type.body, color = c.inkMuted)
+        toMe -> Text(
+            live?.let { stringResource(R.string.place_heading_you, it.second) } ?: stringResource(R.string.place_heading_you_nopos),
+            style = Lifeline.type.bodyStrong, color = c.safe,
+        )
+        !settings.role.isTeam -> Text(stringResource(R.string.place_heading_other), style = Lifeline.type.body, color = c.ink)
+        else -> {
+            val needs = com.lifeline.mesh.packet.Need.fromMask(target?.needs ?: 0)
+            val what = if (com.lifeline.mesh.packet.Need.PANIC in needs) stringResource(R.string.alert_panic)
+            else needs.joinToString(" · ") { context.getString(it.labelRes()) }
+            val people = target?.people?.takeIf { it > 0 }?.let { if (it == 1) stringResource(R.string.alert_one_person) else stringResource(R.string.alert_people, it) }
+            Text(stringResource(R.string.place_heading, listOfNotNull(what.ifBlank { null }, people).joinToString(", ").ifBlank { "an alert" }),
+                style = Lifeline.type.bodyStrong, color = c.link)
+            target?.note?.takeIf { it.isNotBlank() }?.let { Text("“$it”", style = Lifeline.type.body, color = c.ink) }
+            Text(
+                live?.let { stringResource(R.string.place_heading_eta, distanceText(it.first), it.second, Teams.defaultTravel(role).label) }
+                    ?: stringResource(R.string.place_heading_nopos),
+                style = Lifeline.type.body, color = c.ink,
+            )
+        }
+    }
+    if (heading != null && (toMe || settings.role.isTeam)) {
+        Text(stringResource(R.string.place_heading_said, heading.promisedEta, ago(context, now, heading.promisedAtMs)),
+            style = Lifeline.type.caption, color = c.inkMuted)
     }
 }
 
