@@ -347,4 +347,6 @@
     <string name="watch_kind_oxygen">oxygen</string>
     <string name="watch_kind_bp">blood pressure</string>
     <string name="health_from_hc">From Health Connect</string>
+    <string name="weather_simulated">Simulated weather: a storm story for the demo. Real weather returns when simulation is off.</string>
+    <string name="weather_next">Next weather</string>
 </resources>

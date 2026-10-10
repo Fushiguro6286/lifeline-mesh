@@ -337,4 +337,6 @@
     <string name="watch_kind_oxygen">ಆಮ್ಲಜನಕ</string>
     <string name="watch_kind_bp">ರಕ್ತದೊತ್ತಡ</string>
     <string name="health_from_hc">Health Connect ನಿಂದ</string>
+    <string name="weather_simulated">ಅನುಕರಿಸಿದ ಹವಾಮಾನ: ಡೆಮೊಗಾಗಿ ಚಂಡಮಾರುತದ ಕಥೆ. ಸಿಮ್ಯುಲೇಶನ್ ಆಫ್ ಮಾಡಿದಾಗ ನಿಜವಾದ ಹವಾಮಾನ ಬರುತ್ತದೆ.</string>
+    <string name="weather_next">ಮುಂದಿನ ಹವಾಮಾನ</string>
 </resources>

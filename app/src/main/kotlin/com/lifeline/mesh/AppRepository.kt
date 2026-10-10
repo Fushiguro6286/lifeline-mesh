@@ -74,6 +74,10 @@ class AppRepository(
     val lastVitalsCheck = MutableStateFlow<Pair<Long, Int>?>(null)
     /** Live weather from the server's last answer, and when it arrived here (wall ms). Memory only. */
     val weather = MutableStateFlow<Pair<com.lifeline.mesh.sync.FeedWeather, Long>?>(null)
+    /** Simulation mode: the simulated weather step and when it began (wall ms); null outside simulation. */
+    val simWeather = MutableStateFlow<Pair<com.lifeline.mesh.sync.FeedWeather, Long>?>(null)
+    /** "Next weather" on the SOS tab (simulation mode); handled by the mesh service. */
+    val simWeatherNext = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 2)
     fun setServerUrl(url: String) = scope.launch { settingsStore.setServerUrl(url) }
     fun setPhone(phone: String) = scope.launch { settingsStore.setPhone(phone) }
     fun setTravel(travel: com.lifeline.mesh.triage.Travel) = scope.launch { settingsStore.setTravel(travel) }

@@ -337,4 +337,6 @@
     <string name="watch_kind_oxygen">ऑक्सीजन</string>
     <string name="watch_kind_bp">ब्लड प्रेशर</string>
     <string name="health_from_hc">Health Connect से</string>
+    <string name="weather_simulated">सिम्युलेटेड मौसम: डेमो के लिए तूफ़ान की कहानी। सिम्युलेशन बंद होने पर असली मौसम दिखेगा।</string>
+    <string name="weather_next">अगला मौसम</string>
 </resources>

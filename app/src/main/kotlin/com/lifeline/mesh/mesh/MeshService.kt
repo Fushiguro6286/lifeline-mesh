@@ -144,6 +144,7 @@ class MeshService : Service() {
         }
         watchForFalls()
         watchVitals()
+        simulateWeather()
     }
 
     // ------------------------------------------------------------------ fall and crash detection
@@ -225,6 +226,29 @@ class MeshService : Service() {
             }
         }
         watchOverBluetooth()
+    }
+
+    /**
+     * Simulation mode: the weather follows [SimWeather]'s storm story (a step every 75 s, or "Next weather"); dangerous
+     * steps send simulated forecast warnings into the simulated mesh. Outside simulation: nothing (real weather instead).
+     */
+    private fun simulateWeather() {
+        scope.launch {
+            repo.settings.filterNotNull().map { it.simulationMode }.distinctUntilChanged().collectLatest { sim ->
+                if (!sim) { repo.simWeather.value = null; return@collectLatest }
+                val session = System.currentTimeMillis()
+                var index = 0
+                while (true) {
+                    val now = System.currentTimeMillis()
+                    repo.simWeather.value = SimWeather.step(index).weather to now
+                    for (w in SimWeather.warningsFor(index, session, now / 1000)) {
+                        runCatching { repo.receiveWarning(com.lifeline.mesh.packet.PacketCodec.encode(com.lifeline.mesh.sync.SyncFormat.warningPacket(w))) }
+                    }
+                    kotlinx.coroutines.withTimeoutOrNull(SimWeather.STEP_MS) { repo.simWeatherNext.first() }
+                    index++
+                }
+            }
+        }
     }
 
     private var watchLink: com.lifeline.mesh.safety.WatchLink? = null
@@ -595,7 +619,7 @@ class MeshService : Service() {
                 return
             }
             if (!Router.storable(packet)) return
-            if (packet is Packet.Warning && !mine) scope.launch { warningAlarm(packet, viaInternet = fromPeer == Router.INTERNET) }
+            if (packet is Packet.Warning && !mine) scope.launch { warningAlarm(packet, viaInternet = fromPeer == Router.INTERNET, simulated = simulated) }
             if (packet is Packet.Alert && !mine) {
                 val role = repo.settings.value?.role
                 val ambulance = packet.needs and com.lifeline.mesh.packet.Need.AMBULANCE.bit != 0 && role == com.lifeline.mesh.data.Role.AMBULANCE
@@ -698,20 +722,20 @@ class MeshService : Service() {
      * An official warning arrived (first copy only). Severe or Extreme and still in force: strong vibration, an alarm
      * notification and read aloud. Says how it arrived: from the server, or passed on by nearby phones (not verifiable).
      */
-    private fun warningAlarm(w: Packet.Warning, viaInternet: Boolean) {
+    private fun warningAlarm(w: Packet.Warning, viaInternet: Boolean, simulated: Boolean = false) {
         if (w.level < 2 || w.expires * 1000 <= System.currentTimeMillis()) return
         Haptics.strong(this)
         val title = getString(when { w.drill -> R.string.warning_title_drill; w.forecast -> R.string.warning_title_forecast
-            else -> R.string.warning_title }, w.event.ifBlank { "—" })
+            else -> R.string.warning_title }, w.event.ifBlank { "—" }) + if (simulated) " · ${getString(R.string.simulated_tag)}" else ""
         val until = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(w.expires * 1000))
-        val how = (when { w.drill -> ""; w.forecast -> getString(R.string.warning_source_forecast) + " · "
+        val how = if (simulated) "" else (when { w.drill -> ""; w.forecast -> getString(R.string.warning_source_forecast) + " · "
             else -> getString(R.string.warning_source) + " · " }) +
             getString(if (viaInternet) R.string.warning_via_internet else R.string.warning_via_mesh)
         val n = NotificationCompat.Builder(this, CHANNEL_WARNINGS)
             .setSmallIcon(R.drawable.ic_warning)
             .setContentTitle(title)
             .setContentText(w.headline)
-            .setStyle(NotificationCompat.BigTextStyle().bigText("${w.headline}\n${getString(R.string.warning_until, until)} · $how"))
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${w.headline}\n${getString(R.string.warning_until, until)}" + if (how.isNotEmpty()) " · $how" else ""))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)

@@ -74,7 +74,10 @@ private fun CardColumn(icon: Int, title: String, content: @Composable () -> Unit
 fun WeatherCard(settings: Settings) {
     val c = Lifeline.colors
     val app = LocalContext.current.applicationContext as LifelineApp
-    val latest by app.repository.weather.collectAsStateWithLifecycle()
+    val real by app.repository.weather.collectAsStateWithLifecycle()
+    val simulatedWeather by app.repository.simWeather.collectAsStateWithLifecycle()
+    // Simulation mode shows the simulated storm story; otherwise the real weather from the server.
+    val latest = if (settings.simulationMode) simulatedWeather else real
     val aiStatus by app.ai.status.collectAsStateWithLifecycle()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(30_000); now = System.currentTimeMillis() } }
@@ -82,7 +85,7 @@ fun WeatherCard(settings: Settings) {
     CardColumn(R.drawable.ic_water_drop, stringResource(R.string.weather_title)) {
         val pair = latest
         when {
-            settings.serverUrl.isBlank() -> Text(stringResource(R.string.weather_no_server), style = Lifeline.type.body, color = c.inkMuted)
+            !settings.simulationMode && settings.serverUrl.isBlank() -> Text(stringResource(R.string.weather_no_server), style = Lifeline.type.body, color = c.inkMuted)
             pair == null -> Text(stringResource(R.string.weather_waiting), style = Lifeline.type.body, color = c.inkMuted)
             else -> {
                 val (w, at) = pair
@@ -98,12 +101,19 @@ fun WeatherCard(settings: Settings) {
                 val computed = stringResource(R.string.weather_summary, facts.feelsLikeC ?: facts.temperatureC ?: 0,
                     facts.rain24hMm ?: 0, facts.gustMaxKmh ?: 0)
                 Text(phrased ?: computed, style = Lifeline.type.body, color = c.ink)
-                val stale = now - at > 30 * 60_000L
-                Text(
-                    (if (phrased != null) "Written on device · " else "") +
-                        stringResource(if (stale) R.string.weather_source_old else R.string.weather_source, clock(at)),
-                    style = Lifeline.type.caption, color = if (stale) c.warn else c.inkMuted,
-                )
+                if (settings.simulationMode) {
+                    Text((if (phrased != null) "Written on device · " else "") + stringResource(R.string.weather_simulated),
+                        style = Lifeline.type.caption, color = c.warn)
+                    com.lifeline.mesh.ui.components.SecondaryButton(stringResource(R.string.weather_next),
+                        { app.repository.simWeatherNext.tryEmit(Unit) }, Modifier.fillMaxWidth())
+                } else {
+                    val stale = now - at > 30 * 60_000L
+                    Text(
+                        (if (phrased != null) "Written on device · " else "") +
+                            stringResource(if (stale) R.string.weather_source_old else R.string.weather_source, clock(at)),
+                        style = Lifeline.type.caption, color = if (stale) c.warn else c.inkMuted,
+                    )
+                }
             }
         }
     }

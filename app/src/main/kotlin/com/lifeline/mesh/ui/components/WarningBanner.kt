@@ -61,7 +61,8 @@ fun WarningBanner(packets: List<PacketEntity>, modifier: Modifier = Modifier) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                     Icon(painterResource(R.drawable.ic_warning), null, tint = c.sos, modifier = Modifier.size(24.dp))
                     Text(stringResource(when { w.drill -> R.string.warning_title_drill; w.forecast -> R.string.warning_title_forecast
-                        else -> R.string.warning_title }, w.event.ifBlank { "—" }),
+                        else -> R.string.warning_title }, w.event.ifBlank { "—" }) +
+                        if (e.simulated) " · " + stringResource(R.string.simulated_tag) else "",
                         style = Lifeline.type.title, color = c.sos)
                 }
                 Text(w.headline, style = Lifeline.type.body, color = c.ink)
@@ -71,7 +72,9 @@ fun WarningBanner(packets: List<PacketEntity>, modifier: Modifier = Modifier) {
                 // A drill is not from NDMA: only real warnings name the source; a forecast check says it is not official.
                 val source = when { w.drill -> ""; w.forecast -> stringResource(R.string.warning_source_forecast) + " · "
                     else -> stringResource(R.string.warning_source) + " · " }
-                Text("$source${stringResource(R.string.warning_until, until)} · $how", style = Lifeline.type.caption, color = c.inkMuted)
+                // Simulated (simulation mode): no real source or route to name; the title already says Simulated.
+                Text(if (e.simulated) stringResource(R.string.warning_until, until) else "$source${stringResource(R.string.warning_until, until)} · $how",
+                    style = Lifeline.type.caption, color = c.inkMuted)
             }
         }
     }

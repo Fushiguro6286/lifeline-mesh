@@ -291,6 +291,21 @@ early (apps cannot), it runs out by itself.
   NOT checked: a real watch reading.
 - Left on the iQOO: Health Connect permissions granted, the Watch vitals alarm switch off.
 
+## Simulated weather (added 10 Oct 2026, on request)
+
+- Simulation on: the SOS weather card shows a storm story instead of the real weather, labelled "Simulated weather":
+  Partly cloudy 29 °C → Heavy rain (150 mm/24 h) → Thunderstorm with hail → Violent showers (210 mm, gusts 120 km/h)
+  → Mainly clear, a step every 75 s or on "Next weather". Dangerous steps send simulated forecast warnings (same
+  thresholds as server/weather.py, SimWeatherTest) into the simulated mesh: alarm and banner titled "Weather warning: …
+  · Simulated", hopping through the virtual phones. No server or internet needed. The on-device model still phrases the
+  numbers ("Written on device").
+- Simulation off and online: the real weather from the server, as before. In simulation the real server's forecast
+  warnings are ignored (they would contradict the story); official warnings and drills still come in.
+- Checked on the iQOO 15: Partly cloudy → Heavy rain (alarm "Weather warning: Very heavy rain · Simulated", events
+  "The rescue server's weather warning arrived …", "Passing … on to 2 phones") → hail → violent showers (two warnings).
+- Known: in simulation the event log still says the warning "arrived over the internet" (the simulated server uses the
+  same route as the real one). Simulated warnings last 6 h; switching simulation off and on starts a clean session.
+
 ## Live Bluetooth watch (added 10 Oct 2026, on request)
 
 - SOS tab → Your health (watch) → Connect a Bluetooth watch: scans for devices advertising the standard Bluetooth health

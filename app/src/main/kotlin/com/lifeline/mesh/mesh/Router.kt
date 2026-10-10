@@ -509,7 +509,7 @@ class Router(
             is Packet.Ping -> if (p.echo) "ping echo" else "ping"
             is Packet.Hello -> "hello"
             is Packet.Position -> "position"
-            is Packet.Warning -> if (p.drill) "drill warning" else "official warning"
+            is Packet.Warning -> when { p.drill -> "drill warning"; p.forecast -> "weather warning"; else -> "official warning" }
             is Packet.Summary -> "summary"
         }
 

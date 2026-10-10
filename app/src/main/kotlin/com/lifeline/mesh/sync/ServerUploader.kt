@@ -196,6 +196,8 @@ class ServerUploader(
             }
             // Official warnings: into the mesh like any packet (duplicates are dropped by message ID).
             for (w in feed.warnings) {
+                // In simulation the weather is simulated too: the real forecast check would contradict it.
+                if (sim && w.forecast) continue
                 val bytes = runCatching { com.lifeline.mesh.packet.PacketCodec.encode(SyncFormat.warningPacket(w)) }.getOrNull() ?: continue
                 if (repo.receiveWarning(bytes)) injected++
             }
