@@ -98,6 +98,12 @@ class Router(
     @Volatile var displayName: String = ""
     /** 0–100, or 255 when unknown. */
     @Volatile var battery: Int = 255
+    /**
+     * Measure round trips without anyone pressing "Send ping" (CLAUDE.md 10): ping my alert as soon as a neighbor
+     * takes it, and, on a team phone, ping each new alert back towards its sender. At most one automatic ping per
+     * [AUTO_PING_GAP_MS], so pings never use up the 10-a-minute budget this phone's alerts and acks need at relays.
+     */
+    @Volatile var autoPing: Boolean = false
 
     private val lock = Any()
     private val peers = LinkedHashSet<String>()
@@ -111,6 +117,7 @@ class Router(
     /** Packets I received straight from their origin: for the "first receiver" ping echo rule. */
     private val directIds = LinkedHashSet<Long>()
     private val pendingPings = HashMap<Long, Long>()
+    private var lastAutoPing: Long? = null
     private val rttDone = HashSet<String>()
     private val handedTo = HashMap<Long, MutableSet<String>>()
     /** Packets at least one neighbor has received, for the waiting count. */
@@ -152,8 +159,15 @@ class Router(
         return raw
     }
 
-    /** Ping for one of my packets; any rescuer (or the packet's first receiver) echoes it back. */
+    /** Ping for a packet; any rescuer, the packet's first receiver, or its sender echoes it back. */
     fun sendPing(refId: Long): ByteArray = originate(Packet.Ping(newHeader(), refId, echo = false))
+
+    private fun autoPingLocked(refId: Long, now: Long, fx: Effects) {
+        val last = lastAutoPing
+        if (!autoPing || (last != null && now - last < AUTO_PING_GAP_MS)) return
+        lastAutoPing = now
+        originateLocked(Packet.Ping(newHeader(), refId, echo = false), fx)
+    }
 
     /** My live position (Phase 10); the role and name come from the settings the service applied. */
     fun sendPosition(latE6: Int, lonE6: Int, accuracy: Int) {
@@ -290,8 +304,10 @@ class Router(
                     listener.onEvent(MeshEvent(MeshEvent.Kind.REPLY, "Reply from $who: help is coming, ETA ${p.etaMinutes} min.", id))
                 }
             }
+            is Packet.Alert -> if (role.isTeam && peer != INTERNET) autoPingLocked(id, now, fx)
             is Packet.Ping -> if (!p.echo) {
-                if (role.isTeam || p.refId in directIds) {
+                // Rescuers, the first receiver, and the packet's own sender (a rescuer pinging it back) answer.
+                if (role.isTeam || p.refId in directIds || p.refId in myIds) {
                     originateLocked(Packet.Ping(newHeader(), p.refId, echo = true), fx)
                 }
             } else {
@@ -368,6 +384,7 @@ class Router(
     private fun onSendResult(bytes: ByteArray, id: Long, peer: String, ok: Boolean, mine: Boolean) {
         if (!ok) return
         val fx = Effects()
+        val packet = (PacketCodec.decode(bytes) as? DecodeResult.Ok)?.packet
         synchronized(lock) {
             if (delivered.add(id)) checkWaitingLocked(clock(), fx)
             if (mine && id in myIds) {
@@ -375,10 +392,11 @@ class Router(
                 if (set.add(peer)) {
                     val count = set.size
                     fx.add { listener.onHandedOff(id, count) }
+                    // My alert just left this phone: measure how long a round trip through the mesh takes.
+                    if (count == 1 && packet is Packet.Alert) autoPingLocked(id, clock(), fx)
                 }
             }
         }
-        val packet = (PacketCodec.decode(bytes) as? DecodeResult.Ok)?.packet
         if (packet != null && !beacon(packet) && packet !is Packet.Summary) {
             fx.add { listener.onLinkActivity(peer, packet, outgoing = true, linkHops = packet.header.hops + 1) }
         }
@@ -455,6 +473,9 @@ class Router(
     }
 
     companion object {
+        /** Automatic pings: at most one per 30 s from this phone (see [autoPing]). */
+        const val AUTO_PING_GAP_MS = 30_000L
+
         /** 0 = most urgent. Severity-3 alerts and acks, then alerts, pings, check-ins, reports, hellos. */
         fun priority(p: Packet): Int = when (p) {
             is Packet.Alert -> if (p.severity >= 3) 0 else 1

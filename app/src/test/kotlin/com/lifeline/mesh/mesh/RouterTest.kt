@@ -245,6 +245,54 @@ class RouterTest {
         assertEquals(1, c.received(Packet.Ping::class.java).size)
     }
 
+    @Test fun autoPingMeasuresRoundTripsWithoutAButton() = runTest {
+        val sim = MeshSimulator(this, latencyMs = 20)
+        sim.node("A"); sim.node("B"); sim.node("C", HelloRole.RESCUER)
+        sim.line("A", "B", "C")
+        sim.nodes.values.forEach { it.router.autoPing = true }
+        sim.advance(1_000)
+        val a = sim["A"]; val c = sim["C"]
+
+        val alert = a.sendAlert()
+        sim.advance(3_000)
+
+        // The sender measures to the rescuer (and to B, the first receiver) as soon as the alert leaves.
+        val aToC = a.roundTrips.single { it.responder == c.origin }
+        assertEquals(alert.header.messageId, aToC.refId)
+        assertEquals(2, aToC.hops)
+        // The rescuer pings the new alert back; the sender answers, so the rescuer's scoreboard has a round trip too.
+        val cToA = c.roundTrips.single { it.responder == a.origin }
+        assertEquals(alert.header.messageId, cToA.refId)
+        assertEquals(2, cToA.hops)
+        assertTrue("rtt ${cToA.millis}", cToA.millis in 180L..700L)
+    }
+
+    @Test fun autoPingIsAtMostOneEvery30Seconds() = runTest {
+        val sim = MeshSimulator(this)
+        val (a, _, c) = sim.line("A", "B", "C")
+        a.router.autoPing = true
+        sim.advance(1_000)
+        fun pingsFromA() = c.received(Packet.Ping::class.java).count { it.packet.header.origin == a.origin }
+
+        repeat(3) { a.sendAlert(note = "alert $it"); sim.advance(2_000) }
+        assertEquals(1, pingsFromA())
+
+        sim.advance(Router.AUTO_PING_GAP_MS)
+        a.sendAlert(note = "later")
+        sim.advance(2_000)
+        assertEquals(2, pingsFromA())
+    }
+
+    @Test fun noAutoPingUnlessSwitchedOn() = runTest {
+        val sim = MeshSimulator(this)
+        sim.node("A"); sim.node("B"); sim.node("C", HelloRole.RESCUER)
+        sim.line("A", "B", "C")
+        sim.advance(1_000)
+        sim["A"].sendAlert()
+        sim.advance(3_000)
+        assertTrue(sim.nodes.values.all { n -> n.received(Packet.Ping::class.java).isEmpty() })
+    }
+
     // ------------------------------------------------------------------ hello topology
 
     @Test fun helloBuildsTopologyBeyondDirectNeighbors() = runTest {

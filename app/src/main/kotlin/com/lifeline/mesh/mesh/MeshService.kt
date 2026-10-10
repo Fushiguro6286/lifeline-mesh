@@ -186,6 +186,7 @@ class MeshService : Service() {
             peerLabel = { id -> simulation?.label(id) ?: nearby!!.nameOf(id) },
         )
         persist.router = router
+        router.autoPing = true
         applySettings(router, settings)
         router.battery = batteryPercent()
 
