@@ -207,6 +207,24 @@ Open the Mesh tab on each.
   Checked on the iQOO 15 in simulation: "Round trip to Ravi: 247 ms over 1 hop", "to Meena: 1005 ms over 2 hops",
   tile shows ms with "Simulated". Real 3-phone check still open: A and C each show a round trip after A's alert.
 
+## Presentation features (added 10 Oct 2026, on request)
+
+- How it works (Demo mode only; top-bar gauge icon next to Settings, or Settings -> Demo mode -> How it works): the last
+  alert step by step with this phone's measurements (AI model and time, bytes, hops, round trip), the On-device AI card
+  (model, why, speed, languages, Benchmarks) and Export measurements. Remove model now needs a second tap.
+  Checked on the iQOO 15: "Gemma 4 E4B on GPU read the message in 4095 ms", 61 bytes, 2 hops (Simulated), en/hi/kn ok.
+- Fall and crash detection (Settings -> Safety, off by default; "Try the fall alarm" for stage): impact + stillness ->
+  15 s alarm (ringtone, vibration, full-screen "I'm OK"), then a panic SOS with position. Checked on the iQOO 15: test
+  alarm shows over the app, "I'm OK" cancels (no SOS), no answer sends the SOS, the switch registers the accelerometer
+  at 50 Hz. NOT checked: a real drop (needs you: switch it on, drop the phone onto a cushion, leave it still ~3 s),
+  the notification's "I'm OK" button (vivo's shade could not be opened over adb), the alarm over the lock screen.
+- Live ETA after "Help is coming": live estimate from the team's position, "They are here" on arrival, else the ETA they
+  gave counted down. Checked on the iQOO 15 in simulation: 15 min / 1.9 km -> 8 min / 1.0 km -> 1 min / 80 m -> They are here.
+- Rescue tab shows my own check-in ("Piyush is safe · you"). Checked on the iQOO 15.
+- Map: dashed line from each responder to its job; tap a team or volunteer for where it is heading. Non-team phones see
+  only teams coming to them. Checked on the iQOO 15: line for a team phone; "On the way to you · about 1 min" and
+  "On the way to help someone else" sheets. NOT checked on the phone: the team-phone sheet text "Heading to: ...".
+
 ## Demo steps
 
 Not ready. The 3-minute script in CLAUDE.md section 14 needs phases 2 to 7.
