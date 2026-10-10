@@ -359,6 +359,12 @@
         <item quantity="one">their reply crossed %d hop</item>
         <item quantity="other">their reply crossed %d hops</item>
     </plurals>
+    <string name="status_team_seen">Reached a rescue team\'s phone</string>
+    <string name="status_team_seen_detail">Confirmed automatically when a team\'s phone gets it.</string>
+    <plurals name="status_team_hops">
+        <item quantity="one">%1$s · it confirmed over %2$d hop</item>
+        <item quantity="other">%1$s · it confirmed over %2$d hops</item>
+    </plurals>
     <string name="warning_show_fewer">Show fewer warnings</string>
     <plurals name="warning_show_more">
         <item quantity="one">Show %d more warning</item>

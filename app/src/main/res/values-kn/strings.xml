@@ -349,6 +349,12 @@
         <item quantity="one">ಅವರ ಉತ್ತರ %d ಹಾಪ್‌ನಲ್ಲಿ ಬಂತು</item>
         <item quantity="other">ಅವರ ಉತ್ತರ %d ಹಾಪ್‌ಗಳಲ್ಲಿ ಬಂತು</item>
     </plurals>
+    <string name="status_team_seen">ರಕ್ಷಣಾ ತಂಡದ ಫೋನ್ ತಲುಪಿದೆ</string>
+    <string name="status_team_seen_detail">ತಂಡದ ಫೋನ್ ತಲುಪಿದ ತಕ್ಷಣ ತಾನಾಗಿಯೇ ದೃಢಪಡುತ್ತದೆ.</string>
+    <plurals name="status_team_hops">
+        <item quantity="one">%1$s · ದೃಢೀಕರಣ %2$d ಹಾಪ್‌ನಲ್ಲಿ ಬಂತು</item>
+        <item quantity="other">%1$s · ದೃಢೀಕರಣ %2$d ಹಾಪ್‌ಗಳಲ್ಲಿ ಬಂತು</item>
+    </plurals>
     <string name="warning_show_fewer">ಕಡಿಮೆ ಎಚ್ಚರಿಕೆಗಳನ್ನು ತೋರಿಸಿ</string>
     <plurals name="warning_show_more">
         <item quantity="one">ಇನ್ನೂ %d ಎಚ್ಚರಿಕೆ ತೋರಿಸಿ</item>

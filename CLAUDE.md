@@ -194,7 +194,7 @@ Type handling:
 ### 7.3 Store and forward
 - `Outbox` keeps relayable packets for 6 hours.
 - On every new connection both sides send a Summary of recent IDs; each sends only what the other lacks.
-- The sender's Delivery Status shows honest states: "Waiting for a nearby phone", "Passed to N nearby phones", "Help is coming".
+- The sender's Delivery Status shows honest states: "Waiting for a nearby phone", "Passed to N nearby phones", "Reached a rescue team's phone" (10 Oct 2026, my request: a team phone pinged the alert back and its own beacon says it is a team), "Help is coming".
 
 ### 7.4 Hello beacons (for the live mesh view)
 Every 10 s each phone broadcasts a Hello (TTL 2) with its direct neighbors. Every phone builds a topology graph from its own neighbors plus received Hellos, so the Live Mesh screen shows the whole local network, not just direct links.

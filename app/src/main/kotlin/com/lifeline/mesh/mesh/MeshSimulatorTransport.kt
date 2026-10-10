@@ -214,6 +214,8 @@ class MeshSimulation(
             it.displayName = spec.name
             it.role = spec.role
             it.battery = spec.battery
+            // Like a real team phone: ping each new alert back, so its sender sees "reached a rescue team".
+            it.autoPing = spec.role.isTeam
         }
         val beacon = HelloBeacon(router)
         @Volatile var lat = latOf(spec.northM)

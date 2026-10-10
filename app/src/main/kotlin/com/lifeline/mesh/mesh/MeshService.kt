@@ -669,6 +669,10 @@ class MeshService : Service() {
             write { db.metrics().insert(metric("rtt_ms", millis.toDouble(), "ms", note, now)) }
         }
 
+        override fun onTeamReceipt(refId: Long, team: Int, role: com.lifeline.mesh.packet.HelloRole, hops: Int) {
+            write { db.packets().setTeamSeen(refId, role.code, hops) }
+        }
+
         override fun onHandedOff(messageId: Long, peers: Int) {
             write { db.packets().setHandedTo(messageId, peers) }
         }

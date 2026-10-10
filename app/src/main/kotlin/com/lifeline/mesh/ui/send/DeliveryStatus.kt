@@ -40,6 +40,7 @@ import com.lifeline.mesh.ui.theme.Space
 /**
  * Delivery Status (CLAUDE.md 7.3, DESIGN.md 8.2), honest states only:
  * Created → "Waiting for a nearby phone" or "Passed to N nearby phones" (neighbors that confirmed receipt)
+ * → "Reached a rescue team's phone" (a team phone pinged it back; its role from its own beacon, before anyone answers)
  * → "Help is coming" once an Ack for this alert arrives. Then the card turns safe-green with the ETA.
  */
 @Composable
@@ -70,13 +71,25 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
         if (!acked) NearestTeam()
 
         val passed = alert.handedTo > 0
+        val teamRole = alert.teamSeenRole
+        val teamSeen = teamRole != null || acked
         StatusTimeline(
             listOf(
                 TimelineStep(stringResource(R.string.status_created), StepState.Done),
                 if (passed) TimelineStep(pluralStringResource(R.plurals.status_passed, alert.handedTo, alert.handedTo),
-                    if (acked) StepState.Done else StepState.Current)
-                else TimelineStep(stringResource(R.string.status_waiting), if (acked) StepState.Done else StepState.Current,
+                    if (teamSeen) StepState.Done else StepState.Current)
+                else TimelineStep(stringResource(R.string.status_waiting), if (teamSeen) StepState.Done else StepState.Current,
                     detail = stringResource(R.string.status_waiting_detail)),
+                TimelineStep(
+                    stringResource(R.string.status_team_seen),
+                    when { teamRole != null && !acked -> StepState.Current; teamSeen -> StepState.Done; else -> StepState.Pending },
+                    detail = if (teamRole != null) {
+                        pluralStringResource(R.plurals.status_team_hops, alert.teamSeenHops ?: 0,
+                            stringResource(com.lifeline.mesh.ui.onboarding.teamLabel(teamRole)), alert.teamSeenHops ?: 0) +
+                            if (alert.simulated) " · " + stringResource(R.string.simulated_tag) else ""
+                    } else if (!acked) stringResource(R.string.status_team_seen_detail) else null,
+                    tone = if (teamRole != null) c.safe else null,
+                ),
                 TimelineStep(
                     stringResource(R.string.status_help_coming),
                     // Only a real reply makes this step active: never suggest help is coming before it is.

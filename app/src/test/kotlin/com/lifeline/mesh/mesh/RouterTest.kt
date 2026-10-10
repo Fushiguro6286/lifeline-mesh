@@ -293,6 +293,83 @@ class RouterTest {
         assertTrue(sim.nodes.values.all { n -> n.received(Packet.Ping::class.java).isEmpty() })
     }
 
+    // ------------------------------------------------------------------ "reached a rescue team" receipts
+
+    @Test fun senderLearnsItsAlertReachedATeamPhone() = runTest {
+        val sim = MeshSimulator(this)
+        sim.node("A"); sim.node("B", HelloRole.VOLUNTEER); sim.node("C", HelloRole.AMBULANCE)
+        sim.line("A", "B", "C")
+        sim["C"].router.autoPing = true
+        sim.advance(1_000)
+
+        val alert = sim["A"].sendAlert()
+        sim.advance(3_000)
+
+        val r = sim["A"].receipts.single()
+        assertEquals(alert.header.messageId, r.refId)
+        assertEquals(sim["C"].origin, r.team)
+        assertEquals(HelloRole.AMBULANCE, r.role)
+        assertEquals(2, r.hops)
+        assertEquals(1, sim["A"].eventsOf(MeshEvent.Kind.RECEIPT).size)
+        // The relay in the middle learns nothing about it: the receipt is the sender's.
+        assertTrue(sim["B"].receipts.isEmpty())
+    }
+
+    @Test fun noReceiptFromAPhoneThatIsNotATeam() = runTest {
+        val sim = MeshSimulator(this)
+        sim.node("A"); sim.node("B", HelloRole.VOLUNTEER); sim.node("C", HelloRole.NEEDS_HELP)
+        sim.line("A", "B", "C")
+        sim.nodes.values.forEach { it.router.autoPing = true }
+        sim.advance(1_000)
+        val alert = sim["A"].sendAlert()
+        sim.advance(3_000)
+        // A volunteer pinging the alert by hand holds it too, but it is not a rescue team.
+        sim["B"].router.sendPing(alert.header.messageId)
+        sim.advance(3_000)
+        assertTrue(sim["A"].receipts.isEmpty())
+    }
+
+    @Test fun receiptWaitsUntilTheTeamsRoleIsKnown() = runTest {
+        // E is 4 links from A: its Hello (TTL 2) never reaches A, so A learns its role only from its Position (TTL 5).
+        val sim = MeshSimulator(this)
+        listOf("A", "B", "C", "D").forEach { sim.node(it) }
+        sim.node("E", HelloRole.NDRF)
+        sim.line("A", "B", "C", "D", "E")
+        sim["E"].router.autoPing = true
+        sim.advance(1_000)
+
+        val alert = sim["A"].sendAlert()
+        sim.advance(3_000)
+        assertTrue("role unknown: nothing claimed yet", sim["A"].receipts.isEmpty())
+
+        sim["E"].router.sendPosition(12_971_599, 77_594_566, 2)
+        sim.advance(3_000)
+        val r = sim["A"].receipts.single()
+        assertEquals(alert.header.messageId, r.refId)
+        assertEquals(HelloRole.NDRF, r.role)
+        assertEquals(4, r.hops)
+    }
+
+    @Test fun aBusyTeamSendsEveryReceiptSpacedOut() = runTest {
+        // Three senders' alerts reach the team within seconds: one receipt now, the others 15 s apart, none lost.
+        val sim = MeshSimulator(this)
+        listOf("A1", "A2", "A3").forEach { sim.node(it) }
+        sim.node("T", HelloRole.FIREFIGHTER)
+        listOf("A1", "A2", "A3").forEach { sim.mesh.link(it, "T") }
+        sim["T"].router.autoPing = true
+        sim.advance(1_000)
+
+        val alerts = listOf("A1", "A2", "A3").map { sim[it].sendAlert(note = it) }
+        sim.advance(2_000)
+        fun confirmed() = listOf("A1", "A2", "A3").count { sim[it].receipts.isNotEmpty() }
+        assertEquals(1, confirmed())
+
+        repeat(4) { sim.advance(10_000); sim["T"].router.tick() }
+        sim.advance(2_000)
+        assertEquals(3, confirmed())
+        listOf("A1", "A2", "A3").forEachIndexed { i, n -> assertEquals(alerts[i].header.messageId, sim[n].receipts.single().refId) }
+    }
+
     // ------------------------------------------------------------------ hello topology
 
     @Test fun helloBuildsTopologyBeyondDirectNeighbors() = runTest {

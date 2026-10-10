@@ -36,6 +36,9 @@ data class PacketEntity(
     val handedTo: Int = 0,
     /** Produced in simulation mode. Simulated rows are never shown alongside real ones. */
     val simulated: Boolean = false,
+    /** For my alerts: the first rescue team phone that confirmed it has it (role code, HelloRole) and hops its ping crossed. */
+    val teamSeenRole: Int? = null,
+    val teamSeenHops: Int? = null,
 ) {
     // Full structural equality (bytes by content). Equality on the id alone made StateFlow treat a row whose
     // handedTo/acked changed as "unchanged" and drop the update, so Delivery Status stayed on "Waiting".
@@ -48,7 +51,8 @@ data class PacketEntity(
             needs == other.needs && severity == other.severity && people == other.people && note == other.note &&
             refId == other.refId && eta == other.eta && reportType == other.reportType && name == other.name &&
             isMine == other.isMine && uploaded == other.uploaded && acked == other.acked && ackEta == other.ackEta &&
-            handedTo == other.handedTo && simulated == other.simulated
+            handedTo == other.handedTo && simulated == other.simulated &&
+            teamSeenRole == other.teamSeenRole && teamSeenHops == other.teamSeenHops
     }
 
     override fun hashCode(): Int = 31 * (31 * id.hashCode() + handedTo) + (if (acked) 1 else 0)

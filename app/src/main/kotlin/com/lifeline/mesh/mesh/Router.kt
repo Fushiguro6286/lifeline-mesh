@@ -14,7 +14,7 @@ import kotlin.random.Random
 data class MeshEvent(val kind: Kind, val text: String, val packetId: Long? = null) {
     enum class Kind {
         SENT, QUEUED, RECEIVED, FORWARDED, DUPLICATE, RATE_LIMITED, MALFORMED, TTL_END,
-        CONNECTED, DISCONNECTED, REPLY, ROUND_TRIP, SYNC,
+        CONNECTED, DISCONNECTED, REPLY, ROUND_TRIP, SYNC, RECEIPT,
     }
 }
 
@@ -43,6 +43,12 @@ interface RouterListener {
     fun onReply(ack: Packet.Ack) {}
     /** Ping echo for one of my pings: measured round trip on this phone's clock only. */
     fun onRoundTrip(refId: Long, responder: Int, millis: Long, hops: Int) {}
+    /**
+     * A rescue team's phone has one of my alerts: it pinged the alert back (team phones do that for every new alert),
+     * and its role is known from its Hello or Position beacon. [hops] = links its ping crossed to reach me. Called at
+     * most once per alert (the first team), and only for a phone whose beacon says it is a team: nothing is guessed.
+     */
+    fun onTeamReceipt(refId: Long, team: Int, role: HelloRole, hops: Int) {}
     /** One of my packets has now been received by [peers] different direct neighbors. */
     fun onHandedOff(messageId: Long, peers: Int) {}
     fun onTopology(nodes: List<TopologyNode>) {}
@@ -118,6 +124,14 @@ class Router(
     private val directIds = LinkedHashSet<Long>()
     private val pendingPings = HashMap<Long, Long>()
     private var lastAutoPing: Long? = null
+    /** Team phone: new alerts still to ping back to their senders (receipts), oldest first, with when they arrived. */
+    private val receiptsToSend = ArrayDeque<Pair<Long, Long>>()
+    private var lastReceipt: Long? = null
+    /** Roles of other phones, from their Hello and Position beacons (for "reached a team"). */
+    private val roles = HashMap<Int, HelloRole>()
+    /** My alerts a team has confirmed, and team pings for my alerts whose sender's role is not known yet. */
+    private val receiptDone = HashSet<Long>()
+    private val receiptWaiting = HashMap<Int, MutableList<Pair<Long, Int>>>()
     private val rttDone = HashSet<String>()
     private val handedTo = HashMap<Long, MutableSet<String>>()
     /** Packets at least one neighbor has received, for the waiting count. */
@@ -167,6 +181,44 @@ class Router(
         if (!autoPing || (last != null && now - last < AUTO_PING_GAP_MS)) return
         lastAutoPing = now
         originateLocked(Packet.Ping(newHeader(), refId, echo = false), fx)
+    }
+
+    /**
+     * Team phone: ping waiting new alerts back to their senders, at most one every [RECEIPT_GAP_MS] (so a busy team
+     * stays well under the 10-a-minute limit relays apply to it); the rest go on later ticks. Too old ones are dropped:
+     * the sender has heard nothing for that long, but a late receipt would still be true, so the limit is generous.
+     */
+    private fun sendReceiptsLocked(now: Long, fx: Effects) {
+        while (receiptsToSend.isNotEmpty() && now - receiptsToSend.first().second > RECEIPT_MAX_AGE_MS) receiptsToSend.removeFirst()
+        val last = lastReceipt
+        if (receiptsToSend.isEmpty() || (last != null && now - last < RECEIPT_GAP_MS)) return
+        lastReceipt = now
+        originateLocked(Packet.Ping(newHeader(), receiptsToSend.removeFirst().first, echo = false), fx)
+    }
+
+    private fun receiptLocked(refId: Long, from: Int, hops: Int, fx: Effects) {
+        if (refId in receiptDone) return
+        val r = roles[from]
+        when {
+            r == null -> {
+                if (receiptWaiting.size >= 200) receiptWaiting.remove(receiptWaiting.keys.first())
+                receiptWaiting.getOrPut(from) { ArrayList() }.add(refId to hops)
+            }
+            r.isTeam -> {
+                receiptDone.add(refId)
+                val who = who(from)
+                fx.add {
+                    listener.onTeamReceipt(refId, from, r, hops)
+                    listener.onEvent(MeshEvent(MeshEvent.Kind.RECEIPT, "Your alert reached $who's phone (a rescue team) · ${phones(hops, "hop")}.", refId))
+                }
+            }
+        }
+    }
+
+    private fun learnRoleLocked(origin: Int, r: HelloRole, fx: Effects) {
+        roles[origin] = r
+        if (roles.size > 2_000) roles.remove(roles.keys.first())
+        receiptWaiting.remove(origin)?.forEach { (refId, hops) -> receiptLocked(refId, origin, hops, fx) }
     }
 
     /** My live position (Phase 10); the role and name come from the settings the service applied. */
@@ -293,6 +345,7 @@ class Router(
 
         when (p) {
             is Packet.Hello -> {
+                learnRoleLocked(h.origin, p.role, fx)
                 topology.update(p, linkHops, now)
                 val snap = topology.snapshot()
                 fx.add { listener.onTopology(snap) }
@@ -304,8 +357,16 @@ class Router(
                     listener.onEvent(MeshEvent(MeshEvent.Kind.REPLY, "Reply from $who: help is coming, ETA ${p.etaMinutes} min.", id))
                 }
             }
-            is Packet.Alert -> if (role.isTeam && peer != INTERNET) autoPingLocked(id, now, fx)
+            is Packet.Position -> learnRoleLocked(h.origin, p.role, fx)
+            // A team phone tells each sender their alert reached it (an alert from the internet came another way).
+            is Packet.Alert -> if (role.isTeam && peer != INTERNET && autoPing) {
+                receiptsToSend.addLast(id to now)
+                while (receiptsToSend.size > MAX_RECEIPTS_QUEUED) receiptsToSend.removeFirst()
+                sendReceiptsLocked(now, fx)
+            }
             is Packet.Ping -> if (!p.echo) {
+                // A phone pinging my alert (not an echo of my own ping) holds it: a receipt if it is a team's phone.
+                if (p.refId in myIds) receiptLocked(p.refId, h.origin, linkHops, fx)
                 // Rescuers, the first receiver, and the packet's own sender (a rescuer pinging it back) answer.
                 if (role.isTeam || p.refId in directIds || p.refId in myIds) {
                     originateLocked(Packet.Ping(newHeader(), p.refId, echo = true), fx)
@@ -428,6 +489,7 @@ class Router(
             val now = clock()
             outbox.prune(now)
             pendingPings.values.removeAll { now - it > 5 * 60_000L }
+            sendReceiptsLocked(now, fx)
             checkWaitingLocked(now, fx)
             if (topology.expire(now)) {
                 val snap = topology.snapshot()
@@ -477,6 +539,10 @@ class Router(
     companion object {
         /** Automatic pings: at most one per 30 s from this phone (see [autoPing]). */
         const val AUTO_PING_GAP_MS = 30_000L
+        /** Team receipts (one ping per new alert): at most one per 15 s, up to 20 waiting, each kept 10 minutes. */
+        const val RECEIPT_GAP_MS = 15_000L
+        const val MAX_RECEIPTS_QUEUED = 20
+        const val RECEIPT_MAX_AGE_MS = 10 * 60_000L
 
         /** 0 = most urgent. Severity-3 alerts, acks and severe warnings, then alerts, pings, check-ins, reports, hellos. */
         fun priority(p: Packet): Int = when (p) {

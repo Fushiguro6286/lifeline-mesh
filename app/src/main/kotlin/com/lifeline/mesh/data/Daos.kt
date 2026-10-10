@@ -39,6 +39,10 @@ interface PacketDao {
     @Query("UPDATE packets SET handedTo = MAX(handedTo, :count) WHERE id = :id")
     suspend fun setHandedTo(id: Long, count: Int)
 
+    /** Keeps the first team that confirmed my alert. */
+    @Query("UPDATE packets SET teamSeenRole = :role, teamSeenHops = :hops WHERE id = :id AND teamSeenRole IS NULL")
+    suspend fun setTeamSeen(id: Long, role: Int, hops: Int)
+
     /** Packets the router should remember after a restart (store and forward keeps 6 hours). */
     @Query("SELECT * FROM packets WHERE receivedAt >= :since AND simulated = :simulated ORDER BY receivedAt")
     suspend fun since(since: Long, simulated: Boolean): List<PacketEntity>

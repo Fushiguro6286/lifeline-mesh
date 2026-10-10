@@ -40,7 +40,7 @@ import java.util.Locale
 
 enum class EventFilter(val kinds: Set<Kind>?) {
     ALL(null),
-    ALERTS(setOf(Kind.SENT, Kind.QUEUED, Kind.RECEIVED, Kind.FORWARDED, Kind.DUPLICATE, Kind.REPLY, Kind.TTL_END, Kind.RATE_LIMITED)),
+    ALERTS(setOf(Kind.SENT, Kind.QUEUED, Kind.RECEIVED, Kind.FORWARDED, Kind.DUPLICATE, Kind.REPLY, Kind.RECEIPT, Kind.TTL_END, Kind.RATE_LIMITED)),
     NETWORK(setOf(Kind.CONNECTED, Kind.DISCONNECTED, Kind.SYNC, Kind.ROUND_TRIP, Kind.MALFORMED)),
 }
 
@@ -113,7 +113,7 @@ private fun iconFor(kind: Kind?, c: LifelineColors): Pair<Int, Color> = when (ki
     Kind.MALFORMED -> R.drawable.ic_warning to c.warn
     Kind.CONNECTED -> R.drawable.ic_bluetooth to c.link
     Kind.DISCONNECTED -> R.drawable.ic_close to c.inkMuted
-    Kind.REPLY -> R.drawable.ic_check_circle to c.safe
+    Kind.REPLY, Kind.RECEIPT -> R.drawable.ic_check_circle to c.safe
     Kind.ROUND_TRIP -> R.drawable.ic_speed to c.ink
     Kind.SYNC -> R.drawable.ic_refresh to c.link
     null -> R.drawable.ic_info to c.inkMuted

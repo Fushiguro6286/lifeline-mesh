@@ -548,3 +548,25 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
 ## Build notes
 
 - Use Android Studio's bundled JDK: `JAVA_HOME="C:/Program Files/Android/Android Studio1/jbr"`. The `Android Studio/jbr` folder on this laptop is incomplete (no `jvm.cfg`).
+
+## "Reached a rescue team's phone" (added 10 Oct 2026, on request)
+
+- The sender's Delivery Status has a step between "Passed to N nearby phones" and "Help is coming": "Reached a rescue
+  team's phone · Ambulance · it confirmed over 3 hops". It appears as soon as a team phone has the alert, before
+  anyone on that team has read it, so a person waiting knows it got through.
+- How: a team phone pings every new alert back to its sender (one ping every 15 s at most, so a busy team stays under
+  the 10-a-minute limit relays apply; later ones wait in a queue, none are lost). The sender counts it only if that
+  phone's own Hello or Position beacon says it is a team; if its role is not known yet, nothing is claimed until it
+  is. An echo of the sender's own ping does not count (that proves the team got the ping, not the alert). The first
+  team is kept in Room (database version 4, a migration keeps existing data) and the Mesh tab logs "Your alert reached
+  Suresh's phone (a rescue team) · 3 hops". No packet format change. RouterTest covers: receipt over 2 hops, none from
+  a volunteer, waiting for the role (Position from 4 hops away), and a team with three alerts at once.
+- Checked on the iQOO 15 (simulated mesh, as "I need help", typed "3 people trapped in a house, water rising"): stored
+  receipt Police, 3 hops; Mesh events +1.4 s "Your alert reached Suresh's phone (a rescue team) · 3 hops", +4.5 s
+  "Reply from Priya: help is coming". The card showed "Reached a rescue team's phone · Police · it confirmed over 3
+  hops · Simulated" above "Help is coming". The 4 real packets stored before the update were still there.
+- Demo note: in simulation the virtual teams reply about 3 s later, so the step is green almost at once. On real
+  phones it stays the current step until a person on C taps Acknowledge: show it on A at step 3 of the demo, before C
+  answers.
+- NOT checked yet: on three real phones (needs C set to a team role).
+

@@ -349,6 +349,12 @@
         <item quantity="one">उनका जवाब %d हॉप में आया</item>
         <item quantity="other">उनका जवाब %d हॉप में आया</item>
     </plurals>
+    <string name="status_team_seen">बचाव दल के फ़ोन तक पहुँचा</string>
+    <string name="status_team_seen_detail">दल के फ़ोन तक पहुँचते ही अपने-आप पुष्टि होती है।</string>
+    <plurals name="status_team_hops">
+        <item quantity="one">%1$s · पुष्टि %2$d हॉप में आई</item>
+        <item quantity="other">%1$s · पुष्टि %2$d हॉप में आई</item>
+    </plurals>
     <string name="warning_show_fewer">कम चेतावनियाँ दिखाएँ</string>
     <plurals name="warning_show_more">
         <item quantity="one">%d और चेतावनी दिखाएँ</item>
