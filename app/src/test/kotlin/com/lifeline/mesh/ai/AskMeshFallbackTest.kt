@@ -127,6 +127,27 @@ class SituationReportTest {
         assertEquals("3 active alerts, 16 people, 2 urgent.", t[0])
         assertEquals(3, SituationReport.template(SituationReport.facts(emptyList(), 0)).size)
     }
+
+    // Seen on the iQOO 15: "Top priority #1: fire · 1 people".
+    @Test fun onePersonIsSingular() {
+        val one = listOf(RankedAlert(1, MergedAlert(listOf(AlertReport(1, 1, 12.0, 77.0, 10, setOf(FIRE), 3, 1, "", 0, 1, false, null))), 1100.0, 0.0))
+        val f = SituationReport.facts(one, 1)
+        assertEquals("#1: fire · 1 person · 1100 m", f.topPriority)
+        val t = SituationReport.template(f)
+        assertEquals("1 active alert, 1 person, 1 urgent.", t[0])
+        assertTrue(t[1].startsWith("Top priority #1: fire · 1 person"))
+    }
+
+    // Seen on the iQOO 15: the report named the fire (rank 1) while the team's plan started with the trapped job.
+    @Test fun teamReportNamesItsFirstJob() {
+        val f = SituationReport.facts(alerts, 2, firstJob = alerts[1])
+        assertEquals("#2: fire · 3 people · 800 m", f.topPriority)
+        assertTrue(f.topIsMyJob)
+        assertTrue(SituationReport.template(f)[1].startsWith("Your first job #2: fire"))
+        assertTrue(SituationReport.factLines(f).contains("Your first job: #2: fire"))
+        assertTrue("2" in f.numbers && "800" in f.numbers)
+        assertFalse(SituationReport.facts(alerts, 2).topIsMyJob)
+    }
 }
 
 class TranslatorTest {

@@ -198,7 +198,16 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
         item { com.lifeline.mesh.ui.components.WarningBanner(packets) }
         item { Header(ranked, settings.simulationMode) }
         item {
-            val facts = remember(ranked, checkIns) { com.lifeline.mesh.ai.SituationReport.facts(ranked, checkIns.size, ::distanceText) }
+            // A team with jobs: the report's first job is its plan's first job (PlanCard), not the list's rank 1.
+            val done by repo.jobsDone.collectAsStateWithLifecycle()
+            val firstJob = remember(ranked, packets, done, settings.role, now) {
+                if (!settings.role.isTeam) null
+                else queuesFrom(packets, now, done, mine = true).values.firstOrNull()?.firstOrNull()
+                    ?.let { h -> ranked.firstOrNull { r -> r.alert.reports.any { it.id == h.alertId } } }
+            }
+            val facts = remember(ranked, checkIns, firstJob) {
+                com.lifeline.mesh.ai.SituationReport.facts(ranked, checkIns.size, ::distanceText, firstJob)
+            }
             SituationReportCard(facts)
         }
         item { PlanCard(settings, ranked) }

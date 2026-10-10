@@ -351,8 +351,11 @@ early (apps cannot), it runs out by itself.
 - To show the plan card in simulation, switch the four team phones off first (Kiran, Arjun, Priya, Suresh on the Mesh
   tab): otherwise, at 12x speed, a simulated team reaches each person in about 20 s, the person checks in safe and the
   job leaves the plan before you can show it. Switch them back on afterwards.
-- Known: the situation report's "Top priority" follows the Rescue list ranking (fire was #1 there), while the plan
-  orders this team's own jobs (severity, then accepted first), so they can name different jobs first.
+- Fixed after that check: on a team phone with jobs, the situation report's second line is now "Your first job #n",
+  the plan's first job, not the list's rank 1 (before, it named the fire while the plan started with the trapped job).
+  Checked on the iQOO 15: "Your first job #3: trapped, medical · 2 people · 1.1 km" with plan row 1 the same job, while
+  the list's #1 was an ambulance request accepted second. Other phones still say "Top priority". The report also says
+  "1 person" and "1 active alert" now (seen: "1 people").
 
 ## Simulated weather (added 10 Oct 2026, on request)
 
