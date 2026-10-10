@@ -53,6 +53,8 @@ data class Settings(
     val activeProfileId: String? = null,
     /** Every profile on this phone, for the sign-in screen. */
     val profiles: List<ProfileInfo> = emptyList(),
+    /** Fall and crash detection while the mesh runs (off until the user turns it on). */
+    val fallDetection: Boolean = false,
 ) {
     val travel: com.lifeline.mesh.triage.Travel get() = travelChoice ?: com.lifeline.mesh.triage.Teams.defaultTravel(role.hello)
 
@@ -81,6 +83,7 @@ class SettingsStore(private val context: Context) {
         val LAST_UPLOAD_COUNT = intPreferencesKey("last_upload_count")
         val PROFILES = stringPreferencesKey("profiles")
         val ACTIVE_PROFILE = stringPreferencesKey("active_profile")
+        val FALL_DETECTION = booleanPreferencesKey("fall_detection")
     }
 
     private val store get() = context.dataStore
@@ -118,6 +121,7 @@ class SettingsStore(private val context: Context) {
         travelChoice = p[Keys.TRAVEL]?.let { runCatching { com.lifeline.mesh.triage.Travel.valueOf(it) }.getOrNull() },
         activeProfileId = p[Keys.ACTIVE_PROFILE],
         profiles = Profiles.decode(p[Keys.PROFILES]).map { it.info },
+        fallDetection = p[Keys.FALL_DETECTION] ?: false,
     )
 
     suspend fun setDisplayName(name: String) = store.edit { it[Keys.NAME] = name.trim().take(16); it.saveActiveProfile() }
@@ -129,6 +133,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setDemoMode(on: Boolean) = store.edit { it[Keys.DEMO] = on }
     suspend fun setTheme(mode: ThemeMode) = store.edit { it[Keys.THEME] = mode.name }
     suspend fun setReadAloud(on: Boolean) = store.edit { it[Keys.READ_ALOUD] = on }
+    suspend fun setFallDetection(on: Boolean) = store.edit { it[Keys.FALL_DETECTION] = on }
     suspend fun setPhone(phone: String) = store.edit { it[Keys.PHONE] = phone.filter { c -> c.isDigit() || c == '+' }.take(16); it.saveActiveProfile() }
     suspend fun setTravel(travel: com.lifeline.mesh.triage.Travel) = store.edit { it[Keys.TRAVEL] = travel.name; it.saveActiveProfile() }
 

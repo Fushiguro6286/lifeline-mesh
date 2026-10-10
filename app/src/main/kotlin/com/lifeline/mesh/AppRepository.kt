@@ -60,6 +60,7 @@ class AppRepository(
     fun setSimulationMode(on: Boolean) = scope.launch { settingsStore.setSimulationMode(on) }
     fun setDemoMode(on: Boolean) = scope.launch { settingsStore.setDemoMode(on) }
     fun setReadAloud(on: Boolean) = scope.launch { settingsStore.setReadAloud(on) }
+    fun setFallDetection(on: Boolean) = scope.launch { settingsStore.setFallDetection(on) }
     fun setServerUrl(url: String) = scope.launch { settingsStore.setServerUrl(url) }
     fun setPhone(phone: String) = scope.launch { settingsStore.setPhone(phone) }
     fun setTravel(travel: com.lifeline.mesh.triage.Travel) = scope.launch { settingsStore.setTravel(travel) }
@@ -105,6 +106,23 @@ class AppRepository(
     val myFix = MutableStateFlow<com.lifeline.mesh.ai.GeoFix?>(null)
     /** Other phones' latest positions by origin, current session only (cleared when the mesh stops or the mode changes). */
     val positions = MutableStateFlow<Map<Int, com.lifeline.mesh.mesh.PeerPosition>>(emptyMap())
+    /**
+     * A running fall alarm (fall detected, or "Try the fall alarm"): the service counts down, rings and then sends a
+     * panic SOS; the app shows the countdown with "I'm OK". Null = no alarm.
+     */
+    val fallAlarm = MutableStateFlow<com.lifeline.mesh.safety.FallAlarm?>(null)
+
+    fun startFallAlarm(test: Boolean) {
+        fallAlarm.compareAndSet(null, com.lifeline.mesh.safety.FallAlarm(System.currentTimeMillis(), test))
+    }
+
+    fun cancelFallAlarm() { fallAlarm.value = null }
+
+    /** Skip the rest of the countdown and send now. */
+    fun sendFallSosNow() {
+        fallAlarm.value?.let { a -> fallAlarm.value = a.copy(startedAt = System.currentTimeMillis() - com.lifeline.mesh.safety.FallAlarm.COUNTDOWN_MS) }
+    }
+
     /** The user pressed Stop; don't auto-start the mesh again until they press Start or reopen the app. */
     @Volatile var userStoppedMesh = false
 

@@ -234,4 +234,12 @@
     <string name="profile_no_name">बिना नाम की प्रोफ़ाइल</string>
     <string name="firstaid_unreviewed">अभी किसी चिकित्सा विशेषज्ञ ने इसकी जाँच नहीं की है। प्रशिक्षित बचावकर्मी बेहतर जानते हैं: उनकी बात मानें।</string>
     <string name="firstaid_unreviewed_short">अभी चिकित्सा विशेषज्ञ ने जाँच नहीं की है</string>
+    <!-- Fall and crash alarm -->
+    <string name="fall_title">क्या आप गिर गए?</string>
+    <string name="fall_detected">ज़ोर से गिरने या टक्कर का पता चला।</string>
+    <string name="fall_countdown">%d सेकंड में आपकी जगह के साथ SOS भेजा जाएगा</string>
+    <string name="fall_ok">मैं ठीक हूँ</string>
+    <string name="fall_send_now">अभी SOS भेजें</string>
+    <string name="fall_test">गिरने के अलार्म की जाँच</string>
+    <string name="fall_channel">गिरने का अलार्म</string>
 </resources>

@@ -234,4 +234,12 @@
     <string name="profile_no_name">ಹೆಸರಿಲ್ಲದ ಪ್ರೊಫೈಲ್</string>
     <string name="firstaid_unreviewed">ಇದನ್ನು ಇನ್ನೂ ವೈದ್ಯಕೀಯ ತಜ್ಞರು ಪರಿಶೀಲಿಸಿಲ್ಲ. ತರಬೇತಿ ಪಡೆದ ರಕ್ಷಕರಿಗೆ ಚೆನ್ನಾಗಿ ತಿಳಿದಿದೆ: ಅವರನ್ನು ಅನುಸರಿಸಿ.</string>
     <string name="firstaid_unreviewed_short">ಇನ್ನೂ ವೈದ್ಯಕೀಯ ತಜ್ಞರು ಪರಿಶೀಲಿಸಿಲ್ಲ</string>
+    <!-- Fall and crash alarm -->
+    <string name="fall_title">ನೀವು ಬಿದ್ದಿರಾ?</string>
+    <string name="fall_detected">ಜೋರಾಗಿ ಬೀಳುವಿಕೆ ಅಥವಾ ಡಿಕ್ಕಿ ಪತ್ತೆಯಾಗಿದೆ.</string>
+    <string name="fall_countdown">%d ಸೆಕೆಂಡ್‌ಗಳಲ್ಲಿ ನಿಮ್ಮ ಸ್ಥಳದೊಂದಿಗೆ SOS ಕಳುಹಿಸಲಾಗುವುದು</string>
+    <string name="fall_ok">ನಾನು ಚೆನ್ನಾಗಿದ್ದೇನೆ</string>
+    <string name="fall_send_now">ಈಗಲೇ SOS ಕಳುಹಿಸಿ</string>
+    <string name="fall_test">ಬೀಳುವಿಕೆ ಎಚ್ಚರಿಕೆಯ ಪರೀಕ್ಷೆ</string>
+    <string name="fall_channel">ಬೀಳುವಿಕೆ ಎಚ್ಚರಿಕೆ</string>
 </resources>

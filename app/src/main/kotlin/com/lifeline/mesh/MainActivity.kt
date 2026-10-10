@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
         // Signed out with profiles on the phone: sign in, unless the person chose to create a new profile.
         var creating by rememberSaveable { mutableStateOf(false) }
         androidx.compose.runtime.LaunchedEffect(settings?.onboardingDone) { if (settings?.onboardingDone == true) creating = false }
-        LifelineTheme(mode) {
+        LifelineTheme(mode) { Box(Modifier.fillMaxSize()) {
             when {
                 settings == null -> Box(Modifier.fillMaxSize().background(Lifeline.colors.bg))
                 !settings.onboardingDone && settings.profiles.isNotEmpty() && !creating -> SignInScreen(
@@ -107,7 +107,16 @@ class MainActivity : ComponentActivity() {
                 )
                 else -> MainScaffold(settings, repository)
             }
-        }
+            // Fall alarm over everything, signed in or not; the phone also shows it over the lock screen.
+            val fall by repository.fallAlarm.collectAsStateWithLifecycle()
+            DisposableEffect(fall != null) {
+                if (android.os.Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(fall != null); setTurnScreenOn(fall != null) }
+                onDispose { }
+            }
+            fall?.let { a ->
+                com.lifeline.mesh.ui.send.FallAlarmScreen(a, onOk = repository::cancelFallAlarm, onSendNow = repository::sendFallSosNow)
+            }
+        } }
     }
 }
 

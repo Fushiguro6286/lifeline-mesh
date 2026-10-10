@@ -45,6 +45,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -71,7 +72,10 @@ class MeshService : Service() {
         private const val CHANNEL_MESH = "mesh"
         private const val CHANNEL_REPLIES = "replies"
         private const val CHANNEL_AMBULANCE = "ambulance"
+        private const val CHANNEL_FALL = "fall"
         private const val NOTIF_AMBULANCE = 3
+        private const val NOTIF_FALL = 4
+        private const val ACTION_FALL_OK = "com.lifeline.mesh.FALL_OK"
         private const val NOTIF_MESH = 1
         private const val NOTIF_REPLY = 2
         private const val ACTION_STOP = "com.lifeline.mesh.STOP_MESH"
@@ -87,6 +91,8 @@ class MeshService : Service() {
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var fallSensor: com.lifeline.mesh.safety.FallSensor? = null
+    private var alarm: com.lifeline.mesh.safety.AlarmEffects? = null
     /** Room writes in arrival order (a packet's row exists before its "handed to" update). */
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dbWrites = Dispatchers.IO.limitedParallelism(1)
@@ -132,9 +138,87 @@ class MeshService : Service() {
                 startSession(simulated)
             }
         }
+        watchForFalls()
+    }
+
+    // ------------------------------------------------------------------ fall and crash detection
+
+    /**
+     * While the setting is on, the accelerometer feeds [com.lifeline.mesh.safety.FallDetector]. A fall (or "Try the fall
+     * alarm") starts a 15 s countdown here, in the service, so it also runs with the screen off: alarm sound, vibration and
+     * a notification with "I'm OK". Nobody answers: a panic SOS with this phone's position goes out over the mesh.
+     */
+    private fun watchForFalls() {
+        val sensor = com.lifeline.mesh.safety.FallSensor(this) {
+            Log.i(TAG, "fall detected")
+            repo.startFallAlarm(test = false)
+        }
+        fallSensor = sensor
+        val effects = com.lifeline.mesh.safety.AlarmEffects(this)
+        alarm = effects
+        scope.launch {
+            repo.settings.filterNotNull().map { it.fallDetection }.distinctUntilChanged().collect { on ->
+                if (on) { if (!sensor.start()) Log.w(TAG, "no accelerometer: fall detection unavailable") } else sensor.stop()
+            }
+        }
+        scope.launch {
+            repo.fallAlarm.collectLatest { a ->
+                val nm = getSystemService(NotificationManager::class.java)
+                if (a == null) { effects.stop(); nm.cancel(NOTIF_FALL); return@collectLatest }
+                effects.start()
+                try {
+                    while (true) {
+                        val left = a.secondsLeft(System.currentTimeMillis())
+                        if (left <= 0) break
+                        runCatching { nm.notify(NOTIF_FALL, fallNotification(left, a.test)) }
+                        delay(1_000)
+                    }
+                } finally {
+                    effects.stop()
+                    nm.cancel(NOTIF_FALL)
+                }
+                sendFallSos()
+                repo.fallAlarm.compareAndSet(a, null)
+            }
+        }
+    }
+
+    private suspend fun sendFallSos() {
+        val fix = repo.myFix.value ?: com.lifeline.mesh.location.LocationProvider(this).lastKnown()
+        val draft = com.lifeline.mesh.ai.QualityGate.panicDraft().copy(note = "Fall or crash detected, no answer")
+        repo.originate { h ->
+            com.lifeline.mesh.ui.send.SendViewModel.alertPacket(h, draft, com.lifeline.mesh.ai.LocationChoice(fix, approximate = true))
+        }
+        Haptics.strong(this)
+        Log.i(TAG, "fall SOS sent")
+    }
+
+    private fun fallNotification(secondsLeft: Int, test: Boolean): Notification {
+        val ok = PendingIntent.getService(
+            this, 2, Intent(this, MeshService::class.java).setAction(ACTION_FALL_OK), PendingIntent.FLAG_IMMUTABLE,
+        )
+        val text = getString(R.string.fall_countdown, secondsLeft)
+        val b = NotificationCompat.Builder(this, CHANNEL_FALL)
+            .setSmallIcon(R.drawable.ic_sos)
+            .setContentTitle(getString(R.string.fall_title) + if (test) " · ${getString(R.string.fall_test)}" else "")
+            .setContentText(text)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(openApp())
+            .addAction(0, getString(R.string.fall_ok), ok)
+        // Lights the screen and opens the countdown over the lock screen where the phone allows it.
+        val nm = getSystemService(NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent()) b.setFullScreenIntent(openApp(), true)
+        return b.build()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_FALL_OK) {
+            repo.cancelFallAlarm()
+            return START_STICKY
+        }
         if (intent?.action == ACTION_STOP) {
             repo.userStoppedMesh = true
             stopSelf()
@@ -145,6 +229,8 @@ class MeshService : Service() {
     }
 
     override fun onDestroy() {
+        fallSensor?.stop()
+        alarm?.stop()
         stopSession()
         if (receiverRegistered) runCatching { unregisterReceiver(radioReceiver) }
         wakeLock?.let { if (it.isHeld) it.release() }
@@ -490,6 +576,13 @@ class MeshService : Service() {
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_MESH, getString(R.string.notif_channel_mesh), NotificationManager.IMPORTANCE_LOW)
+        )
+        // The fall alarm rings and vibrates itself (on a loop until "I'm OK"), so the channel stays silent.
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_FALL, getString(R.string.fall_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+                setSound(null, null)
+                enableVibration(false)
+            }
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_REPLIES, getString(R.string.notif_channel_replies), NotificationManager.IMPORTANCE_HIGH).apply {

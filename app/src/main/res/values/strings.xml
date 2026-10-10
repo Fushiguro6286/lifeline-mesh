@@ -244,4 +244,12 @@
     <string name="profile_no_name">Profile without a name</string>
     <string name="firstaid_unreviewed">Not yet reviewed by a medical professional. Trained responders know best: follow them.</string>
     <string name="firstaid_unreviewed_short">Not yet reviewed by a medical professional</string>
+    <!-- Fall and crash alarm -->
+    <string name="fall_title">Did you fall?</string>
+    <string name="fall_detected">A hard fall or crash was detected.</string>
+    <string name="fall_countdown">Sending an SOS with your location in %d s</string>
+    <string name="fall_ok">I\'m OK</string>
+    <string name="fall_send_now">Send SOS now</string>
+    <string name="fall_test">Test of the fall alarm</string>
+    <string name="fall_channel">Fall alarm</string>
 </resources>

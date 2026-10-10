@@ -111,6 +111,17 @@ fun SettingsScreen(
             }
         }
 
+        Section("Safety")
+        SwitchRow(R.drawable.ic_sos, "Fall and crash detection",
+            "Uses the motion sensor while the mesh runs, also with the screen off. After a hard fall or crash followed by " +
+                "stillness, the phone rings for 15 seconds; if nobody taps I'm OK, it sends an SOS with your location.",
+            settings.fallDetection, repository::setFallDetection)
+        val meshRunning by repository.meshRunning.collectAsStateWithLifecycle()
+        LinkRow(R.drawable.ic_sos, "Try the fall alarm",
+            if (meshRunning) "Starts the 15-second countdown now, as if a fall was detected. Tap I'm OK to stop it; otherwise a real SOS is sent."
+            else "Start the mesh first: the countdown and the SOS run in the mesh service.",
+            onClick = { if (meshRunning) repository.startFallAlarm(test = true) })
+
         Section(stringResource(R.string.settings_appearance))
         listOf(
             ThemeMode.SYSTEM to R.string.theme_system,

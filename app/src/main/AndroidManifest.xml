@@ -34,6 +34,8 @@
     <!-- Voice, haptics -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Fall alarm: light the screen and show the countdown over the lock screen (falls back to a heads-up notification). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Sync only (core features work without it) -->
     <uses-permission android:name="android.permission.INTERNET" />
