@@ -349,4 +349,9 @@
         <item quantity="one">उनका जवाब %d हॉप में आया</item>
         <item quantity="other">उनका जवाब %d हॉप में आया</item>
     </plurals>
+    <string name="warning_show_fewer">कम चेतावनियाँ दिखाएँ</string>
+    <plurals name="warning_show_more">
+        <item quantity="one">%d और चेतावनी दिखाएँ</item>
+        <item quantity="other">%d और चेतावनियाँ दिखाएँ</item>
+    </plurals>
 </resources>

@@ -15,6 +15,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,10 +51,15 @@ fun WarningBanner(packets: List<PacketEntity>, modifier: Modifier = Modifier) {
         .mapNotNull { e -> e.warning()?.let { e to it } }
         .filter { (_, w) -> w.level >= 2 && w.expires * 1000 > now }
         .sortedByDescending { (e, _) -> e.sentAt }
+        // One per kind of event (the newest), so a storm does not stack the same warning several times.
+        .distinctBy { (e, w) -> listOf(w.event.lowercase(), w.forecast, w.drill, e.simulated) }
         .toList()
     if (inForce.isEmpty()) return
+    // At most two at once, so the SOS button stays near the top; the rest one tap away.
+    var all by remember { mutableStateOf(false) }
+    val shown = if (all) inForce else inForce.take(MAX_SHOWN)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        inForce.forEach { (e, w) ->
+        shown.forEach { (e, w) ->
             Column(
                 Modifier.fillMaxWidth().background(c.surface, Shapes.card).border(2.dp, c.sos, Shapes.card).padding(Space.l)
                     .semantics { liveRegion = LiveRegionMode.Assertive },
@@ -77,5 +84,14 @@ fun WarningBanner(packets: List<PacketEntity>, modifier: Modifier = Modifier) {
                     style = Lifeline.type.caption, color = c.inkMuted)
             }
         }
+        if (inForce.size > MAX_SHOWN) {
+            SecondaryButton(
+                if (all) stringResource(R.string.warning_show_fewer)
+                else pluralStringResource(R.plurals.warning_show_more, inForce.size - MAX_SHOWN, inForce.size - MAX_SHOWN),
+                { all = !all }, Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
+
+private const val MAX_SHOWN = 2

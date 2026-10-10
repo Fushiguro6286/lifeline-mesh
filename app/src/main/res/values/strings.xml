@@ -359,4 +359,9 @@
         <item quantity="one">their reply crossed %d hop</item>
         <item quantity="other">their reply crossed %d hops</item>
     </plurals>
+    <string name="warning_show_fewer">Show fewer warnings</string>
+    <plurals name="warning_show_more">
+        <item quantity="one">Show %d more warning</item>
+        <item quantity="other">Show %d more warnings</item>
+    </plurals>
 </resources>

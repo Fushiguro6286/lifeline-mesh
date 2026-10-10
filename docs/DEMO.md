@@ -303,7 +303,17 @@ early (apps cannot), it runs out by itself.
   crossed N hops"; Rescue tab with virtual alerts and hops; storm weather and warnings; simulated or real watch.
   Simulation off: real mesh between real phones (needs phones B and C for alerts to a rescuer), real weather and
   warnings from the laptop server, real watch, Health Connect.
-- NOT yet checked on the phone: the two hop lines and a real watch during simulation (the phone was in use).
+- Checked on the iQOO 15 (10 Oct), simulation on: SOS "Trapped · Medical" → Passed to 2 nearby phones → Ambulance (Kiran)
+  "ETA 4 min · their reply crossed 2 hops" → They are here; Rescue card "5 reports merged · just now · reached you over
+  1 hop"; Mesh tab 11 phones, round trip 2038 ms, farthest link 547 m (all Simulated); weather story (thunderstorm with
+  hail, model sentence); simulated watch live 97 % / 76 per min; the real Galaxy Fit3 live 104 per min with the "alarm
+  reaches only the virtual phones" note.
+- Simulation off (laptop server): real weather 31 °C Mainly clear (Open-Meteo, model sentence); Galaxy Fit3 live 105 per
+  min; drill "DRILL, not real: Flood" alarm and banner; Rescue tab "No alerts yet" (no other real phone); Mesh tab "0
+  phones linked to you, 1 waiting to send" (the drill queued for the next phone). Drill deleted afterwards. Real alerts
+  to a rescuer still need phones B and C.
+- Warning banner: one per kind of event (newest) and at most two, with "Show N more", so a storm does not push the SOS
+  button off the screen (seen in the test: four stacked warnings).
 
 ## Simulated weather (added 10 Oct 2026, on request)
 
