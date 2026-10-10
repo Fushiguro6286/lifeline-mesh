@@ -115,7 +115,14 @@ data class Route(
     val fromLat: Double, val fromLon: Double, val toLat: Double, val toLon: Double, val toMe: Boolean,
     val travel: com.lifeline.mesh.triage.Travel = com.lifeline.mesh.triage.Travel.VEHICLE,
     val points: List<Pair<Double, Double>> = listOf(fromLat to fromLon, toLat to toLon),
+    /** Minutes for this leg, once routed. */
+    val minutes: Int? = null,
+    /** After the pick-up: the suggested drop-off at the quickest open shelter, if one is known. */
+    val dropOff: DropOff? = null,
 )
+
+/** The leg from a pick-up to the quickest open shelter for the team's way of travelling. */
+data class DropOff(val points: List<Pair<Double, Double>>, val minutes: Int, val shelter: String)
 
 /**
  * Lines for every visible responder with a known job. Teams see every line; anyone else only lines to their own
@@ -193,11 +200,19 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     // Along the roads, around reported blockages; worked out in the background, only when someone moved about 25 m.
     val blocks = remember(packets) { com.lifeline.mesh.ui.rescuer.blocksFrom(packets) }
     val routeKey = straightLines.map { listOf(Math.round(it.fromLat * 4000), Math.round(it.fromLon * 4000), it.toLat, it.toLon, it.travel) }
-    val lines by produceState(straightLines, routeKey, roads, blocks) {
+    // Shelters reported open: a team's route continues from the pick-up to the quickest one (11 Oct 2026).
+    val shelterPlaces = remember(packets, now) {
+        com.lifeline.mesh.triage.Shelters.places(packets.filter {
+            it.type == PacketType.REPORT.code && now - it.receivedAt < ACTIVE_MS && it.lat != null && it.lon != null
+        }.map { com.lifeline.mesh.triage.PlaceReport(it.id, it.reportType ?: 0, it.lat!!, it.lon!!, it.note.orEmpty(), it.receivedAt) })
+    }
+    val lines by produceState(straightLines, routeKey, roads, blocks, shelterPlaces) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             straightLines.map { r ->
                 val p = com.lifeline.mesh.routing.RoutePlanner.plan(roads, r.fromLat to r.fromLon, emptyList(), r.toLat to r.toLon, r.travel, blocks)
-                r.copy(points = p.points)
+                val drop = com.lifeline.mesh.ui.send.quickestShelter(shelterPlaces, r.toLat to r.toLon, r.travel, roads, blocks)
+                r.copy(points = p.points, minutes = p.minutes,
+                    dropOff = drop?.let { (s, dp) -> DropOff(dp.points, dp.minutes, com.lifeline.mesh.ui.send.shelterName(s)) })
             }
         }
     }
@@ -407,6 +422,8 @@ private fun LibreMap(
                         st.addSource(GeoJsonSource("gaps"))
                         st.addSource(GeoJsonSource("evac"))
                         st.addSource(GeoJsonSource("meshpath"))
+                        st.addSource(GeoJsonSource("dropoff"))
+                        st.addSource(GeoJsonSource("legs"))
                         st.addSource(GeoJsonSource("hops"))
                         st.addSource(GeoJsonSource("places"))
                         st.addSource(GeoJsonSource("alerts"))
@@ -435,6 +452,13 @@ private fun LibreMap(
                             PropertyFactory.lineWidth(5f),
                             PropertyFactory.lineOpacity(0.8f),
                         ))
+                        // Drop-off legs: from the pick-up to the shelter, green dashes.
+                        st.addLayer(LineLayer("dropoff", "dropoff").withProperties(
+                            PropertyFactory.lineColor(c.safe.toArgb()),
+                            PropertyFactory.lineWidth(3f),
+                            PropertyFactory.lineOpacity(0.9f),
+                            PropertyFactory.lineDasharray(arrayOf(2f, 1.5f)),
+                        ))
                         // Mesh paths: thin solid ink lines through each relay phone, with numbered hop badges.
                         st.addLayer(LineLayer("meshpath", "meshpath").withProperties(
                             PropertyFactory.lineColor(c.ink.toArgb()),
@@ -452,6 +476,8 @@ private fun LibreMap(
                         st.addLayer(SymbolLayer("places", "places").withProperties(*icon.toTypedArray()))
                         st.addLayer(SymbolLayer("alerts", "alerts").withProperties(*(icon + PropertyFactory.symbolSortKey(Expression.get("order"))).toTypedArray()))
                         st.addLayer(SymbolLayer("me", "me").withProperties(*icon.toTypedArray()))
+                        // Minutes on each leg, on top so their text is never cut by a marker.
+                        st.addLayer(SymbolLayer("legs", "legs").withProperties(*icon.toTypedArray()))
                         style = st
                     }
                 } catch (e: Exception) {
@@ -504,6 +530,15 @@ private fun LibreMap(
     // Push data into the sources whenever it changes. Marker images are created on demand, once each.
     LaunchedEffect(style, ranked, places, routes, me, gapLines, evac, meshPaths) {
         val st = style ?: return@LaunchedEffect
+        st.getSourceAs<GeoJsonSource>("dropoff")?.setGeoJson(FeatureCollection.fromFeatures(routes.mapNotNull { it.dropOff }.filter { it.points.size >= 2 }.map { d ->
+            Feature.fromGeometry(LineString.fromLngLats(d.points.map { (la, lo) -> Point.fromLngLat(lo, la) }))
+        }))
+        st.getSourceAs<GeoJsonSource>("legs")?.setGeoJson(FeatureCollection.fromFeatures(legLabels(routes).map { (pt, text, drop) ->
+            val name = "leg-${if (drop) "d" else "r"}-$text"
+            if (st.getImage(name) == null) st.addImage(name,
+                MarkerBitmaps.pill(text, (if (drop) c.safe else c.link).toArgb(), c.onFill.toArgb(), c.bg.toArgb(), density))
+            Feature.fromGeometry(Point.fromLngLat(pt.second, pt.first)).apply { addStringProperty("icon", name) }
+        }))
         st.getSourceAs<GeoJsonSource>("meshpath")?.setGeoJson(FeatureCollection.fromFeatures(meshPaths.filter { it.points.size >= 2 }.map { p ->
             Feature.fromGeometry(LineString.fromLngLats(p.points.map { (la, lo) -> Point.fromLngLat(lo, la) }))
         }))
@@ -588,3 +623,30 @@ fun circlePoints(lat: Double, lon: Double, radiusM: Double, steps: Int = 48): Li
         lat + dLat * kotlin.math.sin(a) to lon + dLon * kotlin.math.cos(a)
     }
 }
+
+/**
+ * Minute labels for the map: (where, text, drop-off?) at the middle of each routed leg: "6 min" on the way to the
+ * pick-up, "5 min to School hall" on the way to the shelter.
+ */
+fun legLabels(routes: List<Route>): List<Triple<Pair<Double, Double>, String, Boolean>> = routes.flatMap { r ->
+    listOfNotNull(
+        r.minutes?.let { m -> Triple(halfway(r.points), "$m min", false) },
+        r.dropOff?.let { d -> Triple(halfway(d.points), "${d.minutes} min to ${d.shelter}", true) },
+    )
+}
+
+/** The point half way along a line by distance (a 2-point line's "middle point" would be its end). */
+fun halfway(points: List<Pair<Double, Double>>): Pair<Double, Double> {
+    if (points.size < 2) return points.first()
+    val legs = points.zipWithNext().map { (a, b) -> com.lifeline.mesh.triage.GeoMath.distanceM(a.first, a.second, b.first, b.second) }
+    var left = legs.sum() / 2
+    for ((i, d) in legs.withIndex()) {
+        if (left <= d && d > 0) {
+            val t = left / d; val a = points[i]; val b = points[i + 1]
+            return a.first + (b.first - a.first) * t to a.second + (b.second - a.second) * t
+        }
+        left -= d
+    }
+    return points.last()
+}
+

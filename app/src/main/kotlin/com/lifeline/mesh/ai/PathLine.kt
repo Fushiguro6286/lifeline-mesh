@@ -37,9 +37,11 @@ object PathLine {
 
     fun request(f: PathFacts) = LlmRequest(
         feature = "path",
-        system = "Write ONE short, calm sentence telling ${if (f.mine) "a person waiting for help" else "a rescue team"} how " +
-            "messages travel between them and the other phone, using ONLY these facts. Name the phones in order. Write " +
-            "numbers as digits. Do not add numbers or advice.\nFacts:\n" + factLines(f),
+        system = "Write ONE short, calm sentence telling " +
+            (if (f.mine) "a person waiting for help how their alert travels from their phone to the rescue team"
+            else "a rescue team how its messages travel from its phone to the person") +
+            ", using ONLY these facts. Start from the reader's phone and name the phones in order. Write numbers as " +
+            "digits. Do not add numbers or advice.\nFacts:\n" + factLines(f),
         user = "Write the sentence now.",
         maxTokens = 60,
         timeoutMs = 6_000,
@@ -50,6 +52,10 @@ object PathLine {
         if (text.isBlank() || text.length > 200 || text.contains('{')) return null
         if (Regex("[.!?](\\s|$)").findAll(text).count() > 1) return null
         if (!text.contains(f.teamName, ignoreCase = true)) return null
+        // The names must come in path order, from this phone outwards (seen on the iQOO 15: "travels from Kiran to
+        // Divya and then to your phone", the right phones in the wrong direction).
+        val order = (f.via + f.teamName).map { n -> text.indexOf(n, ignoreCase = true) }.filter { it >= 0 }
+        if (order.zipWithNext().any { (a, b) -> a > b }) return null
         if (Regex("\\p{Nd}+").findAll(text).any { it.value != f.hops.toString() }) return null
         if (WeatherLine.NUMBER_WORDS.containsMatchIn(text)) return null
         return text

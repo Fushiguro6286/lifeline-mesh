@@ -764,5 +764,22 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
   2 hops, no internet." The on-device model may phrase it ("Written on device"); its sentence is used only if it names
   the team (or person), uses no number but the hop count, writes no number as a word and is one sentence.
 - MeshPathTest: shortest paths on the simulated layout, unreachable, ties, the computed sentences, model checks.
-- NOT checked on the phone yet (it was locked).
+- Checked on the iQOO 15 (11 Oct 2026, simulation): as "I need help", a line from me to Kiran with a "2" hop badge and
+  "Written on device: Your alert travels from Kiran to Divya and then to your phone." That sentence had the right phones
+  in the wrong direction, so the check now also requires the names in path order and the prompt says to start from
+  the reader's phone. As Ambulance with a job taken: "Messages between you and Farhan go through Ravi and Meena: 3
+  hops, no internet." with the hop-by-hop line and numbered badges.
+
+## Rescue route ends at the shelter (added 11 Oct 2026, on request)
+- Every team line on the map (team → the person it is going to) continues from the person to the open shelter quickest
+  to reach for that team's way of travelling (road for vehicles, straight for boats), around reported blocked roads:
+  a green dashed drop-off leg. Minute labels sit half way along each leg: "3 min" (teal) and "4 min to School hall"
+  (green), drawn above the markers. Full shelters are skipped. Shared with "Where to go" (quickestShelter).
+- The team's plan card adds, under its first job: "Then take them to School hall: about 1 min (suggested drop-off,
+  open shelter)". The time chain of later jobs is unchanged (it still goes job to job).
+- Checked on the iQOO 15 (simulation, as Ambulance): Kiran "3 min" to #1 then "4 min to School hall", Arjun "4 min"
+  then "4 min to School hall", Priya's boat "9 min" then "1 min to Temple hall"; plan card drop-off line as above.
+  Fixed during the check: on 2-point lines the label sat on the end point (now half way by distance), and labels were
+  drawn under markers (now on top).
+- ShelterNameTest: short names from report notes.
 

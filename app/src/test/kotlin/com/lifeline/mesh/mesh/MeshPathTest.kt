@@ -44,5 +44,7 @@ class MeshPathTest {
         assertNull(PathLine.validate("Your alert reaches Kiran in three hops.", coming))        // number as a word
         assertNull(PathLine.validate("Your alert reaches the ambulance in 3 hops.", coming))    // team not named
         assertNull(PathLine.validate("It reaches Kiran. Help is near.", coming))                // two sentences
+        assertNull(PathLine.validate("Your alert travels from Kiran to Divya and then to your phone.", coming)) // backwards
+        assertNull(PathLine.validate("Your alert goes through Ravi and Divya to Kiran in 3 hops.", coming))    // order swapped
     }
 }

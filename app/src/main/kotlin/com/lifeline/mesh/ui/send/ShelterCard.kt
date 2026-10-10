@@ -44,6 +44,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
+/**
+ * The open shelter quickest to reach from [from] for [travel] (a person on foot, or a team's vehicle or boat), timed
+ * along the offline roads around [blocks]; null if no open shelter is known. Shared by "Where to go" and the rescue
+ * team's drop-off.
+ */
+fun quickestShelter(
+    all: List<Shelter>, from: Pair<Double, Double>, travel: Travel,
+    roads: com.lifeline.mesh.routing.RoadMap?, blocks: List<com.lifeline.mesh.routing.Block>,
+): Pair<Shelter, TravelPlan>? =
+    Shelters.quickest(Shelters.openNear(all, from.first, from.second)) { s ->
+        val p = RoutePlanner.plan(roads, from, emptyList(), s.lat to s.lon, travel, blocks)
+        p.minutes to p
+    }?.let { it.first to it.third }
+
+/** A shelter's short name from its report: "School hall open, 200 beds" → "School hall". */
+fun shelterName(s: Shelter): String =
+    s.note.substringBefore(',').replace(Regex("\\s+(is\\s+)?open\\b.*", RegexOption.IGNORE_CASE), "").trim().ifBlank { "the shelter" }
+
 /** The open shelter to walk to, how ([plan], along the roads around blocked ones), and what else is known. */
 data class ShelterChoice(val shelter: Shelter?, val plan: TravelPlan?, val fullSkipped: Int, val water: Shelter?, val waterM: Double?)
 
@@ -68,12 +86,9 @@ fun rememberShelterChoice(repo: AppRepository): ShelterChoice? {
         val me = fix ?: run { value = null; return@produceState }
         value = withContext(Dispatchers.Default) {
             val all = Shelters.places(reports)
-            val best = Shelters.quickest(Shelters.openNear(all, me.lat, me.lon)) { s ->
-                val p = RoutePlanner.plan(roads, me.lat to me.lon, emptyList(), s.lat to s.lon, Travel.FOOT, blocks)
-                p.minutes to p
-            }
+            val best = quickestShelter(all, me.lat to me.lon, Travel.FOOT, roads, blocks)
             val water = all.filter { it.water }.minByOrNull { GeoMath.distanceM(me.lat, me.lon, it.lat, it.lon) }
-            ShelterChoice(best?.first, best?.third, Shelters.fullCount(all), water,
+            ShelterChoice(best?.first, best?.second, Shelters.fullCount(all), water,
                 water?.let { GeoMath.distanceM(me.lat, me.lon, it.lat, it.lon) })
         }
     }

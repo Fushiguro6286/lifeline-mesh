@@ -77,6 +77,21 @@ fun PlanCard(settings: Settings, ranked: List<RankedAlert>) {
         }
     }
 
+    // After the first pick-up: the quickest open shelter for this team's way of travelling (11 Oct 2026).
+    val shelters = remember(packets) {
+        com.lifeline.mesh.triage.Shelters.places(packets.filter {
+            it.type == com.lifeline.mesh.packet.PacketType.REPORT.code && now - it.receivedAt < ACTIVE_MS && it.lat != null && it.lon != null
+        }.map { com.lifeline.mesh.triage.PlaceReport(it.id, it.reportType ?: 0, it.lat!!, it.lon!!, it.note.orEmpty(), it.receivedAt) })
+    }
+    val first = queue.firstOrNull()
+    val drop by produceState<Pair<String, Int>?>(null, first?.alertId, shelters, roads, blocks) {
+        val la = first?.lat; val lo = first?.lon
+        value = if (la == null || lo == null) null else withContext(Dispatchers.Default) {
+            com.lifeline.mesh.ui.send.quickestShelter(shelters, la to lo, settings.travel, roads, blocks)
+                ?.let { (s, p) -> com.lifeline.mesh.ui.send.shelterName(s) to p.minutes }
+        }
+    }
+
     var phrased by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(stops, aiStatus) { phrased = null; if (stops.isNotEmpty()) phrased = app.ai.plan(stops) }
 
@@ -94,6 +109,10 @@ fun PlanCard(settings: Settings, ranked: List<RankedAlert>) {
                     Text("${s.legMinutes} min · reached after about ${s.arriveMinutes} min" +
                         if (s.avoided > 0) " · around ${s.avoided} blocked road" + (if (s.avoided > 1) "s" else "") else "",
                         style = Lifeline.type.caption, color = if (s.avoided > 0) c.warn else c.inkMuted)
+                    if (s.order == 1) drop?.let { (name, m) ->
+                        Text("Then take them to $name: about $m min (suggested drop-off, open shelter)",
+                            style = Lifeline.type.caption, color = c.safe)
+                    }
                 }
             }
         }

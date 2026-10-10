@@ -112,6 +112,28 @@ object MarkerBitmaps {
         return bmp
     }
 
+    /** A small rounded label, e.g. "6 min" on a route leg. */
+    fun pill(text: String, fill: Int, textColor: Int, ring: Int, density: Float): Bitmap {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = 12f * density
+        }
+        val w = (p.measureText(text) + 16 * density).toInt()
+        val h = (22 * density).toInt()
+        val bmp = createBitmap(w, h)
+        val c = Canvas(bmp)
+        val rr = h / 2f
+        p.color = ring
+        c.drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), rr, rr, p)
+        p.color = fill
+        val inset = 1.5f * density
+        c.drawRoundRect(RectF(inset, inset, w - inset, h - inset), rr, rr, p)
+        p.color = textColor
+        p.textAlign = Paint.Align.CENTER
+        c.drawText(text, w / 2f, h / 2f - (p.descent() + p.ascent()) / 2, p)
+        return bmp
+    }
+
     /** Me: a dot with a ring (no compass heading, so no arrow pretending to know my direction). */
     fun me(fill: Int, ring: Int, density: Float): Bitmap {
         val size = (22 * density).toInt()

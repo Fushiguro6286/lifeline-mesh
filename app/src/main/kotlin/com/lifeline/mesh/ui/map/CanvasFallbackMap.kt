@@ -136,6 +136,22 @@ fun CanvasFallbackMap(
             drawPath(path, c.safe.copy(alpha = 0.8f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5.dp.toPx()))
         }
 
+        // Drop-off legs to the shelter: green dashes, and minute labels on every leg.
+        for (r in routes) {
+            val d = r.dropOff ?: continue
+            val path = androidx.compose.ui.graphics.Path()
+            d.points.forEachIndexed { i, (la, lo) -> val o = at(plot(la, lo)); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
+            drawPath(path, c.safe, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), pathEffect = dash))
+        }
+        for ((pt, text, drop) in legLabels(routes)) {
+            val o = at(plot(pt.first, pt.second))
+            val t = measurer.measure(text, TextStyle(fontFamily = type.label.fontFamily, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = c.onFill))
+            val pad = 6.dp.toPx()
+            drawRoundRect(if (drop) c.safe else c.link, Offset(o.x - t.size.width / 2 - pad, o.y - t.size.height / 2 - 2.dp.toPx()),
+                Size(t.size.width + 2 * pad, t.size.height + 4.dp.toPx()), CornerRadius(10.dp.toPx()))
+            drawText(t, topLeft = Offset(o.x - t.size.width / 2, o.y - t.size.height / 2))
+        }
+
         // Mesh paths: thin ink lines, numbered hops.
         for (mp in meshPaths) {
             if (mp.points.size < 2) continue
