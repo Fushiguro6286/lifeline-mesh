@@ -796,7 +796,14 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
 - "Help is coming" and SOS-sent vibrations are marked as alarms on Android 13+, so a phone left on silent still buzzes.
 - In simulation the titles say Simulated; a team phone in simulation gets a message for each simulated incident of its
   kind (about one a minute).
-- NOT checked on the phone yet (it was locked).
+- Checked on the iQOO 15 (11 Oct 2026, simulation), from Android's notification and vibration records:
+  "Your alert reached a rescue team · Simulated / Kiran (Ambulance) has it, 2 hops away" vibrated (670 ms); the "Help
+  is coming" buzz played in full as an alarm (838 ms) and Android skipped the notification's own buzz instead of doing
+  both; as Ambulance, "Urgent alert · Simulated / trapped, medical, 2 people · 1.1 km · 2 hops away" vibrated.
+- Found and fixed: the simulated storm raised a new warning every 75 s, and each one rang a full alarm (3 s alarm
+  vibration and sound), cutting off the app's own buzz. A warning for the same event at the same or lower level now
+  rings at most once an hour (a higher level rings again; the banner always shows it), and the warning's extra app
+  buzz is gone (its channel already vibrates as an alarm). Checked: four "Next weather" steps, one alarm.
 
 ## Find someone (added 11 Oct 2026, on request: a feature for the judges)
 - SOS tab card: type a name; the phone searches what it has heard in the last 6 hours (check-ins with names, alerts,
@@ -809,5 +816,8 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
 - No new packet: check-ins and alerts flood the mesh already. Computed text only, no model.
 - Stage use: in simulation, type "Ravi" (he checks in safe in the script) or "Meena" (her alert, and who answered).
 - FindPersonTest: search (any case, every word, too short), status rules, the sentences.
-- NOT checked on the phone yet (it was locked).
+- Checked on the iQOO 15 (simulation): "Ravi's phone was last heard just now, 1 hop away. No alert and no check-in from
+  them." (before his scripted check-in), "meena" → "Meena checked in safe just now, 2 hops away.", "Joseph" → "Joseph
+  asked for help just now: trapped, medical, 2 people, 2 hops away. Kiran (Ambulance) said help is coming." Answers
+  matched the phone's database. "Just now" is under a minute.
 

@@ -84,6 +84,7 @@ class MeshService : Service() {
         private const val ACTION_FALL_OK = "com.lifeline.mesh.FALL_OK"
         private const val NOTIF_MESH = 1
         private const val NOTIF_REPLY = 2
+        private const val WARNING_RING_AGAIN_MS = 60 * 60_000L
         private const val NOTIF_RECEIPT = 7
         private const val NOTIF_SAFE = 8
         /** New alerts each get their own notification: this plus the low bits of the message ID. */
@@ -783,9 +784,19 @@ class MeshService : Service() {
      * An official warning arrived (first copy only). Severe or Extreme and still in force: strong vibration, an alarm
      * notification and read aloud. Says how it arrived: from the server, or passed on by nearby phones (not verifiable).
      */
+    /** Last alarm per warning event (event name → level, wall ms): an update of the same warning does not ring again. */
+    private val rungWarnings = java.util.concurrent.ConcurrentHashMap<String, Pair<Int, Long>>()
+
     private fun warningAlarm(w: Packet.Warning, viaInternet: Boolean, simulated: Boolean = false) {
-        if (w.level < 2 || w.expires * 1000 <= System.currentTimeMillis()) return
-        Haptics.strong(this)
+        val now = System.currentTimeMillis()
+        if (w.level < 2 || w.expires * 1000 <= now) return
+        // Agencies re-issue warnings as updates, and the simulated storm makes a new one every step (seen on the iQOO 15:
+        // an alarm every 75 s). Ring again only for a new event, a higher level, or after an hour; the banner still shows it.
+        val key = (if (simulated) "sim:" else "") + w.event.lowercase()
+        val last = rungWarnings[key]
+        if (last != null && w.level <= last.first && now - last.second < WARNING_RING_AGAIN_MS) return
+        rungWarnings[key] = w.level to now
+        // The warnings channel vibrates (alarm class) and rings itself; a second vibration here was cut short by it.
         val title = getString(when { w.drill -> R.string.warning_title_drill; w.forecast -> R.string.warning_title_forecast
             else -> R.string.warning_title }, w.event.ifBlank { "—" }) + if (simulated) " · ${getString(R.string.simulated_tag)}" else ""
         val until = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(w.expires * 1000))
