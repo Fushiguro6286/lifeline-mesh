@@ -267,6 +267,9 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
   system restarts the service in the background it falls back to relaying only; positions resume when the app opens.
 - The internet relay never runs in simulation mode (real and simulated packets never mix).
 - Phase 10 Hindi and Kannada strings (team names, ambulance request, nearest team) are machine-drafted: check them.
+- The sender's "Help is coming" card no longer quotes the rescuer's reply note (it named the vehicle, e.g. "Rescue boat
+  on the way"); it says "They are on the way" (hi: "वे रास्ते में हैं", kn: "ಅವರು ದಾರಿಯಲ್ಲಿದ್ದಾರೆ", machine-drafted). The reply
+  notification still appends the note.
 - Read aloud uses the phone's TextToSpeech voices. If the phone has no Hindi or Kannada voice, it reads with the default
   voice (check Settings → Text-to-speech on each phone).
 

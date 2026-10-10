@@ -251,5 +251,6 @@
     <string name="status_promised_only">ಅವರು ಹೇಳಿದ %d ನಿಮಿಷದಿಂದ ಎಣಿಕೆ. ಅವರ ಲೈವ್ ಸ್ಥಳ ಇನ್ನೂ ತಿಳಿದಿಲ್ಲ.</string>
     <string name="status_volunteer">ಒಬ್ಬ ಸ್ವಯಂಸೇವಕ</string>
     <string name="status_arrived">ಅವರು ಬಂದಿದ್ದಾರೆ</string>
+    <string name="status_on_the_way">ಅವರು ದಾರಿಯಲ್ಲಿದ್ದಾರೆ</string>
     <string name="status_arrived_body">ನಿಮ್ಮ ಎಚ್ಚರಿಕೆಯಲ್ಲಿ ನೀಡಿದ ಸ್ಥಳಕ್ಕೆ ಅವರು ತಲುಪಿದ್ದಾರೆ (75 ಮೀ ಒಳಗೆ). ಸಾಧ್ಯವಾದರೆ ಕೂಗಿ ಅಥವಾ ಕೈ ಬೀಸಿ.</string>
 </resources>

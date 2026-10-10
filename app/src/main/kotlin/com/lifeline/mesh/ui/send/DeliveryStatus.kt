@@ -43,7 +43,7 @@ import com.lifeline.mesh.ui.theme.Space
  * → "Help is coming" once an Ack for this alert arrives. Then the card turns safe-green with the ETA.
  */
 @Composable
-fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: () -> Unit, modifier: Modifier = Modifier, language: String = "en") {
+fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: () -> Unit, modifier: Modifier = Modifier) {
     val c = Lifeline.colors
     val res = LocalResources.current
     val acked = alert.acked || ack != null
@@ -63,7 +63,6 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
         if (acked) {
             Text(stringResource(R.string.status_help_coming), style = Lifeline.type.headline, color = c.safe, modifier = Modifier.semantics { heading() })
             HelpEta(alert, ack, eta)
-            ack?.note?.takeIf { it.isNotBlank() }?.let { com.lifeline.mesh.ui.components.TranslatableNote(it, language, auto = true) }
         } else {
             Text(stringResource(R.string.status_title), style = Lifeline.type.title, color = c.ink, modifier = Modifier.semantics { heading() })
         }
@@ -131,7 +130,10 @@ private fun HelpEta(alert: PacketEntity, ack: PacketEntity?, promised: Int?) {
         Text(stringResource(R.string.status_arrived), style = Lifeline.type.display, color = c.safe)
         who?.let { Text(it, style = Lifeline.type.bodyStrong, color = c.link) }
         Text(stringResource(R.string.status_arrived_body), style = Lifeline.type.caption, color = c.inkMuted)
-    } else if (live != null) {
+        return
+    }
+    Text(stringResource(R.string.status_on_the_way), style = Lifeline.type.bodyStrong, color = c.ink)
+    if (live != null) {
         Text(stringResource(R.string.status_live_min, live.minutes), style = Lifeline.type.display, color = c.ink)
         val role = live.who.role
         val who = (if (role.isTeam) stringResource(com.lifeline.mesh.ui.onboarding.teamLabel(role.code)) else stringResource(R.string.status_volunteer)) +
