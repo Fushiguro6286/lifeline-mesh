@@ -86,4 +86,47 @@ class RespondersTest {
         assertTrue("via distance $d2", d2 > 2_500)
         assertTrue(m2 > m)
     }
+
+    @Test fun urgentJobsComeFirstThenTheOneAcceptedFirst() {
+        val spots = mapOf(
+            1L to AlertSpot(0xA, 12.970, 77.590, severity = 1),
+            2L to AlertSpot(0xB, 12.980, 77.600, severity = 3),
+            3L to AlertSpot(0xC, 12.990, 77.610, severity = 1),
+            4L to AlertSpot(0xD, 12.960, 77.580, severity = 3),
+        )
+        // Accepted in the order 1 (low), 2 (urgent), 3 (low), 4 (urgent).
+        val acks = listOf(AckSeen(7, 1L, 10, now - 9 * min), AckSeen(7, 2L, 10, now - 8 * min),
+            AckSeen(7, 3L, 10, now - 7 * min), AckSeen(7, 4L, 10, now - 6 * min))
+        val q = Responders.queues(acks, spots, emptyList(), now).getValue(7)
+        assertEquals(listOf(2L, 4L, 1L, 3L), q.map { it.alertId })
+        assertEquals(2L, Responders.headings(acks, spots, emptyList(), now).getValue(7).alertId)
+        // The urgent person checks in safe: the next urgent job is next.
+        assertEquals(listOf(4L, 1L, 3L), Responders.queues(acks, spots, listOf(0xB to now - min), now).getValue(7).map { it.alertId })
+    }
+
+    @Test fun aheadIsTheJobsBeforeItOrForANewJobEverythingAtLeastAsUrgent() {
+        val q = listOf(
+            Heading(7, 2L, 12.98, 77.60, 10, now - 8 * min, severity = 3),
+            Heading(7, 1L, 12.97, 77.59, 10, now - 9 * min, severity = 1),
+        )
+        assertEquals(listOf(2L), Responders.ahead(q, 1L, 1).map { it.alertId })
+        assertTrue(Responders.ahead(q, 2L, 3).isEmpty())
+        // Not accepted yet: an urgent one goes after the urgent job only; a low one after both.
+        assertEquals(listOf(2L), Responders.ahead(q, 99L, 3).map { it.alertId })
+        assertEquals(listOf(2L, 1L), Responders.ahead(q, 99L, 0).map { it.alertId })
+    }
+
+    @Test fun routeEtaAddsTheUrgentLegThenTheLegOnToTheLowJob() {
+        val km = 1000 / 111_195.0
+        // Team at 0; urgent job 2 km north; low job 1 km north of the start (so 1 km back from the urgent one).
+        val urgent = Heading(7, 2L, 12.970 + 2 * km, 77.590, 10, now, severity = 3)
+        val (d, m) = Responders.routeEta(12.970, 77.590, listOf(urgent), 12.970 + km, 77.590, Travel.VEHICLE)
+        assertEquals(3_000.0, d, 5.0)
+        // 3 km × 1.3 / 25 km/h = 9.4 min → 10; the low job alone would be 1 km → 4 min.
+        assertEquals(10, m)
+        assertEquals(Teams.etaMinutes(2_000.0, Travel.VEHICLE) + Teams.etaMinutes(1_000.0, Travel.VEHICLE) - 1, m)
+        // A stop without a position adds no leg.
+        val unknown = Heading(7, 3L, null, null, 10, now, severity = 3)
+        assertEquals(1_000.0, Responders.routeEta(12.970, 77.590, listOf(unknown), 12.970 + km, 77.590, Travel.VEHICLE).first, 5.0)
+    }
 }

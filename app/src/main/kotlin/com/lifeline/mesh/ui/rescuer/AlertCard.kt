@@ -17,12 +17,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -117,20 +119,39 @@ fun peopleText(a: MergedAlert): String = when (a.people) {
     else -> stringResource(R.string.alert_people, a.people)
 }
 
-/** My estimate for this alert (Phase 10), or null when I need help myself or either position is unknown. */
+/** My travel-time estimate for an alert: minutes, how I travel, and how many of my open jobs I do before it. */
+data class MyEta(val minutes: Int, val travel: com.lifeline.mesh.triage.Travel, val jobsFirst: Int)
+
+/**
+ * My estimate for this alert (Phase 10), or null when I need help myself or either position is unknown. If I have
+ * already said "help is coming" to other alerts, the more urgent (or earlier) ones come first: the estimate goes
+ * through each of them, then to this one.
+ */
 @Composable
-fun myEstimate(r: RankedAlert): Pair<Int, com.lifeline.mesh.triage.Travel>? {
+fun myEstimate(r: RankedAlert): MyEta? {
     val repo = (LocalContext.current.applicationContext as com.lifeline.mesh.LifelineApp).repository
     val settings by repo.settings.collectAsStateWithLifecycle()
+    val packets by repo.packets.collectAsStateWithLifecycle()
+    val fix by repo.myFix.collectAsStateWithLifecycle()
+    val done by repo.jobsDone.collectAsStateWithLifecycle()
     val s = settings ?: return null
     if (s.role == com.lifeline.mesh.data.Role.NEEDS_HELP) return null
     val d = r.distanceM ?: return null
-    return com.lifeline.mesh.triage.Teams.etaMinutes(d, s.travel) to s.travel
+    val now = System.currentTimeMillis()
+    val queue = remember(packets, done) { queuesFrom(packets, now, done, mine = true).values.firstOrNull().orEmpty() }
+    val ahead = com.lifeline.mesh.triage.Responders.ahead(queue, r.alert.id, r.alert.severity)
+        .filter { it.alertId !in r.alert.reports.map { rep -> rep.id } }
+    val me = fix; val to = r.alert.position
+    if (ahead.isEmpty() || me == null || to?.lat == null || to.lon == null) return MyEta(com.lifeline.mesh.triage.Teams.etaMinutes(d, s.travel), s.travel, 0)
+    val (_, m) = com.lifeline.mesh.triage.Responders.routeEta(me.lat, me.lon, ahead, to.lat, to.lon, s.travel)
+    return MyEta(m, s.travel, ahead.size)
 }
 
 /** "About 7 min by road · estimate": straight-line distance × detour at an assumed speed, computed in Kotlin. */
 @Composable
 private fun EtaLine(r: RankedAlert) {
-    val (min, travel) = myEstimate(r) ?: return
-    Text(stringResource(R.string.eta_estimate, min, travel.label), style = Lifeline.type.body, color = Lifeline.colors.link)
+    val e = myEstimate(r) ?: return
+    Text(stringResource(R.string.eta_estimate, e.minutes, e.travel.label), style = Lifeline.type.body, color = Lifeline.colors.link)
+    if (e.jobsFirst > 0) Text(pluralStringResource(R.plurals.eta_jobs_first, e.jobsFirst, e.jobsFirst),
+        style = Lifeline.type.caption, color = Lifeline.colors.inkMuted)
 }

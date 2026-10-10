@@ -90,22 +90,45 @@ class RescuerViewModel(app: Application) : AndroidViewModel(app) {
 /** Alerts older than this are no longer "active" (store and forward keeps 6 hours too). */
 const val ACTIVE_MS = 6 * 60 * 60 * 1000L
 
-/** Ranked merged alerts from stored packets: the same list on the Rescue tab and the Map. */
-fun rankAlerts(packets: List<PacketEntity>, me: GeoFix?, now: Long): List<RankedAlert> = Ranker.rank(
-    Merger.merge(packets.filter { it.type == PacketType.ALERT.code && !it.isMine && now - it.receivedAt < ACTIVE_MS }.map { it.toReport() }),
-    me?.lat, me?.lon,
-)
+/**
+ * Ranked merged alerts from stored packets: the same list on the Rescue tab and the Map. An alert whose sender has
+ * since checked in safe is done and leaves the list.
+ */
+fun rankAlerts(packets: List<PacketEntity>, me: GeoFix?, now: Long): List<RankedAlert> {
+    val checkIns = checkInsOf(packets)
+    return Ranker.rank(
+        Merger.merge(packets.filter { it.type == PacketType.ALERT.code && !it.isMine && now - it.receivedAt < ACTIVE_MS }.map { it.toReport() })
+            .filterNot { it.closedBy(checkIns) },
+        me?.lat, me?.lon,
+    )
+}
 
-/** Each responder's current job from the "help is coming" replies stored here (map lines, the sender's live ETA). */
-fun headingsFrom(packets: List<PacketEntity>, now: Long, done: Set<Pair<Int, Long>> = emptySet()): Map<Int, com.lifeline.mesh.triage.Heading> {
-    val acks = packets.filter { it.type == PacketType.ACK.code && !it.isMine && it.refId != null }
+/** "I'm safe" check-ins stored here, as (origin, time). */
+fun checkInsOf(packets: List<PacketEntity>): List<Pair<Int, Long>> =
+    packets.filter { it.type == PacketType.CHECK_IN.code }.map { it.origin to it.receivedAt }
+
+/** This check-in closed an alert (its sender asked for help before it), so its row leaves the Check-ins list too. */
+fun closedATask(checkIn: PacketEntity, packets: List<PacketEntity>): Boolean =
+    packets.any { it.type == PacketType.ALERT.code && it.origin == checkIn.origin && it.receivedAt < checkIn.receivedAt }
+
+/**
+ * Each responder's open jobs, most urgent first, from the "help is coming" replies stored here. [mine] = only this
+ * phone's own replies (the rescuer's own queue); otherwise only other phones' (map lines, the sender's live ETA).
+ */
+fun queuesFrom(
+    packets: List<PacketEntity>, now: Long, done: Set<Pair<Int, Long>> = emptySet(), mine: Boolean = false,
+): Map<Int, List<com.lifeline.mesh.triage.Heading>> {
+    val acks = packets.filter { it.type == PacketType.ACK.code && it.isMine == mine && it.refId != null }
         .map { com.lifeline.mesh.triage.AckSeen(it.origin, it.refId!!, it.eta ?: 0, it.receivedAt) }
     if (acks.isEmpty()) return emptyMap()
     val alerts = packets.filter { it.type == PacketType.ALERT.code }
-        .associate { p -> p.id to p.toReport().let { r -> com.lifeline.mesh.triage.AlertSpot(p.origin, r.lat, r.lon) } }
-    val checkIns = packets.filter { it.type == PacketType.CHECK_IN.code }.map { it.origin to it.receivedAt }
-    return com.lifeline.mesh.triage.Responders.headings(acks, alerts, checkIns, now, done)
+        .associate { p -> p.id to p.toReport().let { r -> com.lifeline.mesh.triage.AlertSpot(p.origin, r.lat, r.lon, r.severity) } }
+    return com.lifeline.mesh.triage.Responders.queues(acks, alerts, checkInsOf(packets), now, done)
 }
+
+/** Each responder's current job: the first of its queue. */
+fun headingsFrom(packets: List<PacketEntity>, now: Long, done: Set<Pair<Int, Long>> = emptySet()): Map<Int, com.lifeline.mesh.triage.Heading> =
+    queuesFrom(packets, now, done).mapValues { it.value.first() }
 
 /** Packet row → triage input. Lat/lon 0/0 means "no position" (the sender had no fix). */
 fun PacketEntity.toReport(): AlertReport {
@@ -138,10 +161,13 @@ fun RescuerScreen(settings: Settings, onOpenMesh: () -> Unit, onAsk: () -> Unit,
     val ranked = remember(active, me) { rankAlerts(active, me, now) }
     val checkIns = remember(active) {
         active.filter { it.type == PacketType.CHECK_IN.code && !it.isMine }.groupBy { it.origin }.map { (_, l) -> l.maxBy { it.receivedAt } }
+            .filterNot { closedATask(it, active) }
             .sortedByDescending { it.receivedAt }
     }
     // My own "I'm safe" shows at the top of the list, so the sender can see exactly what rescuers see.
-    val myCheckIn = remember(active) { active.filter { it.type == PacketType.CHECK_IN.code && it.isMine }.maxByOrNull { it.receivedAt } }
+    val myCheckIn = remember(active) {
+        active.filter { it.type == PacketType.CHECK_IN.code && it.isMine }.maxByOrNull { it.receivedAt }?.takeUnless { closedATask(it, active) }
+    }
     val reports = remember(active) { active.filter { it.type == PacketType.REPORT.code }.sortedByDescending { it.receivedAt } }
     var open by rememberSaveable { mutableStateOf<Long?>(null) }
     var reporting by rememberSaveable { mutableStateOf(false) }

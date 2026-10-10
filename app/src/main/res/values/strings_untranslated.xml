@@ -171,6 +171,10 @@
     <!-- Phase 10: travel-time estimates (Rescue tab, English like the rest of it) -->
     <string name="eta_estimate">About %1$d min %2$s · estimate</string>
     <string name="eta_basis">Your estimate: %1$d min %2$s (straight line × %3$s at %4$d km/h).</string>
+    <plurals name="eta_jobs_first">
+        <item quantity="one">Includes your %d more urgent or earlier job first.</item>
+        <item quantity="other">Includes your %d more urgent or earlier jobs first.</item>
+    </plurals>
     <!-- Map point details (Phase 10) -->
     <string name="place_safe">%s is safe</string>
     <string name="place_role_1">Needs help</string>

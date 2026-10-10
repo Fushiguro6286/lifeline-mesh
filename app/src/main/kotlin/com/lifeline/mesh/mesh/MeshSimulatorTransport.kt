@@ -191,8 +191,10 @@ class MeshSimulation(
     private val _online = MutableStateFlow(PHONES.associateWith { true })
     val online: StateFlow<Map<String, Boolean>> = _online
 
-    /** A rescue a team has taken on: where to go, and whose alert it was. */
-    private data class Task(val alertId: Long, val origin: Int, val lat: Double, val lon: Double)
+    /** A rescue a team has taken on: where to go, whose alert it was, how urgent, and when it was accepted. */
+    private data class Task(val alertId: Long, val origin: Int, val lat: Double, val lon: Double, val severity: Int, val acceptedAt: Long) {
+        fun asHeading(responder: Int) = com.lifeline.mesh.triage.Heading(responder, alertId, lat, lon, 0, acceptedAt, severity)
+    }
 
     private inner class Phone(val spec: Spec) : RouterListener {
         val name get() = spec.name
@@ -207,7 +209,9 @@ class MeshSimulation(
         val beacon = HelloBeacon(router)
         @Volatile var lat = latOf(spec.northM)
         @Volatile var lon = lonOf(spec.eastM)
-        val tasks = java.util.concurrent.ConcurrentLinkedDeque<Task>()
+        val tasks = java.util.concurrent.CopyOnWriteArrayList<Task>()
+        /** Same order as real teams (Responders.queues): most urgent first, then the one accepted first. */
+        private fun queue() = tasks.sortedWith(compareByDescending<Task> { it.severity }.thenBy { it.acceptedAt })
         private var lastPositionAt = 0L
         private var restUntil = 0L
 
@@ -220,23 +224,29 @@ class MeshSimulation(
                 if (!mesh.isUp(name)) return@launch
                 val known = packet.latE6 != 0 || packet.lonE6 != 0
                 val travel = com.lifeline.mesh.triage.Teams.defaultTravel(spec.role)
-                val eta = if (!known) 20 else com.lifeline.mesh.triage.Teams.etaMinutes(
-                    com.lifeline.mesh.triage.GeoMath.distanceM(lat, lon, packet.latE6 / 1e6, packet.lonE6 / 1e6), travel)
+                // Through every open job at least as urgent as this one, then here.
+                val ahead = queue().filter { it.severity >= packet.severity }.map { it.asHeading(spec.origin) }
+                val eta = if (!known) 20 else com.lifeline.mesh.triage.Responders.routeEta(
+                    lat, lon, ahead, packet.latE6 / 1e6, packet.lonE6 / 1e6, travel).second
                 router.originate(Packet.Ack(router.newHeader(), packet.header.messageId, eta.coerceIn(1, 255), onTheWay(spec.role)))
-                if (known) tasks.add(Task(packet.header.messageId, packet.header.origin, packet.latE6 / 1e6, packet.lonE6 / 1e6))
+                if (known) tasks.add(Task(packet.header.messageId, packet.header.origin, packet.latE6 / 1e6, packet.lonE6 / 1e6,
+                    packet.severity, clock()))
             }
         }
 
-        /** A team drives towards its first task at time-lapse speed; on arrival the person checks in safe. */
+        /**
+         * A team drives towards its most urgent task at time-lapse speed (a new urgent one makes it turn); on arrival the
+         * person checks in safe.
+         */
         fun tick(now: Long) {
             var moved = false
-            val t = tasks.peekFirst()
+            val t = queue().firstOrNull()
             if (t != null && now >= restUntil && mesh.isUp(name)) {
                 val d = com.lifeline.mesh.triage.GeoMath.distanceM(lat, lon, t.lat, t.lon)
                 val step = com.lifeline.mesh.triage.Teams.defaultTravel(spec.role).kmh / 3.6 * (TICK_MS / 1000.0) * TIME_LAPSE
                 if (d <= step) {
                     lat = t.lat; lon = t.lon
-                    tasks.pollFirst()
+                    tasks.remove(t)
                     restUntil = now + 10_000 // on the scene for a moment before the next job
                     phones.values.firstOrNull { it.spec.origin == t.origin }?.let { p -> scope.launch { delay(3_000); p.checkIn() } }
                 } else {

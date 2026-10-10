@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -61,8 +62,8 @@ fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String)
     val a = r.alert
     val context = LocalContext.current
     val estimate = myEstimate(r)
-    val choices = remember(estimate) { (listOfNotNull(estimate?.first?.coerceIn(1, 255)) + ETAS).distinct().sorted().take(5) }
-    var eta by rememberSaveable { mutableIntStateOf(a.ackEta ?: estimate?.first?.coerceIn(1, 255) ?: 20) }
+    val choices = remember(estimate) { (listOfNotNull(estimate?.minutes?.coerceIn(1, 255)) + ETAS).distinct().sorted().take(5) }
+    var eta by rememberSaveable { mutableIntStateOf(a.ackEta ?: estimate?.minutes?.coerceIn(1, 255) ?: 20) }
     var note by rememberSaveable { mutableStateOf("") }
 
     ModalBottomSheet(
@@ -109,8 +110,11 @@ fun AlertDetailSheet(r: RankedAlert, now: Long, onSend: (eta: Int, note: String)
             if (a.acked) Text(stringResource(R.string.alert_eta_sent, a.ackEta ?: 0), style = Lifeline.type.bodyStrong, color = c.safe)
 
             Text(stringResource(R.string.detail_eta), style = Lifeline.type.label, color = c.inkMuted, modifier = Modifier.padding(top = Space.s))
-            estimate?.let { (m, t) ->
-                Text(stringResource(R.string.eta_basis, m, t.label, t.detour.toString(), t.kmh.toInt()),
+            estimate?.let { e ->
+                val t = e.travel
+                Text(stringResource(R.string.eta_basis, e.minutes, t.label, t.detour.toString(), t.kmh.toInt()),
+                    style = Lifeline.type.caption, color = c.inkMuted)
+                if (e.jobsFirst > 0) Text(pluralStringResource(R.plurals.eta_jobs_first, e.jobsFirst, e.jobsFirst),
                     style = Lifeline.type.caption, color = c.inkMuted)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {

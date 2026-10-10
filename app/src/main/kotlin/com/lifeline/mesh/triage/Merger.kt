@@ -51,6 +51,15 @@ data class MergedAlert(val reports: List<AlertReport>) {
     val count: Int get() = reports.size
     /** Every copy came from the server: nobody nearby relayed it. */
     val viaInternet: Boolean get() = reports.all { it.viaInternet }
+
+    /**
+     * Done: a phone that sent one of these reports checked in safe ("Are you safe?" → yes) after the newest report.
+     * [checkIns] = (origin, time stored here). A newer report of the same emergency opens it again.
+     */
+    fun closedBy(checkIns: List<Pair<Int, Long>>): Boolean {
+        val origins = reports.map { it.origin }.toSet()
+        return checkIns.any { (origin, at) -> origin in origins && at > lastAt }
+    }
 }
 
 /**

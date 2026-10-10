@@ -208,7 +208,10 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
     }
 }
 
-/** Community reports (kind 1–4) and check-ins (kind 0) with a position, newest per phone for check-ins. */
+/**
+ * Community reports (kind 1–4) and check-ins (kind 0) with a position, newest per phone for check-ins. A check-in that
+ * closed that phone's alert leaves the map with the alert.
+ */
 private fun places(packets: List<PacketEntity>, now: Long): List<Place> {
     val live = packets.filter { now - it.receivedAt < ACTIVE_MS }
     val reports = live.filter { it.type == PacketType.REPORT.code }.mapNotNull { p ->
@@ -217,6 +220,7 @@ private fun places(packets: List<PacketEntity>, now: Long): List<Place> {
     }
     val checkIns = live.filter { it.type == PacketType.CHECK_IN.code && !it.isMine }.groupBy { it.origin }.values
         .map { l -> l.maxBy { it.receivedAt } }
+        .filterNot { com.lifeline.mesh.ui.rescuer.closedATask(it, live) }
         .mapNotNull { p ->
             val r = p.toReport()
             if (r.lat == null || r.lon == null) null

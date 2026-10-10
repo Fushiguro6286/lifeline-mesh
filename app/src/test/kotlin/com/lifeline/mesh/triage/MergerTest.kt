@@ -90,4 +90,15 @@ class MergerTest {
         assertEquals("N", GeoMath.compass(359.0))
         assertFalse(Merger.sameEmergency(r(1), r(2, needs = setOf(Need.FIRE))))
     }
+
+    @Test fun aSafeCheckInAfterTheNewestReportClosesTheAlert() {
+        val g = Merger.merge(listOf(r(1, origin = 0xA, at = 0), r(2, origin = 0xB, dLatM = 30.0, at = 5 * min))).single()
+        assertFalse(g.closedBy(emptyList()))
+        // The sender of either report checks in safe after the newest report: done.
+        assertTrue(g.closedBy(listOf(0xA to 6 * min)))
+        assertTrue(g.closedBy(listOf(0xB to 6 * min)))
+        // Before the newest report, or from someone else: still open.
+        assertFalse(g.closedBy(listOf(0xA to 4 * min)))
+        assertFalse(g.closedBy(listOf(0xC to 6 * min)))
+    }
 }

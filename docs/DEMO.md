@@ -199,6 +199,19 @@ Open the Mesh tab on each.
   guide. Until then each guide says "Not yet reviewed by a medical professional". Emergency numbers used: 112 (and 108
   for an ambulance).
 
+## Rescue queue and finished tasks (added 10 Oct 2026, on request)
+
+- A team works most urgent first (severity 3 before 0), then in the order it accepted jobs; a new urgent job makes it
+  turn (real teams on the map and in the sender's ETA, and the simulated teams). Responders.queues, RespondersTest.
+- ETA through the queue: the sender's live estimate goes from the team's position through every job ahead of theirs,
+  then to them (urgent leg + the leg on). The rescuer's own estimate on a card and in Acknowledge does the same with
+  their own open jobs and says "Includes your N more urgent or earlier jobs first".
+- "Are you safe?" → I'm safe after an alert closes it: the alert leaves the Rescue list, the counts and the map, and
+  that person's check-in row and map marker go too (MergedAlert.closedBy). A newer report of the same emergency opens it
+  again. Reaching the place alone does not close it (arriving is not the same as rescued).
+- Checked on the iQOO 15 in simulation: alerts appear, are acknowledged, and leave the list after the team arrives and
+  the person checks in; the Check-ins section stays empty. Real 3-phone check still open.
+
 ## Round trip on the scoreboard (fixed 10 Oct 2026)
 
 - Before: only the Mesh debug panel's "Send ping" measured a round trip, so the Mesh tab tile stayed "Not measured".

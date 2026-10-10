@@ -92,8 +92,8 @@ fun DeliveryStatusCard(alert: PacketEntity, ack: PacketEntity?, onSendAnother: (
 
 /**
  * When help is coming: a live estimate from the position of the team (or volunteer) that replied, updated as their
- * Position packets arrive, to where my alert said I am. If they are finishing another job first, the route goes via
- * that job. Without their position: the ETA they gave, counted down from when it arrived. Every number is computed in
+ * Position packets arrive, to where my alert said I am. If they have more urgent (or earlier) jobs first, the route
+ * goes through each of those, then here. Without their position: the ETA they gave, counted down from when it arrived. Every number is computed in
  * Kotlin and labelled as an estimate.
  */
 @Composable
@@ -108,16 +108,17 @@ private fun HelpEta(alert: PacketEntity, ack: PacketEntity?, promised: Int?) {
 
     val replies = packets.filter { it.type == com.lifeline.mesh.packet.PacketType.ACK.code && it.refId == alert.id && !it.isMine }
     val done by repo.jobsDone.collectAsStateWithLifecycle()
-    val headings = remember(packets, now, done) { com.lifeline.mesh.ui.rescuer.headingsFrom(packets, now, done) }
+    val queues = remember(packets, now, done) { com.lifeline.mesh.ui.rescuer.queuesFrom(packets, now, done) }
     val arrived = replies.firstOrNull { (it.origin to alert.id) in done }
     // Where help is going: the position my alert carried, else where I am now.
     val dest = alert.takeIf { (it.lat ?: 0.0) != 0.0 || (it.lon ?: 0.0) != 0.0 }?.let { it.lat!! to it.lon!! } ?: me?.let { it.lat to it.lon }
     val live = if (dest == null) null else replies.mapNotNull { r ->
         val pos = positions[r.origin]?.takeIf { now - it.heardAt < com.lifeline.mesh.mesh.PositionBeacon.SHOW_MS } ?: return@mapNotNull null
-        val job = headings[r.origin]?.takeIf { it.alertId != alert.id && it.lat != null && it.lon != null }
-        val (d, m) = com.lifeline.mesh.triage.Responders.liveEta(pos.lat, pos.lon, dest.first, dest.second, pos.role,
-            via = job?.let { it.lat!! to it.lon!! })
-        LiveEta(pos, d, m, job != null)
+        // More urgent (or earlier) jobs come first: the route goes through each of them, then here.
+        val ahead = queues[r.origin]?.let { com.lifeline.mesh.triage.Responders.ahead(it, alert.id, alert.severity ?: 0) }.orEmpty()
+        val (d, m) = com.lifeline.mesh.triage.Responders.routeEta(pos.lat, pos.lon, ahead, dest.first, dest.second,
+            com.lifeline.mesh.triage.Teams.defaultTravel(pos.role))
+        LiveEta(pos, d, m, ahead.isNotEmpty())
     }.minByOrNull { it.minutes }
     val first = ack ?: replies.minByOrNull { it.receivedAt }
     val left = if (promised != null && first != null) com.lifeline.mesh.triage.Responders.promisedLeft(promised, first.receivedAt, now) else promised
