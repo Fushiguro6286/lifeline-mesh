@@ -36,6 +36,18 @@ class RelayGapsTest {
         assertEquals(366.7, d[0], 2.0); assertEquals(733.3, d[1], 2.0)
     }
 
+    @Test fun aRelinkedPhoneCarriesTheNextOne() {
+        // Meena 750 m out needs one person; Farhan, 300 m beyond her, then needs nobody more: once Meena is linked
+        // again, Farhan is within reach of her.
+        val g = find(listOf(phone(2, "Ravi", 0.0), phone(3, "Meena", 750.0, heardAgoMs = 4 * 60_000),
+            phone(4, "Farhan", 1_050.0, heardAgoMs = 4 * 60_000)), range = 500.0)
+        val farhan = g.bridges.first { it.phone.name == "Farhan" }
+        assertEquals(Anchor.RELINKED, farhan.fromKind)
+        assertEquals("Meena", farhan.from.name)
+        assertEquals(0, farhan.relays)
+        assertEquals(1, g.spots.size)
+    }
+
     @Test fun whoCountsAsLost() {
         val fresh = phone(2, "Fresh", 900.0, heardAgoMs = 60_000)            // within the 3 minutes
         val old = phone(3, "Old", 900.0, heardAgoMs = 40 * 60_000)           // forgotten after 30 minutes

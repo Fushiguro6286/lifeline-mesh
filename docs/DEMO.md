@@ -656,5 +656,24 @@ Who goes where (Rescue tab card on team phones; triage/Dispatch.kt, ui/rescuer/D
 - A job suggested for this phone has "Take it", which sends "help is coming" with that estimate.
 - DispatchTest: two medical jobs to two ambulances, a free far team beating a busy near one, urgency and team type,
   accepted jobs kept, fallback to another type, no position, no teams, ties.
-- NOT checked on the phone yet.
+
+### Checked on the iQOO 15 (10 Oct 2026, simulated mesh)
+- Survival mode: Settings switch on by default; "Ravi's battery to 8 %" → Ravi's details "Battery 8%, Critical battery:
+  passing on urgent alerts, replies and "I'm safe" only", red battery arc on the mesh view.
+- Relay gaps: before anything, the tree-shaped simulated mesh shows its weak points (Meena at 18 % first). Ravi at 8 %
+  → "Ravi's phone is your only link to 5 phones · battery 8 %". Ravi off, after about 100 s, as Ambulance: "Meena's
+  phone went quiet 2 min ago · open alert. 780 m from your phone. One person with the app standing at the marked spot";
+  Farhan and Joseph planned from Meena "once it is linked again". Map: amber dotted line from me to Meena with a
+  "Stand here" marker ("Links Meena back to the mesh… 390 m NE of you").
+  - Changed after the first look: each lost phone had its own chain from a phone still heard (14 people in all, and
+    "Piyush's phone" instead of "your phone"). Now chains grow from relinked phones and placed people, nearest first,
+    and stand points within half a spacing merge: 10 people. The simulated phones are 800 to 1,300 m apart while the
+    only measured link is 540 m, so the simulation needs more people than real neighbours would.
+- Where to go (as "I need help"): "School hall open, 200 beds · About 14 min on foot · 920 m along the roads · Water:
+  150 m away", green route on the map. "Fill the nearest shelter" → "Temple hall open, 80 places · About 24 min on foot
+  · 1.6 km along the roads · skipped 1 reported full", route redrawn to the temple, school hall marker amber.
+- Who goes where (as Ambulance, simulated teams switched off so jobs stay open): "#2 fire → Arjun (Fire service) ·
+  about 8 min", "#3 trapped → Priya (NDRF / SDRF) · about 21 min", "#4 ambulance requested → You · about 6 min [Take
+  it]", "#5 road blocked → Suresh (Police) · about 8 min". "Take it" → "You said help is coming". Note: teams switched
+  off in the simulation are still suggested while their last position is under 10 minutes old.
 

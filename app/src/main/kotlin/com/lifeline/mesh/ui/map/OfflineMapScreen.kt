@@ -207,11 +207,9 @@ fun OfflineMapScreen(settings: Settings, vm: RescuerViewModel = viewModel()) {
         gaps.bridges.filter { !it.tooFar && it.relays > 0 }.map { b -> listOf(b.from.lat!! to b.from.lon!!, b.phone.lat!! to b.phone.lon!!) }
     }
     val standPlaces = remember(gaps) {
-        gaps.bridges.filter { !it.tooFar }.flatMap { b ->
-            b.standAt.mapIndexed { i, (la, lo) ->
-                Place(b.phone.origin.toLong() * 8 + i, la, lo, STAND_KIND, label = "Stand here",
-                    note = "Links ${b.phone.name.ifBlank { "a lost phone" }} back to the mesh" + if (b.relays > 1) " (${i + 1} of ${b.relays})." else ".")
-            }
+        gaps.spots.mapIndexed { i, s ->
+            Place(-1_000L - i, s.lat, s.lon, STAND_KIND, label = "Stand here",
+                note = "Links ${s.forNames.joinToString(", ")} back to the mesh.")
         }
     }
     val shown = places + standPlaces

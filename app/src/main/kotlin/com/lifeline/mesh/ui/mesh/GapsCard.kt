@@ -111,6 +111,11 @@ fun GapsList(gaps: Gaps, simulated: Boolean) {
             style = Lifeline.type.body, color = c.inkMuted)
         gaps.bridges.forEach { b -> GapItem(bridgeTitle(b), bridgeBody(b, gaps), if (b.hasAlert) c.sos else c.signal) }
         gaps.weak.forEach { w -> GapItem(weakTitle(w), weakBody(w), if (w.mode == PowerMode.NORMAL) c.signal else c.warn) }
+        if (gaps.spots.isNotEmpty()) Text(
+            "In all, ${if (gaps.spots.size == 1) "one person" else "${gaps.spots.size} people"} at the marked " +
+                "${if (gaps.spots.size == 1) "spot" else "spots"} on the Map tab would link these phones again: " +
+                "one person can link several where their paths meet.",
+            style = Lifeline.type.bodyStrong, color = c.ink)
         Text(rangeNote(gaps), style = Lifeline.type.caption, color = c.inkMuted)
         Text("Worked out on this phone from the positions and hellos it has heard; distances are straight lines between GPS positions.",
             style = Lifeline.type.caption, color = c.inkMuted)
@@ -137,7 +142,13 @@ fun bridgeTitle(b: Bridge): String =
     "${who(b.phone)}'s phone went quiet ${minutes(b.silentMs)} min ago" + if (b.hasAlert) " · open alert" else ""
 
 fun bridgeBody(b: Bridge, g: Gaps): String {
-    val from = if (b.from.lat == null) "" else "${distanceText(b.distanceM)} from ${who(b.from)}'s phone"
+    val fromPhone = when {
+        b.fromKind == com.lifeline.mesh.mesh.Anchor.SPOT -> "the person at the nearest marked spot"
+        b.fromKind == com.lifeline.mesh.mesh.Anchor.RELINKED -> "${who(b.from)}'s phone once it is linked again"
+        b.from.origin == g.myOrigin -> "your phone"
+        else -> "${who(b.from)}'s phone"
+    }
+    val from = if (b.from.lat == null) "" else "${distanceText(b.distanceM)} from $fromPhone"
     val flat = b.phone.battery?.takeIf { it <= 10 }?.let { ", out of battery (it last said $it %)" } ?: ", out of battery"
     return when {
         b.tooFar -> "$from: too far for a chain of phones. Send a team to its last position, or reach it through the server."

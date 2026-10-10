@@ -15,8 +15,11 @@ data class GapPhone(
     val battery: Int? = null,
 )
 
+/** Where a lost phone's chain starts: a phone still heard, a person already placed, or a lost phone linked again. */
+enum class Anchor { HEARD, SPOT, RELINKED }
+
 /**
- * A phone the mesh lost: heard recently, silent now. [from] = the nearest phone still heard; [standAt] = where
+ * A phone the mesh lost: heard recently, silent now. [from] = where its chain starts ([fromKind]); [standAt] = where
  * [relays] people with the app would link it again, evenly spaced on the straight line between them. [tooFar] = more
  * than [RelayGaps.MAX_RELAYS] would be needed.
  */
@@ -25,6 +28,7 @@ data class Bridge(
     val hasAlert: Boolean,
     val silentMs: Long,
     val from: GapPhone,
+    val fromKind: Anchor,
     val distanceM: Double,
     val relays: Int,
     val standAt: List<Pair<Double, Double>>,
@@ -34,7 +38,15 @@ data class Bridge(
 /** A phone that is this phone's only link to [cutOff] (named phones), [teams] of them rescue teams. */
 data class WeakPoint(val phone: GapPhone, val cutOff: List<String>, val teams: Int, val mode: PowerMode)
 
-data class Gaps(val bridges: List<Bridge>, val weak: List<WeakPoint>, val spacingM: Double, val rangeM: Double, val rangeMeasured: Boolean) {
+/** One place to stand, shared by every lost phone whose chain passes within half a spacing of it. */
+data class StandSpot(val lat: Double, val lon: Double, val forNames: List<String>)
+
+data class Gaps(
+    val bridges: List<Bridge>, val weak: List<WeakPoint>, val spacingM: Double, val rangeM: Double, val rangeMeasured: Boolean,
+    /** Where people should stand, merged across lost phones (one person can link several). */
+    val spots: List<StandSpot> = emptyList(),
+    val myOrigin: Int = 0,
+) {
     val isEmpty get() = bridges.isEmpty() && weak.isEmpty()
 }
 
@@ -82,9 +94,21 @@ object RelayGaps {
         val live = (placed.filter { now - it.heardAt < silentMs } + listOfNotNull(me.takeIf { it.lat != null && it.lon != null }))
         val lost = placed.filter { now - it.heardAt in silentMs until FORGET_MS && it.origin !in inGraph }
 
-        val bridges = lost.mapNotNull { p ->
-            val from = live.minByOrNull { GeoMath.distanceM(it.lat!!, it.lon!!, p.lat!!, p.lon!!) } ?: return@mapNotNull null
-            val d = GeoMath.distanceM(from.lat!!, from.lon!!, p.lat!!, p.lon!!)
+        // Grow from what is linked, nearest lost phone first: once a lost phone is linked again (or a person stands at
+        // a spot), the next can start from there. Lost phones were neighbours of each other, so one chain often
+        // relinks several. A phone within range that is still silent is presumed off: nothing starts from it.
+        val anchors = live.map { it to Anchor.HEARD }.toMutableList()
+        val left = lost.toMutableList()
+        val bridges = ArrayList<Bridge>()
+        while (left.isNotEmpty() && anchors.isNotEmpty()) {
+            var best: Triple<GapPhone, Pair<GapPhone, Anchor>, Double>? = null
+            for (p in left) for (a in anchors) {
+                val d = GeoMath.distanceM(a.first.lat!!, a.first.lon!!, p.lat!!, p.lon!!)
+                if (best == null || d < best.third) best = Triple(p, a, d)
+            }
+            val (p, a, d) = best!!
+            left.remove(p)
+            val from = a.first
             val relays = (ceil(d / spacing).toInt() - 1).coerceAtLeast(0)
             val tooFar = relays > MAX_RELAYS
             val (aLat, aLon, bLat, bLon) = listOf(from.lat!!, from.lon!!, p.lat!!, p.lon!!)
@@ -92,10 +116,31 @@ object RelayGaps {
                 val t = k.toDouble() / (relays + 1)
                 aLat + (bLat - aLat) * t to aLon + (bLon - aLon) * t
             }
-            Bridge(p.copy(battery = p.battery ?: batteries[p.origin]), p.origin in alertOrigins, now - p.heardAt, from, d, relays, stand, tooFar)
-        }.sortedWith(compareByDescending<Bridge> { it.hasAlert }.thenBy { it.distanceM })
+            bridges += Bridge(p.copy(battery = p.battery ?: batteries[p.origin]), p.origin in alertOrigins, now - p.heardAt,
+                from, a.second, d, relays, stand, tooFar)
+            if (!tooFar && relays > 0) {
+                anchors += p to Anchor.RELINKED
+                stand.forEach { (la, lo) -> anchors += GapPhone(0, "", HelloRole.VOLUNTEER, la, lo, now) to Anchor.SPOT }
+            }
+        }
+        bridges.sortWith(compareByDescending<Bridge> { it.hasAlert }.thenBy { it.distanceM })
 
-        return Gaps(bridges, weakPoints(me, links, names, roles, batteries), spacing, range, measuredRangeM != null && measuredRangeM > 0)
+        return Gaps(bridges, weakPoints(me, links, names, roles, batteries), spacing, range, measuredRangeM != null && measuredRangeM > 0,
+            spots(bridges, spacing), me.origin)
+    }
+
+    /**
+     * Stand points of all lost phones, merged: a point within half a spacing of one already chosen is the same spot
+     * (whoever stands there links both chains). Open alerts first, as [bridges] are ordered.
+     */
+    internal fun spots(bridges: List<Bridge>, spacing: Double): List<StandSpot> {
+        val out = ArrayList<Pair<Pair<Double, Double>, MutableList<String>>>()
+        for (b in bridges) for ((la, lo) in b.standAt) {
+            val name = b.phone.name.ifBlank { "%08x".format(b.phone.origin).takeLast(4) }
+            val near = out.firstOrNull { (p, _) -> GeoMath.distanceM(p.first, p.second, la, lo) <= spacing / 2 }
+            if (near != null) { if (name !in near.second) near.second += name } else out += (la to lo) to mutableListOf(name)
+        }
+        return out.map { (p, names) -> StandSpot(p.first, p.second, names) }
     }
 
     /** Articulation points of the Hello graph: phones whose loss puts others out of this phone's reach. */
