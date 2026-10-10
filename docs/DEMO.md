@@ -291,6 +291,20 @@ early (apps cannot), it runs out by itself.
   NOT checked: a real watch reading.
 - Left on the iQOO: Health Connect permissions granted, the Watch vitals alarm switch off.
 
+## Simulation mode with the internet on (added 10 Oct 2026, on request: stage demo)
+
+- In simulation mode the phone still polls the rescue server when online, but only for real-world, read-only things:
+  live weather (SOS tab card) and warnings (official, forecast check, drill). A warning enters the simulated mesh, is
+  stored as simulated (it shows only while simulation is on) and hops through the virtual phones: the Mesh tab events
+  show "The rescue server's drill warning arrived over the internet", "Passing … on to 2 phones", "Dropped a copy …".
+- Still kept apart: real alerts and replies from the server never enter the simulated mesh; simulated packets are never
+  uploaded; in simulation the phone polls as a plain phone (role 1, no position for teams), so the server never
+  registers it as a team or assigns it real alerts; the server cursor is kept, so nothing real is skipped afterwards.
+- Demo: laptop server running (python -m uvicorn main:app --host 0.0.0.0 --port 8000 in server/), phone on the same
+  Wi-Fi with Settings → Sync set, simulation on. Weather appears within ~15 s. For a warning, open http://localhost:8000
+  on the laptop → "Send a drill warning to phones" (use a few minutes, e.g. 5): the phone rings, shows "DRILL, not real",
+  and the Mesh tab shows it hopping. Checked on the iQOO 15 (10 Oct).
+
 ## SOS tab: live weather and watch readings (added 10 Oct 2026, on request)
 
 - Weather here (SOS tab, under Speak/Type): when the phone is online and the rescue server is set, each feed poll
@@ -381,7 +395,8 @@ Settings and developer screens are English only on purpose (DESIGN.md section 9)
 - Live position with the screen off needs the location foreground-service type, which Android allows only when the
   mesh starts while the app is open (or with background-location permission, which the app does not ask for). If the
   system restarts the service in the background it falls back to relaying only; positions resume when the app opens.
-- The internet relay never runs in simulation mode (real and simulated packets never mix).
+- The internet relay brings no real alerts or replies into simulation mode (real and simulated packets never mix); only
+  weather and warnings work there (see "Simulation mode with the internet on").
 - Phase 10 Hindi and Kannada strings (team names, ambulance request, nearest team) are machine-drafted: check them.
 - The sender's "Help is coming" card no longer quotes the rescuer's reply note (it named the vehicle, e.g. "Rescue boat
   on the way"); it says "They are on the way" (hi: "वे रास्ते में हैं", kn: "ಅವರು ದಾರಿಯಲ್ಲಿದ್ದಾರೆ", machine-drafted). The reply

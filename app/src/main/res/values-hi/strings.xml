@@ -288,7 +288,6 @@
     <string name="warning_source_forecast">पूर्वानुमान जाँच (Open-Meteo), आधिकारिक चेतावनी नहीं</string>
     <!-- SOS tab: weather and watch cards (10 Oct 2026) -->
     <string name="weather_title">यहाँ का मौसम</string>
-    <string name="weather_off_simulation">सिम्युलेशन मोड में लाइव मौसम बंद है।</string>
     <string name="weather_no_server">ऑनलाइन होने पर लाइव मौसम देखने के लिए सेटिंग्स → Sync में बचाव सर्वर डालें।</string>
     <string name="weather_waiting">लाइव मौसम का इंतज़ार। इसके लिए इंटरनेट चाहिए।</string>
     <string name="weather_summary">महसूस होता है %1$d °C। अगले 24 घंटे: %2$d mm बारिश, %3$d km/h तक तेज़ हवा।</string>

@@ -77,7 +77,6 @@ fun WeatherCard(settings: Settings) {
     CardColumn(R.drawable.ic_water_drop, stringResource(R.string.weather_title)) {
         val pair = latest
         when {
-            settings.simulationMode -> Text(stringResource(R.string.weather_off_simulation), style = Lifeline.type.body, color = c.inkMuted)
             settings.serverUrl.isBlank() -> Text(stringResource(R.string.weather_no_server), style = Lifeline.type.body, color = c.inkMuted)
             pair == null -> Text(stringResource(R.string.weather_waiting), style = Lifeline.type.body, color = c.inkMuted)
             else -> {

@@ -101,13 +101,14 @@ class ServerUploader(
             }
         }
         // Internet relay (Phase 10): poll the server for alerts near me (teams) and replies to my alerts.
-        // Never in simulation mode, so real and simulated packets never mix.
+        // In simulation mode (stage demo) only the real-world, read-only parts are used: live weather and warnings.
+        // Real alerts and replies never enter the simulated mesh, and simulated packets are never uploaded.
         scope.launch {
             var since = 0L
             while (true) {
                 delay(POLL_MS)
                 val s = settings.value ?: continue
-                if (s.simulationMode || (!_state.value.internet && wifi == null)) continue
+                if (!_state.value.internet && wifi == null) continue
                 since = poll(s, since) ?: since
             }
         }
@@ -162,13 +163,19 @@ class ServerUploader(
         }
     }
 
-    /** One poll; returns the server's cursor for next time, or null on failure. Received packets enter the mesh. */
+    /**
+     * One poll; returns the server's cursor for next time, or null on failure. Received packets enter the mesh. In
+     * simulation mode: asks as a plain phone (never registers as a team, so the server assigns it no real alerts),
+     * takes only weather and warnings, and keeps the cursor so no real packet is skipped when simulation ends.
+     */
     private suspend fun poll(s: Settings, since: Long): Long? = withContext(Dispatchers.IO) {
         val base = SyncFormat.normalizeUrl(s.serverUrl) ?: return@withContext null
         val fix = repo.myFix.value
+        val sim = s.simulationMode
+        val team = s.role.isTeam && !sim
         val url = try {
-            URL("$base/api/feed?" + SyncFormat.feedQuery(s.originId, s.role.code, s.displayName,
-                fix?.lat.takeIf { s.role.isTeam }, fix?.lon.takeIf { s.role.isTeam }, since, fix?.let { it.lat to it.lon }))
+            URL("$base/api/feed?" + SyncFormat.feedQuery(s.originId, if (sim) 1 else s.role.code, s.displayName,
+                fix?.lat.takeIf { team }, fix?.lon.takeIf { team }, since, fix?.let { it.lat to it.lon }))
         } catch (e: MalformedURLException) { return@withContext null }
         val net = if (SyncFormat.isLocalHost(url.host)) wifi else null
         val conn = (net?.openConnection(url) ?: url.openConnection()) as HttpURLConnection
@@ -182,7 +189,7 @@ class ServerUploader(
             val feed = SyncFormat.json.decodeFromString<FeedResponse>(conn.inputStream.bufferedReader().use { it.readText() })
             feed.weather?.let { repo.weather.value = it to System.currentTimeMillis() }
             var injected = 0
-            for (p in feed.packets) {
+            if (!sim) for (p in feed.packets) {
                 val bytes = runCatching { java.util.Base64.getDecoder().decode(p.raw) }.getOrNull() ?: continue
                 if (p.assigned) p.id.toULongOrNull(16)?.toLong()?.let { repo.assignedToMe.add(it) }
                 if (repo.receiveFromInternet(bytes)) injected++
@@ -190,10 +197,10 @@ class ServerUploader(
             // Official warnings: into the mesh like any packet (duplicates are dropped by message ID).
             for (w in feed.warnings) {
                 val bytes = runCatching { com.lifeline.mesh.packet.PacketCodec.encode(SyncFormat.warningPacket(w)) }.getOrNull() ?: continue
-                if (repo.receiveFromInternet(bytes)) injected++
+                if (repo.receiveWarning(bytes)) injected++
             }
             _state.update { it.copy(lastPollAt = System.currentTimeMillis(), received = it.received + injected, pollError = null) }
-            feed.now
+            if (sim) since else feed.now
         } catch (e: Exception) {
             _state.update { it.copy(pollError = "Cannot reach the server for the internet relay.") }
             null

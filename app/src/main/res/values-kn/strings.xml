@@ -288,7 +288,6 @@
     <string name="warning_source_forecast">ಮುನ್ಸೂಚನೆ ಪರಿಶೀಲನೆ (Open-Meteo), ಅಧಿಕೃತ ಎಚ್ಚರಿಕೆ ಅಲ್ಲ</string>
     <!-- SOS tab: weather and watch cards (10 Oct 2026) -->
     <string name="weather_title">ಇಲ್ಲಿನ ಹವಾಮಾನ</string>
-    <string name="weather_off_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಮೋಡ್‌ನಲ್ಲಿ ಲೈವ್ ಹವಾಮಾನ ಆಫ್ ಆಗಿದೆ.</string>
     <string name="weather_no_server">ಆನ್‌ಲೈನ್ ಇದ್ದಾಗ ಲೈವ್ ಹವಾಮಾನ ನೋಡಲು ಸೆಟ್ಟಿಂಗ್ಸ್ → Sync ನಲ್ಲಿ ರಕ್ಷಣಾ ಸರ್ವರ್ ಹಾಕಿ.</string>
     <string name="weather_waiting">ಲೈವ್ ಹವಾಮಾನಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ. ಇಂಟರ್ನೆಟ್ ಬೇಕು.</string>
     <string name="weather_summary">ಅನುಭವ %1$d °C. ಮುಂದಿನ 24 ಗಂಟೆ: %2$d mm ಮಳೆ, %3$d km/h ವರೆಗೆ ಗಾಳಿ.</string>

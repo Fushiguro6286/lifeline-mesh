@@ -298,7 +298,6 @@
     <string name="warning_source_forecast">Forecast check (Open-Meteo), not an official warning</string>
     <!-- SOS tab: weather and watch cards (10 Oct 2026) -->
     <string name="weather_title">Weather here</string>
-    <string name="weather_off_simulation">Live weather is off in simulation mode.</string>
     <string name="weather_no_server">Set the rescue server in Settings → Sync to see live weather when you are online.</string>
     <string name="weather_waiting">Waiting for live weather. It needs internet.</string>
     <string name="weather_summary">Feels like %1$d °C. Next 24 hours: %2$d mm of rain, gusts up to %3$d km/h.</string>

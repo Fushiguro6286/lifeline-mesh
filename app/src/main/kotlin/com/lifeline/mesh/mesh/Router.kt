@@ -460,7 +460,9 @@ class Router(
 
     // ------------------------------------------------------------------ helpers
 
-    private fun who(origin: Int): String = topology.name(origin) ?: "%08x".format(origin).takeLast(4)
+    private fun who(origin: Int): String =
+        if (origin == com.lifeline.mesh.packet.Warnings.ORIGIN) "the rescue server"
+        else topology.name(origin) ?: "%08x".format(origin).takeLast(4)
 
     private fun ownerLabel(p: Packet): String =
         if (p.header.origin == me) "your ${label(p)}" else "${who(p.header.origin)}'s ${label(p)}"

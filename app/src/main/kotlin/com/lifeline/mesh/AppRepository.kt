@@ -258,6 +258,22 @@ class AppRepository(
         }
     }
 
+    /**
+     * An official, forecast or drill warning from the server. Unlike [receiveFromInternet] it also works in simulation
+     * mode (stage demo): the router then stores it as simulated and relays it to the virtual phones, and it shows only
+     * while simulation is on. True if it was new.
+     */
+    fun receiveWarning(raw: ByteArray): Boolean {
+        val p = (PacketCodec.decode(raw) as? com.lifeline.mesh.packet.DecodeResult.Ok)?.packet as? Packet.Warning ?: return false
+        val r = router
+        if (r != null) { r.onReceived(Router.INTERNET, raw); return true }
+        val sim = settings.value?.simulationMode == true
+        return kotlinx.coroutines.runBlocking {
+            database.packets().insert(p.toEntity(raw, Router.INTERNET, p.header.hops + 1, mine = false,
+                receivedAt = System.currentTimeMillis(), simulated = sim)) != -1L
+        }
+    }
+
     /** Ping for one of my packets; needs the mesh running (a queued ping would measure nothing). */
     fun sendPing(refId: Long): Boolean {
         val r = router ?: return false
