@@ -1,0 +1,284 @@
+<title>Lifeline Mesh Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a speaker's run sheet. A sticky timeline rail of the 10 minutes; each block has SAY (script), DO (phone), IF IT FAILS. */
+:root {
+  --bg: #F4F7F8; --surface: #FFFFFF; --raised: #EAF0F2; --outline: #C9D6DA;
+  --ink: #0E1E28; --muted: #4E626D;
+  --link: #0B6E75; --signal: #9A6A00; --sos: #C8251D; --safe: #2E7D32;
+  --link-soft: rgba(11,110,117,.10); --sos-soft: rgba(200,37,29,.07); --signal-soft: rgba(154,106,0,.10);
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B1620; --surface: #132330; --raised: #1A2E3D; --outline: #27404F;
+  --ink: #E8EEF2; --muted: #8FA3B0;
+  --link: #2BB3A8; --signal: #F2A900; --sos: #E5483B; --safe: #5BC27A;
+  --link-soft: rgba(43,179,168,.13); --sos-soft: rgba(229,72,59,.12); --signal-soft: rgba(242,169,0,.12);
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0B1620; --surface: #132330; --raised: #1A2E3D; --outline: #27404F;
+  --ink: #E8EEF2; --muted: #8FA3B0;
+  --link: #2BB3A8; --signal: #F2A900; --sos: #E5483B; --safe: #5BC27A;
+  --link-soft: rgba(43,179,168,.13); --sos-soft: rgba(229,72,59,.12); --signal-soft: rgba(242,169,0,.12);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--body); padding: 0 16px; }
+.page { max-width: 1060px; margin: 0 auto; padding-block: 36px 72px; display: grid; gap: 44px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 78%; margin: 0; line-height: 1.08; text-wrap: balance; }
+h1 { font-size: clamp(34px, 5.6vw, 54px); font-weight: 800; }
+h2 { font-size: clamp(24px, 3.4vw, 32px); font-weight: 750; }
+h3 { font-size: 20px; font-weight: 700; font-stretch: 85%; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 12.5px/1 var(--display); font-stretch: 100%; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 19px; color: var(--muted); }
+section { display: grid; gap: 18px; }
+
+/* Timeline overview */
+.bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--outline); }
+.bar span { display: block; height: 100%; }
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 16px; font-size: 14px; color: var(--muted); }
+.legend b { font-family: var(--mono); font-weight: 500; font-size: 12.5px; color: var(--ink); margin-right: 6px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* Blocks */
+.block { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 22px; padding-block: 22px; border-top: 1px solid var(--outline); }
+.when { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; padding-top: 2px; display: grid; gap: 4px; }
+.when .t { font: 800 30px/1 var(--display); font-stretch: 70%; font-variant-numeric: tabular-nums; }
+.when .d { font: 600 12px/1.2 var(--display); font-stretch: 100%; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.body { display: grid; gap: 14px; min-width: 0; }
+.say { border-left: 3px solid var(--link); padding: 2px 0 2px 16px; display: grid; gap: 10px; }
+.say p { font-size: 18.5px; line-height: 1.55; }
+.say p.q { font-family: var(--display); font-stretch: 82%; font-size: 23px; font-weight: 700; line-height: 1.2; }
+.label { font: 700 11.5px/1 var(--display); font-stretch: 100%; letter-spacing: .12em; text-transform: uppercase; }
+.label.say-l { color: var(--link); }
+.do { background: var(--raised); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; font-size: 15.5px; }
+.do .label { color: var(--ink); }
+.do ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.fail { background: var(--sos-soft); border-radius: 10px; padding: 10px 14px; font-size: 15px; display: grid; gap: 4px; }
+.fail .label { color: var(--sos); }
+.tap { font-family: var(--mono); font-size: 13.5px; background: var(--surface); border: 1px solid var(--outline); border-radius: 6px; padding: 0 5px; white-space: nowrap; }
+@media (max-width: 680px) { .block { grid-template-columns: minmax(0, 1fr); gap: 8px; } .when { position: static; grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 10px; } }
+
+/* Numbers */
+.table-wrap { overflow-x: auto; border: 1px solid var(--outline); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--outline); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 12px/1.2 var(--display); font-stretch: 100%; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--raised); }
+td.num { font: 750 18px/1.2 var(--display); font-stretch: 80%; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; font: 600 11px/1 var(--display); font-stretch: 100%; letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; white-space: nowrap; }
+.pill.m { background: var(--link-soft); color: var(--link); }
+.pill.r { background: var(--signal-soft); color: var(--signal); }
+.pill.n { background: var(--sos-soft); color: var(--sos); }
+
+/* Q&A */
+.qa { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.qa div { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.qa b { font-family: var(--display); font-stretch: 88%; font-size: 17px; }
+.qa p { font-size: 15.5px; color: var(--ink); }
+@media (max-width: 760px) { .qa { grid-template-columns: minmax(0, 1fr); } }
+.check { display: grid; gap: 8px; padding-left: 1.2em; margin: 0; }
+footer { font-size: 14px; color: var(--muted); border-top: 1px solid var(--outline); padding-top: 16px; }
+</style>
+
+<div class="page">
+  <header style="display:grid;gap:14px">
+    <div class="eyebrow">iQOO Hackathon Grand Finale · Bengaluru · 10-minute pitch</div>
+    <h1>Panic in, clear alert out, even with no network.</h1>
+    <p class="lede">A run sheet for presenting Lifeline Mesh: what to say, what to tap, and what to do if a step fails. Read the blue lines out loud; the grey boxes are for your hands.</p>
+    <div class="bar" aria-hidden="true">
+      <span style="flex:40;background:var(--sos)"></span>
+      <span style="flex:40;background:var(--signal)"></span>
+      <span style="flex:160;background:var(--link)"></span>
+      <span style="flex:120;background:var(--safe)"></span>
+      <span style="flex:90;background:var(--signal)"></span>
+      <span style="flex:75;background:var(--ink)"></span>
+      <span style="flex:45;background:var(--link)"></span>
+      <span style="flex:30;background:var(--sos)"></span>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--sos)"></span><b>0:00</b>The problem</span>
+      <span><span class="dot" style="background:var(--signal)"></span><b>0:40</b>The idea</span>
+      <span><span class="dot" style="background:var(--link)"></span><b>1:20</b>Demo: panic in</span>
+      <span><span class="dot" style="background:var(--safe)"></span><b>4:00</b>Demo: the rescuer</span>
+      <span><span class="dot" style="background:var(--signal)"></span><b>6:00</b>Demo: when things go wrong</span>
+      <span><span class="dot" style="background:var(--ink)"></span><b>7:30</b>Under the hood</span>
+      <span><span class="dot" style="background:var(--link)"></span><b>8:45</b>Measured, not claimed</span>
+      <span><span class="dot" style="background:var(--sos)"></span><b>9:30</b>Close</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="before">
+    <div class="eyebrow">Ten minutes before you walk on</div>
+    <h2 id="before">Set the stage</h2>
+    <ul class="check">
+      <li><b>Phone A (iQOO 15)</b>, role "I need help": How it works (speed icon) → On-device AI says <b>Ready · Gemma 4 E4B on GPU</b>. Screen timeout 10 minutes, brightness up, Do Not Disturb off.</li>
+      <li><b>Real phones B and C</b>, if the three-phone relay has been rehearsed: B volunteer in the middle, C "Ambulance". Otherwise run the whole demo in <b>Simulation mode</b> on A and say so; the red "Simulated" banner says it too.</li>
+      <li>Mobile data and Wi-Fi internet <b>off</b>, Bluetooth and location <b>on</b>. Near a window for 5 minutes so GPS has a fix.</li>
+      <li>Screen mirroring to the projector tested. Close the remote-control app and anything that can pop up.</li>
+      <li>Simulation switched on at least 2 minutes early, so shelters, alerts and teams already exist.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="script">
+    <div class="eyebrow">The 10 minutes</div>
+    <h2 id="script">Script</h2>
+
+    <article class="block">
+      <div class="when"><span class="t">0:00</span><span class="d">The problem · 40 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p class="q">"When a flood or a landslide hits, the first thing to go is the network."</p>
+          <p>"Towers lose power, lines get cut, the one network everybody depends on goes silent at the exact moment people need it. Someone trapped on a roof can't call, can't send a location, can't even know if anyone heard them. And the rescue teams arriving have no idea who needs help first, or where."</p>
+          <p>"We asked one question: what if the phones in that neighbourhood could carry the message themselves?"</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">0:40</span><span class="d">The idea · 40 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p class="q">"This is Lifeline Mesh. Panic in, clear alert out, even with no network."</p>
+          <p>"Three promises. One: it works with no SIM, no tower and no internet; phones pass alerts to each other over Bluetooth, like a relay race. Two: the AI runs on the phone itself, here a Gemma model on the iQOO 15's GPU, so it works offline too. Three: every number you see is measured on the phone, and anything simulated is labelled Simulated."</p>
+        </div>
+        <div class="do"><span class="label">Do</span>Hold up phone A. Point at the status bar: no mobile data, no Wi-Fi internet.</div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">1:20</span><span class="d">Demo: panic in · 2 min 40 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"Imagine I'm on a roof with my family. I don't fill in a form; I just speak, in Hindi, Kannada or English."</p>
+        </div>
+        <div class="do"><span class="label">Do</span><ol>
+          <li>SOS tab → <span class="tap">Speak</span>: "Water is rising, four of us are trapped on the roof, my father is sick." → <span class="tap">Continue</span>.</li>
+          <li>Point at the review sheet: Trapped, Medical, 4 people, Urgent, <b>"Understood by: On-device AI"</b>, and the packet size (about 60 bytes).</li>
+          <li><span class="tap">Send alert</span>. Point at the status card as it moves: <b>Passed to 2 nearby phones → Reached a rescue team's phone → Help is coming</b>. The phone vibrates.</li>
+        </ol></div>
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"The AI turned panic into a structured alert: what is wrong, how many people, how urgent, and the GPS position. The whole alert is about 60 bytes, smaller than one line of this slide."</p>
+          <p>"It hopped phone to phone. And look: before any person answered, my phone told me <i>'your alert reached an ambulance team's phone, two hops away'</i>. Then the team said help is coming, and my phone vibrated, even on silent."</p>
+          <p>"If I just type 'please help us', the app won't send something useless: it asks one calm question, in my language, to get what's missing. And if I can't speak at all, I hold this button for 3 seconds."</p>
+        </div>
+        <div class="do"><span class="label">Do (if time)</span>Hold <span class="tap">Hold for SOS</span> for 3 seconds: an SOS goes out with a strong vibration.</div>
+        <div class="fail"><span class="label">If it fails</span>Speech fails in the noise: tap <span class="tap">Type</span>, same sentence. The alert doesn't reach C in 20 s: Settings → Simulation mode on, send again, and say "this is the simulated neighbourhood".</div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">4:00</span><span class="d">Demo: the rescuer · 2 min</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"Now the other side. I'm an ambulance team, and alerts are arriving from all over the neighbourhood."</p>
+        </div>
+        <div class="do"><span class="label">Do</span><ol>
+          <li>Rescue tab (role Ambulance). Point at the <b>situation report</b>: three lines written on the phone, every number checked against the alerts.</li>
+          <li><b>Who goes where</b>: the alerts split between teams, the right team for each need. On the one suggested for you, <span class="tap">Take it</span>.</li>
+          <li><b>Your plan</b>: the job, the minutes along the roads, and "then take them to School hall".</li>
+          <li>Map tab: the team lines along real roads, the green drop-off leg to the shelter, the minute labels.</li>
+          <li><span class="tap">Ask the mesh</span>: let a judge ask, e.g. "Who needs help first?"</li>
+        </ol></div>
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"Every team phone runs the same rules on the same data, so two ambulances never go to the same person while someone else waits. No control room, no server."</p>
+          <p>"The routes are on an offline map of Bengaluru, built into the app. The AI can explain things, but it is never allowed to invent a number: if its answer has a number that isn't in the alerts, the phone shows the computed answer instead."</p>
+        </div>
+        <div class="fail"><span class="label">If it fails</span>The model is busy or slow: the card shows the computed text, which is correct. Say "the AI is optional; the rules always work".</div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">6:00</span><span class="d">Demo: when things go wrong · 1 min 30 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"Disasters don't stay still. Watch what happens when things go wrong."</p>
+        </div>
+        <div class="do"><span class="label">Do (simulation on)</span><ol>
+          <li>Mesh tab → <span class="tap">Block a road ahead</span> → Map tab: the team's route goes around the fallen tree.</li>
+          <li>Mesh tab → <span class="tap">Ravi's battery to 8 %</span> → banner <span class="tap">Show</span>: "Ravi's phone is your only link to 5 phones · battery 8 %".</li>
+          <li>Mesh tab → <span class="tap">Fill the nearest shelter</span> → SOS tab, Where to go: it switches to the Temple hall.</li>
+          <li>SOS tab → Find someone → type a name, e.g. "Meena".</li>
+        </ol></div>
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"A road gets blocked: the team re-plans around it. A relay phone runs low: it goes into survival mode and passes on only life-saving messages, and the app tells rescuers exactly where to place another phone so nobody is cut off. A shelter fills up: everyone is sent to the next one. And a family can type a name and see 'Meena checked in safe, 2 hops away'."</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">7:30</span><span class="d">Under the hood · 1 min 15 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"How it works, in four sentences."</p>
+          <p>"One: each alert is a tiny binary packet, a 19-byte header and the essentials, with GPS stored to a tenth of a metre. Two: phones flood it outward over Google Nearby Connections, each one passing it on once, at most six phones far, keeping it for six hours if nobody is in range. Three: on-device AI picks the best model this phone can run (Gemma 4 E4B here, a smaller model on a smaller phone, rules only on an old phone) and every AI output is checked before it's shown. Four: when any phone finds internet, it syncs to a server and brings back official warnings; nothing depends on it."</p>
+        </div>
+        <div class="do"><span class="label">Do</span>How it works screen (speed icon): the last alert step by step, the model card, Benchmarks.</div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">8:45</span><span class="d">Measured, not claimed · 45 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"We were strict about honesty. These numbers were measured on this iQOO 15, and the app shows 'Not measured' where we don't have one."</p>
+          <p>"The model's first word comes in under a second, about 21 tokens a second on the GPU, and it passed our tests in English, Hindi and Kannada. With the model removed, every feature still works on rules. The core logic has over 300 automated tests."</p>
+        </div>
+        <div class="do"><span class="label">Do</span>Benchmarks screen; point at GPU vs CPU and at "Not measured" where it appears.</div>
+      </div>
+    </article>
+
+    <article class="block">
+      <div class="when"><span class="t">9:30</span><span class="d">Close · 30 s</span></div>
+      <div class="body">
+        <div class="say"><span class="label say-l">Say</span>
+          <p>"Every phone in a flooded street already has the radio to save a life. Lifeline Mesh turns them into one network that keeps working when everything else stops: it understands panic on the phone, gets the alert through phone by phone, and helps rescuers decide who to reach first."</p>
+          <p class="q">"Panic in, clear alert out, even with no network. Thank you."</p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section aria-labelledby="numbers">
+    <div class="eyebrow">Keep these straight</div>
+    <h2 id="numbers">Numbers you can say, and how sure they are</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Claim</th><th>Value</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>On-device model on the iQOO 15</td><td class="num">Gemma 4 E4B · GPU</td><td><span class="pill m">Measured</span> selected by the app's own test</td></tr>
+        <tr><td>Time to first token / speed</td><td class="num">0.7 s · 20.9 tok/s</td><td><span class="pill m">Measured</span> iQOO 15, 11 Oct 2026</td></tr>
+        <tr><td>Languages that passed the AI test</td><td class="num">EN · HI · KN</td><td><span class="pill m">Measured</span></td></tr>
+        <tr><td>Size of an alert</td><td class="num">≈ 58–70 bytes</td><td><span class="pill m">Measured</span> depends on the note</td></tr>
+        <tr><td>Furthest an alert travels</td><td class="num">6 phones</td><td><span class="pill r">Design rule</span> TTL 5</td></tr>
+        <tr><td>Kept for a phone that comes into range later</td><td class="num">6 hours</td><td><span class="pill r">Design rule</span></td></tr>
+        <tr><td>Phone's position indoors, online / SOS fix</td><td class="num">16–41 m / 11–12 m</td><td><span class="pill m">Measured</span> indoors, iQOO 15</td></tr>
+        <tr><td>Automated tests</td><td class="num">310</td><td><span class="pill m">Measured</span> all pass</td></tr>
+        <tr><td>Hops, round trip, link range in the simulation</td><td class="num">e.g. 2 hops · 1.4 s · 547 m</td><td><span class="pill r">Simulated</span> say so</td></tr>
+        <tr><td>Real three-phone relay, battery drain, outdoor range, NPU</td><td class="num">—</td><td><span class="pill n">Not yet</span> do not claim until tested</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="qa">
+    <div class="eyebrow">After the pitch</div>
+    <h2 id="qa">Questions judges are likely to ask</h2>
+    <div class="qa">
+      <div><b>What if the other phones don't have the app?</b><p>Messages hop only through phones with the app. Two answers: anyone can share the app offline from phone to phone, and the phone can put its SOS in its Bluetooth name, so any phone nearby that opens its Bluetooth list sees it.</p></div>
+      <div><b>How far does it reach?</b><p>Each hop is Bluetooth range, tens of metres, more in the open. An alert can cross six phones, and a phone that moves (a volunteer walking) carries stored alerts to the next group. Real outdoor range: we will measure and show it.</p></div>
+      <div><b>Why on-device AI and not the cloud?</b><p>There is no cloud in a disaster. The model runs on the phone's GPU, offline. The app picks a model per phone, and with no model it still works on rules.</p></div>
+      <div><b>Can the AI make a dangerous mistake?</b><p>It never decides alone. It suggests fields the person checks before sending, numbers are always computed in code and checked, and first aid only shows vetted guides word for word.</p></div>
+      <div><b>What about battery?</b><p>Below 20 % a phone goes into survival mode: fewer hellos, only life-saving messages, AI paused. The phone records drain per hour in each mode.</p></div>
+      <div><b>Privacy: can anyone see where I am?</b><p>Only rescue teams see people's positions. Others see teams. IDs are random per install, never a phone number. Each link is encrypted by Nearby Connections.</p></div>
+      <div><b>What stops spam or fake alerts?</b><p>Each phone accepts at most 10 messages a minute from one sender, duplicates are dropped, and messages expire. Team roles are self-declared today; verification is a next step.</p></div>
+      <div><b>Did the NPU work?</b><p>Not yet: it needs a model built for this exact chip. The GPU is the accelerated path today, and the Benchmarks screen says so honestly.</p></div>
+    </div>
+  </section>
+
+  <footer>Lifeline Mesh · run sheet for the 10-minute pitch · numbers as of 11 Oct 2026 from the iQOO 15; rehearse with a stopwatch and trim the 6:00 block first if you run long.</footer>
+</div>
