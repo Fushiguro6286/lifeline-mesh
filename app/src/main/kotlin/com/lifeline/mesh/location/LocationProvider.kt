@@ -31,9 +31,9 @@ class LocationProvider(context: Context) {
         ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    /** The phone's last known position, at once. */
-    @SuppressLint("MissingPermission")
-    suspend fun lastKnown(): GeoFix? {
+        /** The phone's last known position, at once. */
+        @SuppressLint("MissingPermission")
+        suspend fun lastKnown(): GeoFix? {
         if (!hasPermission()) return null
         return try { client.lastLocation.await()?.toFix() } catch (e: Exception) { Log.w(TAG, "lastLocation", e); null }
     }
