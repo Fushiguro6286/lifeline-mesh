@@ -1,0 +1,18 @@
+<section id="stack" data-transition="fade" style="background:#F4F7F8;color:#0E1E28;font-family:'Atkinson Hyperlegible', Verdana, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:36px">
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-family:Archivo, Arial, sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#0B6E75">Under the hood</p>
+<h2 style="font-family:Archivo, Arial, sans-serif;font-size:64px;font-weight:800;line-height:1.1">Plain, proven parts.</h2>
+</div>
+<table style="font-size:27px;color:#0E1E28">
+<tr><th style="width:28%;font-family:Archivo, Arial, sans-serif">Part</th><th style="width:72%;font-family:Archivo, Arial, sans-serif">Built with</th></tr>
+<tr><td>App</td><td>Kotlin, Jetpack Compose, Material 3 · Android 8 and up</td></tr>
+<tr><td>Mesh</td><td>Google Nearby Connections (P2P cluster) in a foreground service</td></tr>
+<tr><td>Storage</td><td>Room database and DataStore: everything survives a restart</td></tr>
+<tr><td>On-device AI</td><td>LiteRT-LM with Gemma 4 and Gemma 3 on GPU or CPU</td></tr>
+<tr><td>Speech</td><td>Android speech recognition and text-to-speech, offline where available</td></tr>
+<tr><td>Map</td><td>MapLibre with an offline PMTiles file; A* routing in Kotlin</td></tr>
+<tr><td>Server</td><td>Python FastAPI and SQLite, only used when internet appears</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4E626D">Lifeline Mesh · 19</p>
+<aside>The core (packets, router, ranking, gate, rules, dispatch) is pure Kotlin with no Android imports, which is why it can be unit-tested. No dependency injection framework, few files. Built solo for this hackathon.</aside>
+</section>

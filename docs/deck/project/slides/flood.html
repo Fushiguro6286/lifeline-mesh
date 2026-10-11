@@ -1,0 +1,17 @@
+<section id="flood" data-transition="fade" style="background:#F4F7F8;color:#0E1E28;font-family:'Atkinson Hyperlegible', Verdana, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:36px">
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-family:Archivo, Arial, sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#9A6A00">How a message crosses the mesh</p>
+<h2 style="font-family:Archivo, Arial, sans-serif;font-size:64px;font-weight:800;line-height:1.1">Every phone passes it on once, and remembers it.</h2>
+</div>
+<table style="font-size:28px;color:#0E1E28">
+<tr><th style="width:30%;font-family:Archivo, Arial, sans-serif">Rule</th><th style="width:70%;font-family:Archivo, Arial, sans-serif">What it does</th></tr>
+<tr><td>Radio</td><td>Google Nearby Connections over Bluetooth (Wi-Fi where it can); each link encrypted</td></tr>
+<tr><td>Duplicates</td><td>Message ID seen before: dropped, on every phone</td></tr>
+<tr><td>Hop limit</td><td>TTL starts at 5: at most 6 phones from the sender</td></tr>
+<tr><td>Rate limit</td><td>More than 10 a minute from one sender: dropped</td></tr>
+<tr><td>Urgent first</td><td>Life-threatening alerts and replies jump the queue</td></tr>
+<tr><td>Store and forward</td><td>Kept 6 hours; sent to any phone that comes in range</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4E626D">Lifeline Mesh · 10</p>
+<aside>Controlled flooding: simple, robust, no routing tables to break. On every new connection both phones swap a summary of recent message IDs and send only what the other lacks. Each phone waits 50 to 300 ms before passing a message on, so copies don't collide. A volunteer walking between two groups carries stored alerts across.</aside>
+</section>

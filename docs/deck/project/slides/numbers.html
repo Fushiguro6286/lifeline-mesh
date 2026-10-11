@@ -1,0 +1,18 @@
+<section id="numbers" data-transition="fade" style="background:#F4F7F8;color:#0E1E28;font-family:'Atkinson Hyperlegible', Verdana, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-family:Archivo, Arial, sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#2E7D32">Proof: measured, tested, honest</p>
+<h2 style="font-family:Archivo, Arial, sans-serif;font-size:64px;font-weight:800;line-height:1.1">Measured numbers, and what is still open.</h2>
+</div>
+<table style="font-size:26px;color:#0E1E28">
+<tr><th style="width:34%;font-family:Archivo, Arial, sans-serif">What</th><th style="width:42%;font-family:Archivo, Arial, sans-serif">Result</th><th style="width:24%;font-family:Archivo, Arial, sans-serif">Status</th></tr>
+<tr><td>Alert packet</td><td>31 bytes bare, 58 with a note; largest packet 820</td><td style="color:#2E7D32;font-weight:700">Measured</td></tr>
+<tr><td>AI on GPU, iQOO 15</td><td>First token 336 ms · 22 tokens/s</td><td style="color:#2E7D32;font-weight:700">Measured</td></tr>
+<tr><td>AI on CPU, iQOO 15</td><td>First token 1,392 ms · 17 tokens/s</td><td style="color:#2E7D32;font-weight:700">Measured</td></tr>
+<tr><td>Demo sentences</td><td>On-device AI 4/4 · rules 4/4</td><td style="color:#2E7D32;font-weight:700">Measured</td></tr>
+<tr><td>Round trip</td><td>247 ms over 1 hop, 1,005 ms over 2</td><td style="color:#9A6A00;font-weight:700">Simulated</td></tr>
+<tr><td>Real hops, range, battery drain</td><td>Needs the three-phone test</td><td style="color:#C8251D;font-weight:700">Not measured</td></tr>
+<tr><td>Snapdragon NPU</td><td>No model built for this chip yet</td><td style="color:#C8251D;font-weight:700">Not tried</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4E626D">Lifeline Mesh · 17</p>
+<aside>Rule of the project: never fake a number. The app records every measurement with a "simulated" flag and exports them as CSV from Settings. GPU numbers are the average of 5 runs, 32 output tokens, Gemma 4 E4B. Loading the model takes 7 to 12 seconds, done in the background at launch. If asked about the NPU: we chose to say "not tried" rather than show a number we did not measure.</aside>
+</section>

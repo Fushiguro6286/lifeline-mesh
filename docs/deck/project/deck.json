@@ -1,0 +1,21 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-11T07:30:00Z"},
+  "lists": "css",
+  "title": "Lifeline Mesh",
+  "order": ["cover", "problem", "idea", "promises", "sos", "gate", "status", "safety", "packet", "flood", "resilience", "triage", "dispatch", "map", "ailadder", "aiguard", "numbers", "testing", "stack", "privacy", "next", "close"],
+  "sections": {
+    "s1": {"description": "The problem and the idea", "start": "cover"},
+    "s2": {"description": "For the person who needs help", "start": "sos"},
+    "s3": {"description": "How a message crosses the mesh", "start": "packet"},
+    "s4": {"description": "For rescue teams", "start": "triage"},
+    "s5": {"description": "AI that runs on the phone", "start": "ailadder"},
+    "s6": {"description": "Proof: measured, tested, honest", "start": "numbers"},
+    "s7": {"description": "What comes next", "start": "next"}
+  },
+  "faces": {
+    "archivo": {"family": "Archivo", "href": "https://fonts.googleapis.com/css2?family=Archivo:wght@400..800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"},
+    "atkinson-hyperlegible": {"family": "Atkinson Hyperlegible", "href": "https://fonts.googleapis.com/css2?family=Archivo:wght@400..800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"}
+  },
+  "designSystems": []
+}

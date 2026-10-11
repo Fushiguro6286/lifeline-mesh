@@ -1,0 +1,19 @@
+<section id="packet" data-transition="fade" style="background:#0B1620;color:#E8EEF2;font-family:'Atkinson Hyperlegible', Verdana, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:36px">
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-family:Archivo, Arial, sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#F2A900">How a message crosses the mesh</p>
+<h2 style="font-family:Archivo, Arial, sans-serif;font-size:64px;font-weight:800;line-height:1.1">A whole emergency in 58 bytes.</h2>
+</div>
+<p style="font-family:'Courier New', monospace;font-size:26px;line-height:1.5;color:#2BB3A8;background:#132330;padding:24px 32px;border-radius:12px">11 3F A2 C1 D4 5E 6B 77 88 6E 93 79 17 05 00 6A CA 61 00 00 C5 F5 BF 04 A0 36 55 02 03 03 04 57 61 74 65 72 20 72 69 73 69 6E 67 …</p>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#132330;border-radius:16px;padding:32px">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:32px;font-weight:700;color:#BFD0D8">Header · 19 bytes</h3>
+<p style="font-size:26px;line-height:1.45;color:#BFD0D8">Type · random message ID (spots duplicates) · random sender ID, never a phone number · hops left (TTL) · hops so far · time</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#132330;border-radius:16px;padding:32px">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:32px;font-weight:700;color:#F2A900">Alert · 39 bytes</h3>
+<p style="font-size:26px;line-height:1.45;color:#BFD0D8">Latitude and longitude to 0.1 m (00 C5 F5 BF = 12.973503) · accuracy in 10 m steps · needs · urgency · people · the note in UTF-8</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8FA3B0">Lifeline Mesh · 9</p>
+<aside>A real example: "Water rising, 4 on the roof", trapped plus medical, 4 people, urgent. The latitude 12.973503 is stored as the whole number 12973503 in 4 bytes, so nothing is lost; GPS accuracy, not the packet, is the limit. Each relay changes only two bytes: TTL down, hops up. Unit tests cover every packet type, Hindi and Kannada notes and damaged packets.</aside>
+</section>

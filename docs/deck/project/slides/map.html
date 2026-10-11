@@ -1,0 +1,26 @@
+<section id="map" data-transition="fade" style="background:#F4F7F8;color:#0E1E28;font-family:'Atkinson Hyperlegible', Verdana, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:36px">
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-family:Archivo, Arial, sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#0B6E75">For rescue teams</p>
+<h2 style="font-family:Archivo, Arial, sans-serif;font-size:64px;font-weight:800;line-height:1.1">A map that works with no internet at all.</h2>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1px solid #C9D6DA;border-radius:16px;padding:32px">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Offline tiles</h3>
+<p style="font-size:26px;line-height:1.35;color:#4E626D">MapLibre reads a Bengaluru map file stored on the phone. Alerts are coloured by urgency.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1px solid #C9D6DA;border-radius:16px;padding:32px">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Road routes</h3>
+<p style="font-size:26px;line-height:1.35;color:#4E626D">A* on the map's own roads, avoiding reported blocks, with minutes on each leg. Boats go straight. Always marked as an estimate.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1px solid #C9D6DA;border-radius:16px;padding:32px">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Honest positions</h3>
+<p style="font-size:26px;line-height:1.35;color:#4E626D">Each position has an accuracy circle. GPS readings are averaged and jumps ignored; vehicles are placed on the road they are on.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1px solid #C9D6DA;border-radius:16px;padding:32px">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Always a fallback</h3>
+<p style="font-size:26px;line-height:1.35;color:#4E626D">If the map can't load, a simple Rings view shows the same alerts by distance and direction.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4E626D">Lifeline Mesh · 14</p>
+<aside>GPS works with no signal; it only listens to satellites. Accuracy is sent inside the packet in 10 m steps, rounded up, so a position is never claimed to be better than it was. When a phone with an open alert finds internet, it also sends its position through the server, where online teams see it marked "via internet".</aside>
+</section>

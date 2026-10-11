@@ -1,0 +1,30 @@
+<section id="ailadder" data-transition="fade" style="background:#0B1620;color:#E8EEF2;font-family:'Atkinson Hyperlegible', Verdana, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:36px">
+<div style="display:flex;flex-direction:column;gap:20px">
+<p style="font-family:Archivo, Arial, sans-serif;font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#2BB3A8">AI that runs on the phone</p>
+<h2 style="font-family:Archivo, Arial, sans-serif;font-size:64px;font-weight:800;line-height:1.1">Each phone picks the biggest model it can really run.</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:20px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#132330;border-radius:16px;padding:32px;border-top:8px solid #2BB3A8">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Gemma 4 E4B</h3>
+<p style="font-size:24px;line-height:1.35;color:#BFD0D8">Flagship phones</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#132330;border-radius:16px;padding:32px;border-top:8px solid #2BB3A8">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Gemma 4 E2B</h3>
+<p style="font-size:24px;line-height:1.35;color:#BFD0D8">Mid-range phones</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#132330;border-radius:16px;padding:32px;border-top:8px solid #2BB3A8">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Gemma 3 1B</h3>
+<p style="font-size:24px;line-height:1.35;color:#BFD0D8">Low memory</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#132330;border-radius:16px;padding:32px;border-top:8px solid #F2A900">
+<h3 style="font-family:Archivo, Arial, sans-serif;font-size:34px;font-weight:700">Rules only</h3>
+<p style="font-size:24px;line-height:1.35;color:#BFD0D8">Every phone, always works</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px">
+<p style="flex:1;font-size:28px;line-height:1.4;color:#BFD0D8">The phone reads its memory, chip and Android version, loads the best candidate on the GPU, and tests it: a speed probe, then English, Hindi and Kannada. First to pass is kept.</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#E8EEF2">On the iQOO 15: <span style="color:#2BB3A8;font-weight:700">Gemma 4 E4B on GPU</span>, first token in 336 ms, 22 tokens per second (CPU: 1,392 ms, 17 tok/s). English, Hindi and Kannada passed.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8FA3B0">Lifeline Mesh · 15</p>
+<aside>Runs on LiteRT-LM. A language that fails the probe uses rules and fixed sentences, while the others still use the model. The Snapdragon NPU needs a model compiled for this exact chip; we have not measured it yet, and the Benchmarks screen says "Not measured" rather than guessing.</aside>
+</section>
